@@ -22,35 +22,6 @@ const reactionOptions = [
 type OptionFunc = (data: types.Data) => TreeOption[] | true;
 type TreeOption = [string, OptionFunc, string?];
 
-const listLessons = (data: types.Data, dayStr: string) => [
-    ...[
-        ...data.timetable[dayStr].map((x) =>
-            `${x.start} - ${x.end} ║ ${x.subj}${x.elective ? " (fakt)" : ""}`
-        ),
-        "missing lesson",
-        "lesson incorrectly exists"
-    ].map((x): TreeOption => [x, () => true])
-];
-
-const dayLessonList = (dayStr: string): TreeOption => [dayStr, (data: types.Data) => listLessons(data, dayStr), "Which lesson is incorrect?"];
-
-
-const groupNameList = (groupId = 0, groupSize = 9): OptionFunc => (data: types.Data) => {
-    const roster        = data.students.roster;
-    const groupStartId  = groupId * groupSize;
-    const groupEndId    = (groupId + 1) * groupSize;
-    const rosterGroup   = roster.slice(groupStartId, groupEndId);
-    const islastGroup   = groupEndId >= roster.length-1;
-
-    const rosterOptions: TreeOption[] = rosterGroup.map((x): TreeOption => [x, () => true]);
-    const bonusOptions:  TreeOption[] = (
-        islastGroup
-        ? [["missing name", () => true]]
-        : [["other names", groupNameList(groupId + 1, groupSize)]]
-    );
-
-    return [...rosterOptions, ...bonusOptions];
-}
 
 const commandList = (data: types.Data): TreeOption[] => {
     const cmdNames = getCmdList().map(x => x.name);
@@ -60,15 +31,6 @@ const commandList = (data: types.Data): TreeOption[] => {
 }
 
 const optionsTree: TreeOption[] = [
-    ["timetable error", () => [
-        dayLessonList("monday"),
-        dayLessonList("tuesday"),
-        dayLessonList("wednesday"),
-        dayLessonList("thursday"),
-        dayLessonList("friday"),
-        ["missing day", () => true]
-    ]],
-    ["nickname error", groupNameList()],
     ["bot bug", commandList],
     ["other", () => true]
 ];
