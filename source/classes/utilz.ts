@@ -1,5 +1,4 @@
 import * as fs from "fs";
-import * as yaml from "yaml";
 import * as DC from "discord.js";
 import * as types from "./types";
 import * as path from "path";
@@ -10,9 +9,6 @@ config();
 export const rootDir = path.join(__dirname, "..", "..");
 export const sourceDir = path.join(rootDir, "source");
 const prefsDirPath = path.join(sourceDir, "..", "prefs");
-
-const studentsAliasesRaw = fs.readFileSync("source/students/aliases.yaml", "utf-8").toString();
-const studentsAliases : {[key: string]: string[]} = yaml.parse(studentsAliasesRaw);
 
 export const getDayString = (function() {
     const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
@@ -107,33 +103,6 @@ export function isBotOwner(user: DC.User) {
 
 // specific
 
-export function lookupNameFromAlias(lookupName: string | undefined) {
-    if (lookupName === undefined) return undefined;
-    if (studentsAliases[lookupName] !== undefined) return lookupName;
-
-    for (const [name, aliases] of Object.entries(studentsAliases)) {
-        const names = aliases.map(x => removeAccents(x.toLowerCase()));
-        if (
-            removeAccents(name.toLowerCase()) === removeAccents(lookupName.toLowerCase()) ||
-            names.includes(removeAccents(lookupName.toLowerCase()))
-        ) return name;
-    }
-
-    return undefined;
-}
-
-export function getNameAliases(name: string) {
-    return studentsAliases[name];
-}
-
-export const getMeetingURL = (function() {
-    const meetingURLs = yaml.parse(fs.readFileSync("source/timetable/class_meeting_urls.yaml", "utf-8"));
-
-    return function(lesson: string): [string?, string?] {
-        return meetingURLs[lesson];
-    };
-})();
-
 // returns a lowercase, accentless string, that is after the specified prefix.
 // returns an emtpy string if there it is incorrect
 export function prefixless(data: types.Data, msg: DC.Message): string {
@@ -179,3 +148,6 @@ export function loadPrefs(filename: string, silent = false): {[guildID: string]:
         console.log(`loaded prefs from '${filename}'`);
     return loadData;
 }
+
+// bot-specific
+
