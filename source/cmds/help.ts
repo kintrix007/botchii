@@ -8,12 +8,11 @@ const cmd: types.Command = {
     name: "help",
     group: "help",
     usage: "help [command name]",
-    description: "",
-    examples: [ "", "report" ]
+    description: "Gives you the help sheet, or information about a given command.",
+    examples: [ "", "prefix" ]
 };
 
-// TODO
-const footerNote = "[], <>";
+const footerNote = "[] means optional arguements\n<> means obligatory arguements.";
 
 function cmdHelp({ data, msg, args }: types.CombinedData) {
     const targetCommand = args[0];
@@ -29,15 +28,15 @@ function cmdHelp({ data, msg, args }: types.CombinedData) {
         if (!command) {
             const embed = new MessageEmbed()
                 .setColor(0xbb0000)
-                .setDescription(`Nem létezik \`${targetCommand}\` nevű parancs.`);
+                .setDescription(`Command \`${targetCommand}\` does not exist.`);
             msg.channel.send(embed);
             return;
         }
         const usage = "`" + currentPrefix + command.usage! + "`";
         const commandName = currentPrefix + command.name;
         const aliases = (command.aliases ? "alias: " + command.aliases.map(x => currentPrefix+x).reduce((a, b) => a + ", " + b) : "");
-        const description = command.description || "**[Nincs hozzáadva leírás]**";
-        const examples = (command.examples ? "**Pl.:  " +
+        const description = command.description || "**[Description is not set]**";
+        const examples = (command.examples ? "**e.g.  " +
             command.examples.map(x => x ? `\`${commandName} ${x}\`` : `\`${commandName}\``) 
                             .reduce((a, b) => a + ", " + b) + "**"
         : "");
@@ -68,7 +67,7 @@ function cmdHelp({ data, msg, args }: types.CombinedData) {
             .sort()
             .sort(([groupA], [groupB]) => {
                 if (groupA === "help" && groupB !== "help") return -1;
-                if (groupB === "help" && groupA !== "help") return 1;
+                if (groupA !== "help" && groupB === "help") return 1;
                 return 0;
             });
 

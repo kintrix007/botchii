@@ -20,7 +20,7 @@ export interface CombinedData {
 export type CommandGroup = "help" | "admin" | "owner" | "moderation" | "roles" | "utility" | "";
 
 export interface Command {
-    setupFunc?:     (data: Data) => Promise<void>;
+    setupFunc?:     (data: Data) => Promise<any>;
     func:           (combData: CombinedData) => any;
     name:           string;
     group?:         CommandGroup;

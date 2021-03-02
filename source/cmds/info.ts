@@ -22,6 +22,8 @@ function cmdInfo({ msg }: types.CombinedData) {
         .setTitle("Botchii")
         .setDescription(`${description}\n**GitHub:** ${homepage}`);
     msg.channel.send(embed);
+
+    console.log(`${msg.author.username}#${msg.author.discriminator} queried the info about the bot`);
 }
 
 module.exports = cmd;

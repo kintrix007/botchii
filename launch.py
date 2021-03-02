@@ -6,10 +6,12 @@ from functools import reduce
 from typing import List
 
 root = os.path.dirname(os.path.realpath(__file__))
+originale_dir = os.getcwd()
 CRASH_LOG_DIR = os.path.join(root, "crash_logs")
 PACKAGE = os.path.join(root, "package.json")
 
 def main():
+    os.chdir(root)
     args = parse_args(sys.argv)
 
     should_up_dependencies = either_in_list(args, "update", "update-dependencies", "u", "d")
@@ -76,37 +78,27 @@ def compile() -> None:
     print("-- compile successful --")
 
 def update() -> None:
-    # kinda sucks... But it works, at least
     print("-- updating... --")
-    original_dir = os.getcwd()
-    os.chdir(root)
 
     pull_exit_code = os.system("git pull")
 
     if pull_exit_code != 0:
         print(f"git pull stopped with a non-zero exit code ({pull_exit_code})")
         print("-- skipping update --")
-        os.chdir(original_dir)
         return
 
-    os.chdir(original_dir)
     print("-- update successful --")
 
 def update_dependencies() -> None:
-    # kinda sucks... But it works, at least
     print("-- updating dependencies... --")
-    original_dir = os.getcwd()
-    os.chdir(root)
 
     npm_exit_code = os.system("npm install")
 
     if npm_exit_code != 0:
         print(f"npm install stupped with a non-zero exit code ({npm_exit_code})")
         print("-- skipping dependency update --")
-        os.chdir(original_dir)
         return
     
-    os.chdir(original_dir)
     print("-- dependency update successful --")
 
 def parse_args(args) -> List[str]:

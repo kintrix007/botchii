@@ -59,7 +59,7 @@ async function cmdReport({ data, msg }: types.CombinedData) {
             }
             
             const option = tree[answer];
-            problemPath.push(option[0]);
+            problemPath.push(option[0].replace(/`+/g, ""));
             const selectedOption = option[1](data);
             description = option[2] ?? "";
 
