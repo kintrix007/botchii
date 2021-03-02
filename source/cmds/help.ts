@@ -7,13 +7,13 @@ const cmd: types.Command = {
     func: cmdHelp,
     name: "help",
     group: "help",
-    aliases: [ "segítség" ],
-    usage: "help [parancs neve]",
-    description: "Megadja egy parancs használati módját, leírását, és mutat néhány pédát.",
-    examples: [ "", "órarend", "követkető" ]
+    usage: "help [command name]",
+    description: "",
+    examples: [ "", "report" ]
 };
 
-const footerNote = "A [] helyén egy paraméter opcionálisan megadható,\nA <> helyén pedig egy paraméter kötelező.";
+// TODO
+const footerNote = "[], <>";
 
 function cmdHelp({ data, msg, args }: types.CombinedData) {
     const targetCommand = args[0];

@@ -7,7 +7,7 @@ import { MessageEmbed } from "discord.js";
 const cmd: types.Command = {
     func: cmdInfo,
     name: "botinfo",
-    // usage: "botinfo",
+    usage: "botinfo",
     examples: [ "" ]
 }
 
@@ -19,7 +19,7 @@ function cmdInfo({ msg }: types.CombinedData) {
     
     const embed = new MessageEmbed()
         .setColor(0x00bb00)
-        .setTitle("Órarend Bot")
+        .setTitle("Botchii")
         .setDescription(`${description}\n**GitHub:** ${homepage}`);
     msg.channel.send(embed);
 }

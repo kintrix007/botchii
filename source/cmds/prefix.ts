@@ -3,19 +3,16 @@ import * as types from "../classes/types";
 import { MessageEmbed } from "discord.js";
 import { getHelpCmd } from "../commands"
 
-const description = "Átállítja a *prefix*et, amit a bot használ.\n"
-    + "Az alapértelmezett a `!`, álállítás után azzal fognak működni a parancsok.\n"
-    + "Alternatív módon, a bot pingelésével is használhatóak a parancsok.";
+const description = "";
 
 const cmd: types.Command = {
     func: cmdPrefix,
     group: "admin",
     name: "prefix",
     adminCommand: true,
-    usage: "prefix [új prefix]",
+    usage: "prefix [new prefix]",
     description: description,
     examples: [ "", "!!", "." ],
-    aliases: [ "előtag", "hivószó" ]
 };
 
 const PREFS_FILE = "prefixes.json";
