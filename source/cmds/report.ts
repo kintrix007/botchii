@@ -76,7 +76,7 @@ async function cmdReport({ data, msg }: types.CombinedData) {
                     const problemString = problemDescMsg?.content?.slice(0, MAX_DESC_LENGHT)?.replace(/[ \t]+/g, " ")?.replace(/\n+/g, "    ");
                     const embed = new MessageEmbed()
                         .setColor(0xbb0000)
-                        .setTitle(`${msg.author.username}#${msg.author.discriminator} reported a problem:`)
+                        .setTitle(`${msg.author.username}#${msg.author.discriminator} (from '${msg.guild?.name}') reported a problem:`)
                         .setDescription(`**${msg.author}**\n\n**At:**\n\`${problemPath.join(" > ")}\`\n\n**With the description:**\n${problemString}`);
                     await owner.send(embed);
 
