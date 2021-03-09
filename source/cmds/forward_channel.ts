@@ -7,7 +7,7 @@ const cmd: types.Command = {
     func: cmdChannel,
     usage: "channel [<from|to> <channels...>]",
     // description: "",
-    examples: [ "from", "from 123456789012345678 012345678901234567", "to 234567890123456789" ]
+    examples: [ "from", "from #general #announcements 012345678901234567", "to #published-announcements" ]
 }
 
 const PREFS_FILE = "channel.json";

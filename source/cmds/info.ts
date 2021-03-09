@@ -14,12 +14,13 @@ const cmd: types.Command = {
 function cmdInfo({ msg }: types.CombinedData) {
     const packagePath = path.join(Utilz.rootDir, "package.json");
     const packageObj = JSON.parse(fs.readFileSync(packagePath).toString());
+    const name: string = Utilz.capitalize(packageObj.name);
     const description: string = packageObj.description;
     const homepage: string    = packageObj.homepage;
     
     const embed = new MessageEmbed()
         .setColor(0x00bb00)
-        .setTitle("Botchii")
+        .setTitle(name)
         .setDescription(`${description}\n**GitHub:** ${homepage}`);
     msg.channel.send(embed);
 
