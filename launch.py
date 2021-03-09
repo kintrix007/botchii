@@ -14,13 +14,13 @@ def main():
     os.chdir(root)
     args = parse_args(sys.argv)
 
-    should_up_dependencies = either_in_list(args, "update", "update-dependencies", "u", "d")
-    no_recompile = either_in_list(args, "no-compile", "no-update", "n")
+    should_update = either_in_list(args, "update", "u")
+    no_recompile = either_in_list(args, "no-compile", "n")
 
     assert_dotenv_exists()
     remove_crash_logs()
-    if not no_recompile: update()
-    if should_up_dependencies: update_dependencies()
+    if should_update: update()
+    if should_update: update_dependencies()
     if not no_recompile: compile()
 
     iter = 0

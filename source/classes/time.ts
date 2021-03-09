@@ -1,6 +1,6 @@
 export default class Time {
-    public time  : number = 0;
-    public hour  : number = 0;
+    public time:   number = 0;
+    public hour:   number = 0;
     public minute: number = 0;
     
     constructor(time: Date | number | string, minutes: number | undefined = undefined) {
