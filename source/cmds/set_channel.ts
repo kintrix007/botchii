@@ -1,16 +1,18 @@
 import * as Utilz from "../classes/utilz";
 import * as types from "../classes/types";
-import { CategoryChannel, Channel, Client, Message, MessageEmbed, VoiceChannel } from "discord.js";
+import setup from "./other/forward_messages";
+import { CategoryChannel, Channel, Client, MessageEmbed, VoiceChannel } from "discord.js";
 
 const cmd: types.Command = {
     name: "channel",
     func: cmdChannel,
+    setupFunc: setup,
     usage: "channel [<from|to> <channels...>]",
     // description: "",
     examples: [ "from", "from #general #announcements 012345678901234567", "to #published-announcements" ]
 }
 
-const PREFS_FILE = "channel.json";
+export const PREFS_FILE = "channel.json";
 
 export interface ChannelData {
     [guildID: string]: {
