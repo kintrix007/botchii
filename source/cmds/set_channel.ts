@@ -41,7 +41,6 @@ async function cmdChannel({data, msg, args}: types.CombinedData) {
     if (isSetter) {
 
         setChannels(msg, channels, isFromSetter);
-        
 
     } else {
         // getter
