@@ -140,6 +140,11 @@ export function savePrefs(filename: string, saveData: any): void {
 }
 
 export function loadPrefs(filename: string, silent = false): {[guildID: string]: any} {
+    if (!fs.existsSync(prefsDirPath)) {
+        fs.mkdirSync(prefsDirPath);
+        console.log(`created dir '${prefsDirPath}' because it did not exist`);
+    }
+    
     if (!fs.existsSync(`${prefsDirPath}/${filename}`)) return {};
 
     const loadDataRaw = fs.readFileSync(`${prefsDirPath}/${filename}`).toString();
@@ -147,6 +152,10 @@ export function loadPrefs(filename: string, silent = false): {[guildID: string]:
     if (!silent)
         console.log(`loaded prefs from '${filename}'`);
     return loadData;
+}
+
+export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean): T[] {
+    return arr.filter((x, idx) => arr.findIndex(a => isEqual(a, x)) === idx);
 }
 
 // bot-specific

@@ -9,6 +9,7 @@
         "noImplicitAny": true,
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
-        "strictNullChecks": true
+        "strictNullChecks": true,
+        "removeComments": true
     }
 }

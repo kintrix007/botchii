@@ -7,7 +7,7 @@ import * as path from "path";
 const cmds: types.Command[] = [];
 
 function createCmd(command: types.Command): void {
-    console.log(`loaded command '${command.name}'`);
+    if (command.name) console.log(`loaded command '${command.name}'`);
 
     if (command.group === "help") {
         cmds.unshift(command);      // unshift = prepend
@@ -35,8 +35,10 @@ function loadCmds(cmds_dir: string) {
 async function setUpCmds(data: types.Data) {
     console.log("-- started setting up commands... --");
 
-    for (const cmd of cmds) {
-        if (cmd.setupFunc) await cmd.setupFunc(data);
+    for (let cmd of cmds) {
+        if (cmd.setupFunc) {
+            await cmd.setupFunc(data);
+        }
     }
     
     console.log("-- finished setting up commands --");
@@ -44,6 +46,7 @@ async function setUpCmds(data: types.Data) {
 
 export async function createCmdsListeners(data: types.Data, cmds_dir: string) {
     loadCmds(cmds_dir);
+    // console.log(cmds);
     await setUpCmds(data);
 
     data.client.on("message", (msg: Message) => {

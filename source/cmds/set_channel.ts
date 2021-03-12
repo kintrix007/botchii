@@ -1,16 +1,16 @@
 import * as Utilz from "../classes/utilz";
 import * as types from "../classes/types";
-import setup from "./other/forward_messages";
-import { CategoryChannel, Channel, Client, MessageEmbed, VoiceChannel } from "discord.js";
+import { CategoryChannel, Channel, Client, Message, MessageEmbed, VoiceChannel } from "discord.js";
 
 const cmd: types.Command = {
     name: "channel",
     func: cmdChannel,
-    setupFunc: setup,
     usage: "channel [<from|to> <channels...>]",
     // description: "",
-    examples: [ "from", "from #general #announcements 012345678901234567", "to #published-announcements" ]
-}
+    examples: [ "from", "from #general #announcements 012345678901234567", "to #published-announcements" ],
+    adminCommand: true,
+    group: "admin"
+};
 
 export const PREFS_FILE = "channel.json";
 
@@ -24,77 +24,40 @@ export interface ChannelData {
 
 async function cmdChannel({data, msg, args}: types.CombinedData) {
     const [option, ...strIDs] = args;
-    const isToSetter = option === "to";
     const isFromSetter = option === "from";
-    const isGetter = !(isToSetter || isFromSetter);
-
-    if (!strIDs.length && !isGetter) {
-        const embed = new MessageEmbed()
-            .setColor(0xbb0000)
-            .setDescription("Error");
-        msg.channel.send(embed);
-        return;
-    }
+    const isSetter = (isFromSetter || option === "to");
 
     const channelIDs = stripIDs(strIDs);
-
-    if (!channelIDs.length && !isGetter) {
-        const embed = new MessageEmbed()
-            .setColor(0xbb0000)
-            .setDescription("Error");
-        msg.channel.send(embed);
-        return;
-    }
-
-    const guildID = msg.guild!.id;
     const channels = await fetchChannels(data.client, channelIDs);
 
-    if (!channels.length && !isGetter) {
+    if (channels.length === 0 && isSetter) {
         const embed = new MessageEmbed()
             .setColor(0xbb0000)
             .setDescription("Error");
         msg.channel.send(embed);
         return;
     }
-
-    const channelData: ChannelData = Utilz.loadPrefs(PREFS_FILE);
     
-    if (isFromSetter) {
+    if (isSetter) {
 
-        channelData[guildID] = {
-            readableGuildName: msg.guild!.name,
-            fromChannels: channels.map(x => x.id),
-            toChannels: channelData[guildID]?.toChannels
-        };
-        Utilz.savePrefs(PREFS_FILE, channelData);
-
-    } else
-    if (isToSetter) {
-        
-        channelData[guildID] = {
-            readableGuildName: msg.guild!.name,
-            fromChannels: channelData[guildID]?.fromChannels, 
-            toChannels: channels.map(x => x.id)
-        };
-        Utilz.savePrefs(PREFS_FILE, channelData);
+        setChannels(msg, channels, isFromSetter);
         
     } else {
-        // neither "from", nor "to"
-        const { fromChannels, toChannels } = channelData[guildID];
+        // getter
+        const guildID = msg.guild!.id;
+        const channelData: ChannelData = Utilz.loadPrefs(PREFS_FILE);
+
+        const fromChannels = channelData[guildID]?.fromChannels;
+        const toChannels = channelData[guildID]?.toChannels;
+        
         const channelsToString = (channels: string[] | undefined) =>
             (channels ? channels.map(x => `<#${x}>`).reduce((a, b) => a + ", " + b) : "none");
+        
         const embed = new MessageEmbed()
             .setColor(0x00bb00)
             .setDescription(`Base channels: ${channelsToString(fromChannels)}\nTarget channels: ${channelsToString(toChannels)}`);
         msg.channel.send(embed);
-        return;
     }
-
-    const embed = new MessageEmbed()
-        .setColor(0x00bb00)
-        .setTitle(`Successfully set ${isFromSetter ? "base" : "target"} channel${channels.length === 1 ? "" : "s"}!`)
-        .setDescription("Channels: " + channels.map(x => `<#${x.id}>`).reduce((a, b) => a + ", " + b));
-    msg.channel.send(embed);
 }
 
 function stripIDs(strIDs: string[]) {
@@ -116,7 +79,6 @@ async function fetchChannels(client: Client, IDs: string[]): Promise<Channel[]> 
             if (channel instanceof CategoryChannel) {
                 channels = [...channels, ...Array.from(channel.children.values()).filter(x => !(x instanceof VoiceChannel))];
             } else {
-                console.log(channel);
                 if (channel instanceof VoiceChannel) continue;
                 channels.push(channel);
             }
@@ -127,6 +89,34 @@ async function fetchChannels(client: Client, IDs: string[]): Promise<Channel[]> 
     }
 
     return channels.filter(x => x !== undefined) as Channel[];
+}
+
+function setChannels(msg: Message, channels: Channel[], fromSetter: boolean) {
+    const guildID = msg.guild!.id;
+    const channelData: ChannelData = Utilz.loadPrefs(PREFS_FILE);
+
+    if (fromSetter) {
+        // from
+        channelData[guildID] = {
+            readableGuildName: msg.guild!.name,
+            fromChannels: channels.map(x => x.id),
+            toChannels: channelData[guildID]?.toChannels
+        };
+    } else {
+        // to
+        channelData[guildID] = {
+            readableGuildName: msg.guild!.name,
+            fromChannels: channelData[guildID]?.fromChannels, 
+            toChannels: channels.map(x => x.id)
+        };
+    }
+    Utilz.savePrefs(PREFS_FILE, channelData);
+    
+    const embed = new MessageEmbed()
+        .setColor(0x00bb00)
+        .setTitle(`Successfully set ${fromSetter ? "base" : "target"} channel${channels.length === 1 ? "" : "s"}!`)
+        .setDescription("Channels: " + channels.map(x => `<#${x.id}>`).reduce((a, b) => a + ", " + b));
+    msg.channel.send(embed);
 }
 
 
