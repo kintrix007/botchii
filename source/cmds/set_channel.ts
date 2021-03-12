@@ -42,6 +42,7 @@ async function cmdChannel({data, msg, args}: types.CombinedData) {
 
         setChannels(msg, channels, isFromSetter);
         
+
     } else {
         // getter
         const guildID = msg.guild!.id;
