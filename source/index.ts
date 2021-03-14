@@ -25,6 +25,7 @@ function main() {
         const currentTime = new Time(new Date());
         console.log("the current time is:", currentTime.toString());
         console.log("-- bot setup complete --");
+        console.log("-- bot ready --");
     });
 
     const data: types.Data = {

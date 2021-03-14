@@ -1,10 +1,11 @@
 import * as Utilz from "../classes/utilz";
 import * as types from "../classes/types";
-import { CategoryChannel, Channel, Client, Message, MessageEmbed, VoiceChannel } from "discord.js";
+import { CategoryChannel, Channel, Client, DMChannel, Guild, GuildChannel, Message, MessageEmbed, VoiceChannel } from "discord.js";
 
 const cmd: types.Command = {
     name: "channel",
     func: cmdChannel,
+    aliases: [ "channels" ],
     usage: "channel [<from|to> <channels...>]",
     // description: "",
     examples: [ "from", "from #general #announcements 012345678901234567", "to #published-announcements" ],
@@ -12,7 +13,7 @@ const cmd: types.Command = {
     group: "admin"
 };
 
-export const PREFS_FILE = "channel.json";
+const PREFS_FILE = "channel.json";
 
 export interface ChannelData {
     [guildID: string]: {
@@ -28,7 +29,7 @@ async function cmdChannel({data, msg, args}: types.CombinedData) {
     const isSetter = (isFromSetter || option === "to");
 
     const channelIDs = stripIDs(strIDs);
-    const channels = await fetchChannels(data.client, channelIDs);
+    const channels = await fetchChannels(data.client, msg.guild!, channelIDs);
 
     if (channels.length === 0 && isSetter) {
         const embed = new MessageEmbed()
@@ -69,17 +70,20 @@ function stripIDs(strIDs: string[]) {
     }).filter(x => x !== undefined) as string[];
 }
 
-async function fetchChannels(client: Client, IDs: string[]): Promise<Channel[]> {
-    const channelPromises: Promise<Channel|CategoryChannel>[] = IDs.map(async x => client.channels.fetch(x));
+async function fetchChannels(client: Client, guild: Guild, IDs: string[]): Promise<Channel[]> {
+    const channelPromises: Promise<Channel|GuildChannel|CategoryChannel>[] = IDs.map(async x => client.channels.fetch(x));
 
     let channels: (Channel | undefined)[] = [];
     for (let i = 0; i < channelPromises.length; i++) {
         try {
             const channel = await channelPromises[i];
+
+            if (!(channel instanceof GuildChannel)) continue;
+            if (channel.guild.id !== guild.id) continue;
+
             if (channel instanceof CategoryChannel) {
-                channels = [...channels, ...Array.from(channel.children.values()).filter(x => !(x instanceof VoiceChannel))];
+                channels = [...channels, ...Array.from(channel.children.values())];
             } else {
-                if (channel instanceof VoiceChannel) continue;
                 channels.push(channel);
             }
         }
@@ -88,7 +92,7 @@ async function fetchChannels(client: Client, IDs: string[]): Promise<Channel[]> 
         }
     }
 
-    return channels.filter(x => x !== undefined) as Channel[];
+    return channels.filter(x => x !== undefined && !(x instanceof VoiceChannel)) as Channel[];
 }
 
 function setChannels(msg: Message, channels: Channel[], fromSetter: boolean) {

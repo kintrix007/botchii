@@ -7,7 +7,7 @@ import * as path from "path";
 const cmds: types.Command[] = [];
 
 function createCmd(command: types.Command): void {
-    if (command.name) console.log(`loaded command '${command.name}'`);
+    console.log(`loaded command '${command.name}'`);
 
     if (command.group === "help") {
         cmds.unshift(command);      // unshift = prepend
