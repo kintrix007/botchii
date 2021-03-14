@@ -1,13 +1,17 @@
 import * as Utilz from "../classes/utilz";
 import * as types from "../classes/types";
-import { CategoryChannel, Channel, Client, DMChannel, Guild, GuildChannel, Message, MessageEmbed, VoiceChannel } from "discord.js";
+import { CategoryChannel, Channel, Client, Guild, GuildChannel, Message, MessageEmbed, VoiceChannel } from "discord.js";
+
+const description = "Sets the base, and the target channels."
+    + "\nOnce a message in a base channel is accepted, it will be sent in every one of the target channels."
+    + "\nIf used without arguements, lists the currently set bases and targets.";
 
 const cmd: types.Command = {
     name: "channel",
     func: cmdChannel,
     aliases: [ "channels" ],
     usage: "channel [<from|to> <channels...>]",
-    // description: "",
+    description,
     examples: [ "from", "from #general #announcements 012345678901234567", "to #published-announcements" ],
     adminCommand: true,
     group: "admin"

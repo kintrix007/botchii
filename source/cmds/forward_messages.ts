@@ -4,13 +4,14 @@ import { ChannelData } from "./set_channel"
 import { Client, DMChannel, GuildEmoji, Message, MessageEmbed, MessageReaction, PartialUser, TextChannel, User } from "discord.js";
 
 const CHANNEL_PREFS_FILE = "channel.json";
+const EMOJI_PREFS_FILE = "emojis.json";
 
-const acceptSign  = "✅";
+const acceptSign = "✅";
 const rejectSign = "❌";
+const announcedEmoji = "👌";
 
 const acceptEmojis = [ "✅", "☑️" ];
 const rejectEmojis = [ "❎", "❌" ];
-const announcedEmoji = "👌";
 
 const cmd: types.Command = {
     name: "channelSetup",

@@ -96,7 +96,7 @@ export function getMessageLink(msg: DC.Message) {
     if (channel instanceof DC.GuildChannel) {
         return `https://discord.com/channels/${msg.guild!.id}/${channel.id}/${msg.id}`;
     } else {
-        return "";
+        return `https://discord.com/channels/@me/${channel.id}/${msg.id}`;
     }
 }
 
