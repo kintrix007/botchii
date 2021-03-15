@@ -8,7 +8,9 @@ const EMOJI_PREFS_FILE = "emojis.json";
 
 const acceptSign = "✅";
 const rejectSign = "❌";
-const announcedEmoji = "👌";
+const announcedEmoji = "derp:821087663481684038"; //"👌";
+const differeceToForward        = 2;    // the message needs to have this much more accepts than rejects
+const truncateQuickReplyMsgTo   = 30;   // this is how short the quick vote feeback message gets truncated to
 
 const acceptEmojis = [ "✅", "☑️" ];
 const rejectEmojis = [ "❎", "❌" ];
@@ -28,6 +30,8 @@ interface CountedEmoji {
 }
 
 async function setup(data: types.Data) {
+    
+    
     const channelData: ChannelData = Utilz.loadPrefs(CHANNEL_PREFS_FILE);
     await cacheMessages(data.client, channelData);
 
@@ -59,7 +63,7 @@ function trackReactions(data: types.Data, channelData: ChannelData, isReactionAd
         if (!fromChannels?.includes(msg.channel.id)) return;
         if (await isAlreadyAnnounced(reactions)) return;
 
-        const emojis = await convertToCustromEmojis(reactions);
+        const emojis = removeDuplicateUserReactions(await convertToCustromEmojis(reactions));
         const emojiAccepts = emojis.filter(x => acceptEmojis.includes(x.string));
         const emojiRejects = emojis.filter(x => rejectEmojis.includes(x.string));
             
@@ -67,12 +71,13 @@ function trackReactions(data: types.Data, channelData: ChannelData, isReactionAd
         const rejectCount = emojiRejects.length;
         const acceptUsers = Utilz.nubBy(emojiAccepts.reduce((a: User[], b) => [...a, ...b.users], []), (a, b) => a.id === b.id);
         
-        const reply = `> ${Utilz.getMessageLink(msg)}\n`
-            + `${acceptSign}\` ${acceptCount}  :  ${rejectCount} \`${rejectSign}`;
+        const truncatedContent = msg.content.length > truncateQuickReplyMsgTo ? msg.content.substr(0, truncateQuickReplyMsgTo) + "..." : msg.content;
+        const reply = (msg.content ? "> " + truncatedContent : Utilz.getMessageLink(msg))
+            + `\n${acceptSign}\` ${acceptCount}  :  ${rejectCount} \`${rejectSign}`;
 
         msg.channel.send(reply);
 
-        const shouldForward = acceptCount >= rejectCount + 2 && isReactionAdd;
+        const shouldForward = acceptCount >= rejectCount + differeceToForward && isReactionAdd;
 
         if (shouldForward && toChannels) {
             forwardMessage(msg, toChannels, acceptUsers)
@@ -124,6 +129,10 @@ async function convertToCustromEmojis(reactions: MessageReaction[]) {
             isInvalid: !isCustom && emoji.id !== null
         };
     }).filter(x => !x.isInvalid);
+}
+
+function removeDuplicateUserReactions(emojis: CountedEmoji[]) {
+    return Utilz.nubBy(emojis, (a, b) => a.users.some(x => b.users.some(y => x.id === y.id)));
 }
 
 async function cacheMessages(client: Client, channelData: ChannelData) {

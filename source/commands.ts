@@ -35,7 +35,7 @@ function loadCmds(cmds_dir: string) {
 async function setUpCmds(data: types.Data) {
     console.log("-- started setting up commands... --");
 
-    for (let cmd of cmds) {
+    for (const cmd of cmds) {
         if (cmd.setupFunc) {
             await cmd.setupFunc(data);
         }
