@@ -10,7 +10,7 @@ const EMOJI_PREFS_FILE = "emojis.json";
 const HOUR = 3600000;
 
 const acceptSign = "✅";
-const rejectSign = "❌";
+const rejectSign = "❎";
 const announcedEmoji = "👌";
 const differeceToForward        = 2;    // the message needs to have this much more accepts than rejects
 const truncateQuickReplyMsgTo   = 40;   // this is how short the quick vote feeback message gets truncated to
