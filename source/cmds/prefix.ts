@@ -53,7 +53,7 @@ function cmdPrefix({ data, msg, args }: types.CombinedData) {
 
     const embed = new MessageEmbed()
         .setColor(0x00bb00)
-        .setTitle(`Prefix set to \`${currentPrefix}\`.`)
+        .setTitle(`Prefix set to \`${currentPrefix}\``)
         .setDescription("Successfully changed the prefix." + (helpCmdName ? `\nFor help type: \`${currentPrefix}${helpCmdName}\`` : ""));
     msg.channel.send(embed);
     console.log(`${msg.author.username}#${msg.author.discriminator} changed the prefix to ${currentPrefix}`);

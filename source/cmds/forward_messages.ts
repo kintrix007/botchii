@@ -83,8 +83,7 @@ function trackReactions(data: types.Data, isReactionAdd: boolean) {
         const rejectCount = emojiRejects.reduce((acc, emoji) => acc + emoji.count, 0);
         const acceptUsers = Utilz.nubBy(emojiAccepts.reduce((a: User[], b) => [...a, ...b.users], []), (a, b) => a.id === b.id);
         const score = acceptCount - rejectCount;
-        const shouldForward = score > scoreToForward && isReactionAdd;
-        
+        const shouldForward = score >= scoreToForward && isReactionAdd;
 
         const truncatedContent = msg.content.length > truncateQuickReplyMsgTo ? msg.content.substr(0, truncateQuickReplyMsgTo) + "..." : msg.content;
         const reply = (msg.content ? "> " + truncatedContent : Utilz.getMessageLink(msg))
@@ -116,15 +115,22 @@ const wakeUp = (() => {
         const awakeBotchii  = fs.readFileSync(path.join(picsDir, "botchii-awake.png"));
         const asleepBotchii = fs.readFileSync(path.join(picsDir, "botchii-asleep.png"));
 
-        if (timeout) clearTimeout(timeout);
+        if (timeout) {
+            clearTimeout(timeout)
+            timeout = setTimeout(() => client.user!.setAvatar(asleepBotchii), 4 * HOUR);
+        };
 
-        client.user?.setAvatar(awakeBotchii)
-            .then(() => setTimeout(() => client.user?.setAvatar(asleepBotchii), 4 * HOUR));
+        client.user!.setAvatar(awakeBotchii)
+        .then(() => {
+            timeout = setTimeout(() => client.user!.setAvatar(asleepBotchii), 4 * HOUR)
+        });
     };
 })();
 
 async function forwardMessage(msg: Message, toChannels: string[], acceptUsers: User[]) {
-    const forwardTitle = `**${msg.member?.nickname ?? msg.author.username + " made an announcement"}:**`;
+    const member = msg.member;
+    const displayName = member?.nickname ?? msg.author.username;
+    const forwardTitle = "**" + (member ? displayName + " made an announcement" : displayName) + ":**";
     const forwardContent = msg.content.replace(/@here/g, "`@`here").replace(/@everyone/g, "`@`everyone");
     const forwardAttachments = msg.attachments.array();
     const forwardEmbeds = msg.embeds;
