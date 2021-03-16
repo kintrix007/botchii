@@ -11,7 +11,7 @@ const cmd: types.Command = {
     name: "channel",
     func: cmdChannel,
     aliases: [ "channels" ],
-    usage: "channel [<from|to> <channels...>]",
+    usage: "channel [<base|target> <channels...>]",
     description,
     examples: [ "from", "from #general #announcements 012345678901234567", "to #published-announcements" ],
     adminCommand: true,
@@ -30,8 +30,8 @@ export interface ChannelData {
 
 async function cmdChannel({data, msg, args}: types.CombinedData) {
     const [option, ...strIDs] = args;
-    const isFromSetter = option === "from";
-    const isSetter = (isFromSetter || option === "to");
+    const isFromSetter = ["base", "from"].includes(option);
+    const isSetter = (isFromSetter || ["target, to"].includes(option));
 
     const channelIDs = stripIDs(strIDs);
     const channels = await fetchChannels(data.client, msg.guild!, channelIDs);
