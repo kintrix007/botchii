@@ -15,8 +15,8 @@ const announcedEmoji = "👌";
 const differeceToForward        = 2;    // the message needs to have this much more accepts than rejects
 const truncateQuickReplyMsgTo   = 40;   // this is how short the quick vote feeback message gets truncated to
 
-const acceptEmojis = [ "✅", "☑️" ];
-const rejectEmojis = [ "❎", "❌" ];
+const acceptEmojis = [ "✅", "☑️", "👍"];
+const rejectEmojis = [ "❎", "❌", "👎", "✖️", "🇽"];
 
 const cmd: types.Command = {
     name: "reactions",
