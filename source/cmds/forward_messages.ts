@@ -10,11 +10,12 @@ const CHANNEL_PREFS_FILE = "channel.json";
 const EMOJI_PREFS_FILE = "emojis.json";
 const HOUR = 3600000;
 
-const acceptSign = "✅";
-const rejectSign = "❎";
-const announcedEmoji = "👌";
-const differeceToForward        = 2;    // the message needs to have this much more accepts than rejects
-const truncateQuickReplyMsgTo   = 40;   // this is how short the quick vote feeback message gets truncated to
+const acceptSign        = "✅";
+const rejectSign        = "❎";
+const announcedEmoji    = "👌";
+const scoreToForward    = 3;    // the message needs to have this much more accepts than rejects
+
+const truncateQuickReplyMsgTo = 40;   // this is how short the quick vote feeback message gets truncated to
 
 const acceptEmojis = [ "✅", "☑️", "👍"];
 const rejectEmojis = [ "❎", "❌", "👎", "✖️", "🇽"];
@@ -81,14 +82,15 @@ function trackReactions(data: types.Data, isReactionAdd: boolean) {
         const acceptCount = emojiAccepts.reduce((acc, emoji) => acc + emoji.count, 0);
         const rejectCount = emojiRejects.reduce((acc, emoji) => acc + emoji.count, 0);
         const acceptUsers = Utilz.nubBy(emojiAccepts.reduce((a: User[], b) => [...a, ...b.users], []), (a, b) => a.id === b.id);
+        const score = acceptCount - rejectCount;
+        const shouldForward = score > scoreToForward && isReactionAdd;
         
+
         const truncatedContent = msg.content.length > truncateQuickReplyMsgTo ? msg.content.substr(0, truncateQuickReplyMsgTo) + "..." : msg.content;
         const reply = (msg.content ? "> " + truncatedContent : Utilz.getMessageLink(msg))
-            + `\n${acceptSign}\` ${acceptCount}  :  ${rejectCount} \`${rejectSign}`;
+            + `\n${acceptSign}\` ${acceptCount}  :  ${rejectCount} \`${rejectSign}    **${scoreToForward-score} to go**`;
 
         msg.channel.send(reply);
-
-        const shouldForward = acceptCount >= rejectCount + differeceToForward && isReactionAdd;
         console.log(`${acceptCount} +    :    - ${rejectCount}`);
 
         if (toChannels === undefined || toChannels.length === 0) {
