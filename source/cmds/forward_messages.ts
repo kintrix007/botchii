@@ -2,22 +2,29 @@ import * as Utilz from "../classes/utilz";
 import * as types from "../classes/types";
 import { ChannelData } from "./set_channel"
 import { Client, DMChannel, GuildEmoji, Message, MessageEmbed, MessageReaction, PartialUser, TextChannel, User } from "discord.js";
+import * as fs from "fs";
+import * as path from "path";
 
 const CHANNEL_PREFS_FILE = "channel.json";
 const EMOJI_PREFS_FILE = "emojis.json";
+const HOUR = 3600000;
 
 const acceptSign = "✅";
 const rejectSign = "❌";
-const announcedEmoji = "derp:821087663481684038"; //"👌";
+const announcedEmoji = "👌";
 const differeceToForward        = 2;    // the message needs to have this much more accepts than rejects
-const truncateQuickReplyMsgTo   = 30;   // this is how short the quick vote feeback message gets truncated to
+const truncateQuickReplyMsgTo   = 40;   // this is how short the quick vote feeback message gets truncated to
 
 const acceptEmojis = [ "✅", "☑️" ];
 const rejectEmojis = [ "❎", "❌" ];
 
 const cmd: types.Command = {
-    name: "channelSetup",
-    func: () => 0,
+    name: "reactions",
+    func: cmdChangeEmoji,
+    // adminCommand: true,
+    // usage: "reaction [<accept|reject> <emojis...>]",
+    // description: "",
+    // examples: [ "" ],
     setupFunc: setup
 };
 
@@ -37,6 +44,10 @@ async function setup(data: types.Data) {
 
     data.client.on("messageReactionAdd",    trackReactions(data, channelData, true));
     data.client.on("messageReactionRemove", trackReactions(data, channelData, false));
+}
+
+function cmdChangeEmoji({ msg }: types.CombinedData): void {
+
 }
 
 function trackReactions(data: types.Data, channelData: ChannelData, isReactionAdd: boolean) {
@@ -80,10 +91,26 @@ function trackReactions(data: types.Data, channelData: ChannelData, isReactionAd
         const shouldForward = acceptCount >= rejectCount + differeceToForward && isReactionAdd;
 
         if (shouldForward && toChannels) {
-            forwardMessage(msg, toChannels, acceptUsers)
+            await forwardMessage(msg, toChannels, acceptUsers);
+            wakeUp(data.client);
         }
     };
 }
+
+const wakeUp = (() => {
+    let timeout: NodeJS.Timeout;
+    
+    return (client: Client): void => {
+        const picsDir = Utilz.picsDir;
+        const awakeBotchii  = fs.readFileSync(path.join(picsDir, "botchii-awake.png"));
+        const asleepBotchii = fs.readFileSync(path.join(picsDir, "botchii-asleep.png"));
+
+        if (timeout) clearTimeout(timeout);
+
+        client.user?.setAvatar(awakeBotchii)
+            .then(() => setTimeout(() => client.user?.setAvatar(asleepBotchii), 4 * HOUR));
+    };
+})();
 
 async function forwardMessage(msg: Message, toChannels: string[], acceptUsers: User[]) {
     const forwardTitle = `**${msg.member?.nickname ?? msg.author.username + " made an announcement"}:**`;

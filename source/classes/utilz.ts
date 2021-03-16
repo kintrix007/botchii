@@ -6,9 +6,10 @@ import { config } from "dotenv";
 
 config();
 
-export const rootDir = path.join(__dirname, "..", "..");
-export const sourceDir = path.join(rootDir, "source");
-const prefsDirPath = path.join(sourceDir, "..", "prefs");
+export const rootDir    = path.join(__dirname, "..", "..");
+export const sourceDir  = path.join(rootDir, "source");
+export const picsDir    = path.join(rootDir, "images");
+export const prefsDir   = path.join(rootDir, "prefs");
 
 export const getDayString = (function() {
     const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
@@ -145,23 +146,23 @@ export function getPrefix(data: types.Data, guild: DC.Guild): string {
 }
 
 export function savePrefs(filename: string, saveData: any): void {
-    if (!fs.existsSync(prefsDirPath)) {
-        fs.mkdirSync(prefsDirPath);
-        console.log(`created dir '${prefsDirPath}' because it did not exist`);
+    if (!fs.existsSync(prefsDir)) {
+        fs.mkdirSync(prefsDir);
+        console.log(`created dir '${prefsDir}' because it did not exist`);
     }
 
-    const filePath = path.join(prefsDirPath, filename);
+    const filePath = path.join(prefsDir, filename);
     fs.writeFileSync(filePath, JSON.stringify(saveData, undefined, 4));
     console.log(`saved prefs in '${filename}'`);
 }
 
 export function loadPrefs(filename: string, silent = false): {[guildID: string]: any} {
-    if (!fs.existsSync(prefsDirPath)) {
-        fs.mkdirSync(prefsDirPath);
-        console.log(`created dir '${prefsDirPath}' because it did not exist`);
+    if (!fs.existsSync(prefsDir)) {
+        fs.mkdirSync(prefsDir);
+        console.log(`created dir '${prefsDir}' because it did not exist`);
     }
     
-    const filePath = path.join(prefsDirPath, filename);
+    const filePath = path.join(prefsDir, filename);
     if (!fs.existsSync(filePath)) return {};
 
     const loadDataRaw = fs.readFileSync(filePath).toString();
