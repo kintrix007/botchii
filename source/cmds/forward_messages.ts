@@ -4,6 +4,7 @@ import { ChannelData } from "./set_channel"
 import { Client, DMChannel, GuildEmoji, Message, MessageEmbed, MessageReaction, PartialUser, TextChannel, User } from "discord.js";
 import * as fs from "fs";
 import * as path from "path";
+import { Snowflake } from "discord.js";
 
 const CHANNEL_PREFS_FILE = "channel.json";
 const EMOJI_PREFS_FILE = "emojis.json";
@@ -37,8 +38,6 @@ interface CountedEmoji {
 }
 
 async function setup(data: types.Data) {
-    
-    
     const channelData: ChannelData = Utilz.loadPrefs(CHANNEL_PREFS_FILE);
     await cacheMessages(data.client, channelData);
 
@@ -79,8 +78,8 @@ function trackReactions(data: types.Data, isReactionAdd: boolean) {
         const emojiAccepts = emojis.filter(x => acceptEmojis.includes(x.string));
         const emojiRejects = emojis.filter(x => rejectEmojis.includes(x.string));
             
-        const acceptCount = emojiAccepts.length;
-        const rejectCount = emojiRejects.length;
+        const acceptCount = emojiAccepts.reduce((acc, emoji) => acc + emoji.count, 0);
+        const rejectCount = emojiRejects.reduce((acc, emoji) => acc + emoji.count, 0);
         const acceptUsers = Utilz.nubBy(emojiAccepts.reduce((a: User[], b) => [...a, ...b.users], []), (a, b) => a.id === b.id);
         
         const truncatedContent = msg.content.length > truncateQuickReplyMsgTo ? msg.content.substr(0, truncateQuickReplyMsgTo) + "..." : msg.content;
@@ -90,8 +89,17 @@ function trackReactions(data: types.Data, isReactionAdd: boolean) {
         msg.channel.send(reply);
 
         const shouldForward = acceptCount >= rejectCount + differeceToForward && isReactionAdd;
+        console.log(`${acceptCount} +    :    - ${rejectCount}`);
 
-        if (shouldForward && toChannels) {
+        if (toChannels === undefined || toChannels.length === 0) {
+            const embed = new MessageEmbed()
+                .setColor(0xbb0000)
+                .setDescription("No target channel set.");
+            msg.channel.send(embed);
+            return;
+        }
+
+        if (shouldForward) {
             await forwardMessage(msg, toChannels, acceptUsers);
             wakeUp(data.client);
         }
@@ -115,27 +123,22 @@ const wakeUp = (() => {
 
 async function forwardMessage(msg: Message, toChannels: string[], acceptUsers: User[]) {
     const forwardTitle = `**${msg.member?.nickname ?? msg.author.username + " made an announcement"}:**`;
-            const forwardContent = msg.content.replace(/@here/g, "`@`here").replace(/@everyone/g, "`@`everyone");
-            const forwardAttachments = msg.attachments.array();
-            const forwardEmbeds = msg.embeds;
+    const forwardContent = msg.content.replace(/@here/g, "`@`here").replace(/@everyone/g, "`@`everyone");
+    const forwardAttachments = msg.attachments.array();
+    const forwardEmbeds = msg.embeds;
 
-            try {
-                for (const channelID of toChannels) {
-                    await msg.client.channels.fetch(channelID).then(channel => {
-                        (channel as any).send(forwardTitle + "\n" + forwardContent, ...forwardEmbeds, ...forwardAttachments)
-                    }).catch(console.error);
-                }
-                
-                msg.react(announcedEmoji);
-                const embed = new MessageEmbed()
-                    .setColor(0x00bb00)
-                    .setTitle("Made an announcement!")
-                    .setDescription(`On behalf of: ${acceptUsers}`)
-                msg.channel.send(embed);
-            }
-            catch (err) {
-                console.error(err);
-            }
+    for (const channelID of toChannels) {
+        await msg.client.channels.fetch(channelID).then(channel => {
+            (channel as any).send(forwardTitle + "\n" + forwardContent, ...forwardEmbeds, ...forwardAttachments)
+        }).catch(console.error);
+    }
+    
+    msg.react(announcedEmoji);
+    const embed = new MessageEmbed()
+        .setColor(0x00bb00)
+        .setTitle("Made an announcement!")
+        .setDescription(`On behalf of: ${acceptUsers}`)
+    msg.channel.send(embed);
 }
 
 async function isAlreadyAnnounced(reactions: MessageReaction[]) {
@@ -160,6 +163,24 @@ async function convertToCustromEmojis(reactions: MessageReaction[]) {
 }
 
 function removeDuplicateUserReactions(emojis: CountedEmoji[]) {
+    /*
+    const reactedUserIDs: Set<Snowflake> = new Set([]);
+
+    const result = emojis.map(emoji => {
+        emoji.users.forEach(user => {
+            if (reactedUserIDs.has(user.id)) {
+                emoji.count--;
+                emoji.users = emoji.users.filter(x => x.id === user.id);
+            }
+            reactedUserIDs.add(user.id);
+        });
+        return emoji;
+    });
+
+    return result;
+    */
+    // ^^ imperative code doing the exact same thing ^^
+
     return Utilz.nubBy(emojis, (a, b) => a.users.some(x => b.users.some(y => x.id === y.id)));
 }
 

@@ -102,7 +102,10 @@ export function getMessageLink(msg: DC.Message) {
 }
 
 export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean): T[] {
-    return arr.filter((x, idx) => arr.findIndex(a => isEqual(a, x)) === idx);
+    return arr.filter((x, idx) => {
+        const foundIdx = arr.findIndex(a => isEqual(a, x));
+        return foundIdx === idx || foundIdx === -1;
+    });
 }
 
 // specific

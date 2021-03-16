@@ -39,7 +39,7 @@ async function cmdChannel({data, msg, args}: types.CombinedData) {
     if (channels.length === 0 && isSetter) {
         const embed = new MessageEmbed()
             .setColor(0xbb0000)
-            .setDescription("Error");
+            .setDescription("No channels found.");
         msg.channel.send(embed);
         return;
     }
