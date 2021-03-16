@@ -4,6 +4,7 @@ import { CategoryChannel, Channel, Client, Guild, GuildChannel, Message, Message
 
 const description = "Sets the base, and the target channels."
     + "\nOnce a message in a base channel is accepted, it will be sent in every one of the target channels."
+    + "\nYou can also give the ID's of categories. This way all the channels in a category will be added."
     + "\nIf used without arguements, lists the currently set bases and targets.";
 
 const cmd: types.Command = {

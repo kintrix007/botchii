@@ -42,15 +42,15 @@ async function setup(data: types.Data) {
     const channelData: ChannelData = Utilz.loadPrefs(CHANNEL_PREFS_FILE);
     await cacheMessages(data.client, channelData);
 
-    data.client.on("messageReactionAdd",    trackReactions(data, channelData, true));
-    data.client.on("messageReactionRemove", trackReactions(data, channelData, false));
+    data.client.on("messageReactionAdd",    trackReactions(data, true));
+    data.client.on("messageReactionRemove", trackReactions(data, false));
 }
 
 function cmdChangeEmoji({ msg }: types.CombinedData): void {
 
 }
 
-function trackReactions(data: types.Data, channelData: ChannelData, isReactionAdd: boolean) {
+function trackReactions(data: types.Data, isReactionAdd: boolean) {
     return async (reaction: MessageReaction, user: User | PartialUser) => {
         if (user.bot) return;
         if (!(user instanceof User)) return;
@@ -61,6 +61,7 @@ function trackReactions(data: types.Data, channelData: ChannelData, isReactionAd
         const msg = reaction.message;
         if (msg.channel instanceof DMChannel) return;
 
+        const channelData: ChannelData = Utilz.loadPrefs(CHANNEL_PREFS_FILE);
         const guildID = msg.guild!.id;
         const fromChannels = channelData[guildID]?.fromChannels;
         const toChannels = channelData[guildID]?.toChannels;
