@@ -75,7 +75,9 @@ function trackReactions(data: types.Data, isReactionAdd: boolean) {
         if (!fromChannels?.includes(msg.channel.id)) return;
         if (await isAlreadyAnnounced(reactions)) return;
 
-        const emojis = removeDuplicateUserReactions(await convertToCustromEmojis(reactions));
+        const rawCountedEmojis = await convertToCustromEmojis(reactions);
+        console.log(rawCountedEmojis.map(({string, users}) => { return {string} }));
+        const emojis = removeDuplicateUserReactions(rawCountedEmojis);
         const emojiAccepts = emojis.filter(x => acceptEmojis.includes(x.string));
         const emojiRejects = emojis.filter(x => rejectEmojis.includes(x.string));
             

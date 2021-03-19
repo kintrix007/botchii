@@ -73,14 +73,14 @@ export async function createCmdsListeners(data: types.Data, cmds_dir: string) {
                 if (cmd.adminCommand && !Utilz.isAdmin(msg.member)) {
                     const embed = new MessageEmbed()
                         .setColor(0xbb0000)
-                        .setDescription(`A \`${commandName}\` can only be used by admins.`);
+                        .setDescription(`The command \`${commandName}\` can only be used by admins.`);
                     msg.channel.send(embed);
                     return;
                 }
                 if (cmd.ownerCommand && !Utilz.isBotOwner(msg.author)) {
                     const embed = new MessageEmbed()
                         .setColor(0xbb0000)
-                        .setDescription(`A \`${commandName}\` can only be used by the bot's owner.`);
+                        .setDescription(`The command \`${commandName}\` can only be used by the bot's owner.`);
                     msg.channel.send(embed);
                     return;
                 }
