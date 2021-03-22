@@ -2,9 +2,9 @@ import * as Utilz from "../classes/utilz";
 import * as types from "../classes/types";
 import { ChannelData } from "./set_channel"
 import { Client, DMChannel, GuildEmoji, Message, MessageEmbed, MessageReaction, PartialUser, TextChannel, User } from "discord.js";
-import * as fs from "fs";
-import * as path from "path";
-import { Snowflake } from "discord.js";
+import fs from "fs";
+import path from "path";
+import emojiRegex from "emoji-regex/RGI_Emoji";
 
 const CHANNEL_PREFS_FILE = "channel.json";
 const EMOJI_PREFS_FILE = "emojis.json";
@@ -13,9 +13,9 @@ const HOUR = 3600000;
 const acceptSign        = "✅";
 const rejectSign        = "❎";
 const announcedEmoji    = "👌";
-const scoreToForward    = 3;    // the message needs to have this much more accepts than rejects
+const scoreToForward    = 3;            // the message needs to have this much more accepts than rejects
 
-const truncateQuickReplyMsgTo = 40;   // this is how short the quick vote feeback message gets truncated to
+const truncateQuickReplyMsgTo = 40;     // this is how short the quick vote feeback message gets truncated to
 
 const acceptEmojis = [ "✅", "☑️", "👍"];
 const rejectEmojis = [ "❎", "❌", "👎", "✖️", "🇽"];

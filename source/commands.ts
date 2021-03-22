@@ -36,9 +36,7 @@ async function setUpCmds(data: types.Data) {
     console.log("-- started setting up commands... --");
 
     for (const cmd of cmds) {
-        if (cmd.setupFunc) {
-            await cmd.setupFunc(data);
-        }
+        await cmd.setupFunc?.(data);
     }
     
     console.log("-- finished setting up commands --");
