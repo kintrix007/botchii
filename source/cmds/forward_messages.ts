@@ -76,23 +76,24 @@ function trackReactions(data: types.Data, isReactionAdd: boolean) {
         if (await isAlreadyAnnounced(reactions)) return;
 
         const rawCountedEmojis = await convertToCustromEmojis(reactions);
-        console.log(rawCountedEmojis.map(({string, users}) => { return {string} }));
         const emojis = removeDuplicateUserReactions(rawCountedEmojis);
         const emojiAccepts = emojis.filter(x => acceptEmojis.includes(x.string));
         const emojiRejects = emojis.filter(x => rejectEmojis.includes(x.string));
-            
+        
         const acceptCount = emojiAccepts.reduce((acc, emoji) => acc + emoji.count, 0);
         const rejectCount = emojiRejects.reduce((acc, emoji) => acc + emoji.count, 0);
         const acceptUsers = Utilz.nubBy(emojiAccepts.reduce((a: User[], b) => [...a, ...b.users], []), (a, b) => a.id === b.id);
         const score = acceptCount - rejectCount;
         const shouldForward = score >= scoreToForward && isReactionAdd;
 
+        console.log(rawCountedEmojis.map(({string, count}) => { return {string, count} }));
+        console.log(`[ ${acceptSign} ${acceptCount}   -   ${rejectCount} ${rejectSign} ]`);
+
         const truncatedContent = msg.content.length > truncateQuickReplyMsgTo ? msg.content.substr(0, truncateQuickReplyMsgTo) + "..." : msg.content;
         const reply = (msg.content ? "> " + truncatedContent : Utilz.getMessageLink(msg))
             + `\n${acceptSign}\` ${acceptCount}  :  ${rejectCount} \`${rejectSign}    **${scoreToForward-score} to go**`;
 
         msg.channel.send(reply);
-        console.log(`${acceptCount} +    :    - ${rejectCount}`);
 
         if (toChannels === undefined || toChannels.length === 0) {
             const embed = new MessageEmbed()
