@@ -191,7 +191,10 @@ function removeDuplicateUserReactions(emojis: CountedEmoji[]) {
     */
     // ^^ imperative code doing the exact same thing ^^
 
-    return Utilz.nubBy(emojis, (a, b) => a.users.some(x => b.users.some(y => x.id === y.id)));
+    const trackedEmojis = [...acceptEmojis, ...rejectEmojis];
+    return Utilz.nubBy(emojis, (a, b) =>
+        trackedEmojis.includes(a.string) && trackedEmojis.includes(b.string)
+        && a.users.some(x => b.users.some(y => x.id === y.id)));
 }
 
 async function cacheMessages(client: Client, channelData: ChannelData) {
