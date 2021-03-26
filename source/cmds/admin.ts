@@ -31,8 +31,11 @@ async function cmdMod({ msg, args }: types.CombinedData) {
 
     if (!newModRole) {
         const adminRoleID = Utilz.getAdminRole(msg.guild!.id)?.roleID;
+        
         const reply = "People count as admins if they have the "
-        + (adminRoleID ? `role <@&${adminRoleID}>` : "`Administrator` permission") + ".";
+            + (adminRoleID ? `role <@&${adminRoleID}>` : "`Administrator` permission") + ".";
+            
+        console.log(reply)
         const embed = new MessageEmbed()
             .setColor(0x00bb00)
             .setDescription(reply);
@@ -65,7 +68,7 @@ async function cmdMod({ msg, args }: types.CombinedData) {
         .setTitle("Changed the tracked admin role!")
         .setDescription(`From now on, people with the <@&${newAdminRoleID!}> role count as admins.`);
     msg.channel.send(embed);
-    console.log(`${msg.author.username}#${msg.author.discriminator} changed the prefix to ${newAdminRoleID!}`);
+    console.log(`${msg.author.username}#${msg.author.discriminator} changed the admin role to '${newAdminRoleID!}'`);
 }
 
 module.exports = cmd;

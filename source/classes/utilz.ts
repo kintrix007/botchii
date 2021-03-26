@@ -92,11 +92,7 @@ export function isAdmin(member: DC.GuildMember | undefined | null) {
     if (!member) return false;
     const adminRole = getAdminRole(member.guild.id);
 
-    if (adminRole) {
-        return member.roles.cache.some(role => role.id === adminRole?.roleID);
-    } else {
-        return member.hasPermission("ADMINISTRATOR");
-    }
+    return adminRole && member.roles.cache.some(role => role.id === adminRole.roleID) || member.hasPermission("ADMINISTRATOR");
 }
 
 export function getAdminRole(guildID: DC.Snowflake): AdminData[string] | undefined {

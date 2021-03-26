@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import os, sys
-import time
+import time, json
 from datetime import datetime
 from functools import reduce
 from typing import List
@@ -9,6 +9,7 @@ root = os.path.dirname(os.path.realpath(__file__))
 originale_dir = os.getcwd()
 CRASH_LOG_DIR = os.path.join(root, "crash_logs")
 PACKAGE = os.path.join(root, "package.json")
+TSCONFIG = os.path.join(root, "tsconfig.json")
 
 def main():
     os.chdir(root)
