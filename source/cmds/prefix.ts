@@ -10,8 +10,8 @@ const description = "Sets the prefix the bot uses.\n"
 const cmd: types.Command = {
     setupFunc: async data => cmd.description = description.replace(/\{\}/, data.defaultPrefix),
     func: cmdPrefix,
-    group: "admin",
     name: "prefix",
+    group: "admin",
     adminCommand: true,
     usage: "prefix [new prefix]",
     examples: [ "", "!!", "." ],
@@ -28,7 +28,7 @@ function cmdPrefix({ data, msg, args }: types.CombinedData) {
     const newPrefix = args[0];
 
     if (!newPrefix) {
-        const currentPrefix = Utilz.getPrefix(data, msg.guild!);
+        const currentPrefix = Utilz.getPrefix(data, msg.guild!.id);
         const embed = new MessageEmbed()
             .setColor(0x00bb00)
             .setDescription(`The current prefix is: \`${currentPrefix ?? data.defaultPrefix}\``);
@@ -48,7 +48,7 @@ function cmdPrefix({ data, msg, args }: types.CombinedData) {
     prefixes[msg.guild!.id] = newPrefix;
     Utilz.savePrefs(PREFS_FILE, prefixes);
 
-    const currentPrefix = Utilz.getPrefix(data, msg.guild!);
+    const currentPrefix = Utilz.getPrefix(data, msg.guild!.id);
     const helpCmdName = getHelpCmd()?.name;
 
     const embed = new MessageEmbed()

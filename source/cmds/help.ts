@@ -16,7 +16,7 @@ const footerNote = "[] means optional arguements\n<> means obligatory arguements
 
 function cmdHelp({ data, msg, args }: types.CombinedData) {
     const targetCommand = args[0];
-    const currentPrefix = Utilz.getPrefix(data, msg.guild!);
+    const currentPrefix = Utilz.getPrefix(data, msg.guild!.id);
     
     const isMemberAdmin = Utilz.isAdmin(msg.member);
     const cmdList = getCmdList(!isMemberAdmin);

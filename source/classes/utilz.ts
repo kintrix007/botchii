@@ -1,7 +1,9 @@
-import * as fs from "fs";
-import * as DC from "discord.js";
+import fs from "fs";
+import path from "path";
+import DC from "discord.js";
 import * as types from "./types";
-import * as path from "path";
+import { PrefixData } from "../cmds/prefix"
+import { ModData } from "../cmds/mod"
 import { config } from "dotenv";
 
 config();
@@ -91,6 +93,12 @@ export function isAdmin(member: DC.GuildMember | undefined | null) {
     return member.hasPermission("MANAGE_GUILD");
 }
 
+export function getAdminRole(data: types.Data, guildID: DC.Snowflake): ModData[string] | undefined {
+    const modRoles: ModData = loadPrefs("mod_roles.json", true);
+    const modRole = modRoles[guildID];
+    return modRole;
+}
+
 export function getMessageLink(msg: DC.Message) {
     const channel = msg.channel;
 
@@ -122,7 +130,7 @@ export function isBotOwner(user: DC.User) {
 }
 
 // returns a lowercase, accentless string, that is after the specified prefix.
-// returns an emtpy string if there it is incorrect
+// returns an emtpy string if the string is incorrect in some way
 export function prefixless(data: types.Data, msg: DC.Message): string {
     const prefix = removeAccents(getPrefix(data, msg.guild!).toLowerCase());
 
@@ -141,13 +149,11 @@ export function prefixless(data: types.Data, msg: DC.Message): string {
     return "";
 }
 
-export function getPrefix(data: types.Data, guild: DC.Guild): string {
-    const guildID = guild.id;
-    const prefixes: {[guild: string]: string} = loadPrefs("prefixes.json", true);
+export function getPrefix(data: types.Data, guildID: DC.Snowflake): string {
+    const prefixes: PrefixData = loadPrefs("prefixes.json", true);
     const prefix = prefixes[guildID] ?? data.defaultPrefix;
     return prefix;
 }
-
 export function savePrefs(filename: string, saveData: any): void {
     if (!fs.existsSync(prefsDir)) {
         fs.mkdirSync(prefsDir);
