@@ -3,7 +3,7 @@ import path from "path";
 import DC from "discord.js";
 import * as types from "./types";
 import { PrefixData } from "../cmds/prefix"
-import { ModData } from "../cmds/mod"
+import { AdminData } from "../cmds/admin"
 import { config } from "dotenv";
 
 config();
@@ -99,8 +99,8 @@ export function isAdmin(member: DC.GuildMember | undefined | null) {
     }
 }
 
-export function getAdminRole(guildID: DC.Snowflake): ModData[string] | undefined {
-    const modRoles: ModData = loadPrefs("admin_roles.json", true);
+export function getAdminRole(guildID: DC.Snowflake): AdminData[string] | undefined {
+    const modRoles: AdminData = loadPrefs("admin_roles.json", true);
     const modRole = modRoles[guildID];
     return modRole;
 }
