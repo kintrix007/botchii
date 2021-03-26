@@ -4,7 +4,7 @@ import { MessageEmbed } from "discord.js";
 
 const description = "Sets the role the bot looks for to decide whether someone is an admin.\n"
 + "The default behavior is looking for the permission `Administrator`.\n"
-+ "If called without arguements, displays the current one selected.";
++ "If called without arguements, displays the currently selected criteria.";
 
 const cmd: types.Command = {
     setupFunc: async data => cmd.description = description.replace(/\{\}/, data.defaultPrefix),
