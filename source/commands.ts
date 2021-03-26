@@ -1,8 +1,8 @@
 import * as types from "./classes/types";
 import * as Utilz from "./classes/utilz";
-import * as fs from "fs";
+import fs from "fs";
+import path from "path";
 import { Message, MessageEmbed, DMChannel } from "discord.js";
-import * as path from "path";
 
 const cmds: types.Command[] = [];
 
