@@ -65,7 +65,7 @@ export async function createCmdsListeners(data: types.Data, cmds_dir: string) {
         cmds.forEach(cmd => {
             if (
                 Utilz.removeAccents(cmd.name.toLowerCase()) === commandName ||
-                cmd.aliases?.map(x => Utilz.removeAccents(x.toLowerCase()))?.some(x => x === commandName)
+                cmd.aliases?.map(x => Utilz.removeAccents(x.toLowerCase()))?.includes(commandName)
             ) {
                 // if admin command called by non-admin, return
                 if (cmd.adminCommand && !Utilz.isAdmin(msg.member)) {
