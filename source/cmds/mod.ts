@@ -2,7 +2,9 @@ import * as Utilz from "../classes/utilz";
 import * as types from "../classes/types";
 import { MessageEmbed } from "discord.js";
 
-const description = "";
+const description = "Sets the role the bot looks for to decide whether someone is an admin.\n"
++ "The default is looking for the permission `Administrator`.\n"
++ "If called without arguements, displays the current one selected.";
 
 const cmd: types.Command = {
     setupFunc: async data => cmd.description = description.replace(/\{\}/, data.defaultPrefix),
@@ -15,7 +17,7 @@ const cmd: types.Command = {
     aliases: [ "administrator", "mod", "moderator" ]
 };
 
-const PREFS_FILE = "mod_roles.json";
+const PREFS_FILE = "admin_roles.json";
 
 export interface ModData {
     [guildID: string]: {
@@ -24,11 +26,11 @@ export interface ModData {
     };
 }
 
-function cmdMod({ data, msg, args }: types.CombinedData) {
+function cmdMod({ msg, args }: types.CombinedData) {
     const newModRole = args[0];
 
     if (!newModRole) {
-        const modRole = Utilz.getAdminRole(data, msg.guild!.id);
+        const modRole = Utilz.getAdminRole(msg.guild!.id);
         const embed = new MessageEmbed()
             .setColor(0x00bb00)
             .setDescription(`People count as admins if they have the role <@&${modRole?.roleID}>.`);

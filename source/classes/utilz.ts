@@ -90,11 +90,17 @@ export function getUserString(user: DC.User) {
 
 export function isAdmin(member: DC.GuildMember | undefined | null) {
     if (!member) return false;
-    return member.hasPermission("MANAGE_GUILD");
+    const adminRole = getAdminRole(member.guild.id);
+
+    if (adminRole) {
+        return member.roles.cache.some(role => role.id === adminRole?.roleID);
+    } else {
+        return member.hasPermission("ADMINISTRATOR");
+    }
 }
 
-export function getAdminRole(data: types.Data, guildID: DC.Snowflake): ModData[string] | undefined {
-    const modRoles: ModData = loadPrefs("mod_roles.json", true);
+export function getAdminRole(guildID: DC.Snowflake): ModData[string] | undefined {
+    const modRoles: ModData = loadPrefs("admin_roles.json", true);
     const modRole = modRoles[guildID];
     return modRole;
 }
@@ -132,7 +138,7 @@ export function isBotOwner(user: DC.User) {
 // returns a lowercase, accentless string, that is after the specified prefix.
 // returns an emtpy string if the string is incorrect in some way
 export function prefixless(data: types.Data, msg: DC.Message): string {
-    const prefix = removeAccents(getPrefix(data, msg.guild!).toLowerCase());
+    const prefix = removeAccents(getPrefix(data, msg.guild!.id).toLowerCase());
 
     const regex = new RegExp(`^(<@!?${data.client.user!.id}>).+$`);
     const cont = removeAccents(msg.content.toLowerCase());
@@ -182,4 +188,3 @@ export function loadPrefs(filename: string, silent = false): {[guildID: string]:
 }
 
 // bot-specific
-
