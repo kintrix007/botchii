@@ -8,7 +8,7 @@ const cmd: types.Command = {
     name: "help",
     group: "help",
     usage: "help [command name]",
-    description: "Gives you the help sheet, or information about a given command.",
+    description: "Gives you a list of commands, or it can give further information about a specific command.",
     examples: [ "", "prefix" ]
 };
 
