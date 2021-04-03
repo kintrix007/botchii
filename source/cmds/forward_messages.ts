@@ -84,7 +84,7 @@ function trackReactions(data: types.Data, isReactionAdd: boolean) {
 
         const trueEmojis = removeDuplicateUserReactions(rawCountedEmojis);
 
-        console.log(rawCountedEmojis, trueEmojis);
+        // console.log(rawCountedEmojis, trueEmojis);
 
         const emojiAccepts = trueEmojis.filter(x => acceptEmojis.includes(x.string));
         const emojiRejects = trueEmojis.filter(x => rejectEmojis.includes(x.string));
@@ -95,8 +95,8 @@ function trackReactions(data: types.Data, isReactionAdd: boolean) {
         const score = acceptCount - rejectCount;
         const shouldForward = score >= scoreToForward; // && isReactionAdd;
 
-        // console.log(rawCountedEmojis.map(({string, count}) => { return {string, count} }));
-        // console.log(`[ ${acceptSign} ${acceptCount}   -   ${rejectCount} ${rejectSign} ]`);
+        console.log(rawCountedEmojis.map(({string, count}) => `${string} : ${count}`));
+        console.log(`[ ${acceptSign} ${acceptCount}   -   ${rejectCount} ${rejectSign} ]`);
 
         const truncatedContent = (msg.content.length > truncateQuickReplyMsgTo
             ? msg.content.substr(0, truncateQuickReplyMsgTo) + "..."
