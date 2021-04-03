@@ -15,10 +15,11 @@ const rejectSign        = "❎";
 const announcedEmoji    = "👌";
 const scoreToForward    = 3;            // the message needs to have this much more accepts than rejects
 
-const truncateQuickReplyMsgTo = 40;     // this is how short the quick vote feeback message gets truncated to
+const truncateQuickReplyMsgTo = 40;     // this is how many characters the vote feeback "message quote" gets truncated to
 
-const acceptEmojis = [ "✅", "☑️", "👍"];
-const rejectEmojis = [ "❎", "❌", "👎", "✖️", "🇽"];
+const acceptEmojis  = [ "✅", "☑️", "👍"];
+const rejectEmojis  = [ "❎", "❌", "👎", "✖️", "🇽"];
+const trackedEmojis = [...acceptEmojis, ...rejectEmojis];
 
 const cmd: types.Command = {
     name: "reactions",
@@ -55,44 +56,55 @@ function trackReactions(data: types.Data, isReactionAdd: boolean) {
         if (user.bot) return;
         if (!(user instanceof User)) return;
 
-        const isTrackedReaction = [...acceptEmojis, ...rejectEmojis].includes(reaction.emoji.name);
+        const isTrackedReaction = trackedEmojis.includes(reaction.emoji.name);
         if (!isTrackedReaction) return;
 
         const msg = reaction.message;
         if (msg.channel instanceof DMChannel) return;
+        const guildID = msg.guild!.id;
 
         const channelData: ChannelData = Utilz.loadPrefs(CHANNEL_PREFS_FILE);
-        const guildID = msg.guild!.id;
+        
         const fromChannels = channelData[guildID]?.fromChannels;
         const toChannels = channelData[guildID]?.toChannels;
         const reactions = Array.from(msg.reactions.cache.values());
+
+        if (!fromChannels?.includes(msg.channel.id)) return;
 
         // cache users for later use
         for (const reaction of reactions) {
             await reaction.users.fetch();
         }
 
-        if (!fromChannels?.includes(msg.channel.id)) return;
-        if (await isAlreadyAnnounced(reactions)) return;
+        // has to happen after caching the users
+        if (isAlreadyAnnounced(msg)) return;
 
-        const rawCountedEmojis = await convertToCustromEmojis(reactions);
-        const emojis = removeDuplicateUserReactions(rawCountedEmojis);
-        const emojiAccepts = emojis.filter(x => acceptEmojis.includes(x.string));
-        const emojiRejects = emojis.filter(x => rejectEmojis.includes(x.string));
+        const rawCountedEmojis = reactions.map(reaction => convertToCustomEmoji(reaction))
+                                          .filter(x => !x.isInvalid);
+
+        const trueEmojis = removeDuplicateUserReactions(rawCountedEmojis);
+
+        console.log(rawCountedEmojis, trueEmojis);
+
+        const emojiAccepts = trueEmojis.filter(x => acceptEmojis.includes(x.string));
+        const emojiRejects = trueEmojis.filter(x => rejectEmojis.includes(x.string));
         
-        const acceptCount = emojiAccepts.reduce((acc, emoji) => acc + emoji.count, 0);
-        const rejectCount = emojiRejects.reduce((acc, emoji) => acc + emoji.count, 0);
-        const acceptUsers = Utilz.nubBy(emojiAccepts.reduce((a: User[], b) => [...a, ...b.users], []), (a, b) => a.id === b.id);
+        const acceptCount = countEmojis(emojiAccepts);
+        const rejectCount = countEmojis(emojiRejects);
+
         const score = acceptCount - rejectCount;
-        const shouldForward = score >= scoreToForward && isReactionAdd;
+        const shouldForward = score >= scoreToForward; // && isReactionAdd;
 
-        console.log(rawCountedEmojis.map(({string, count}) => { return {string, count} }));
-        console.log(`[ ${acceptSign} ${acceptCount}   -   ${rejectCount} ${rejectSign} ]`);
+        // console.log(rawCountedEmojis.map(({string, count}) => { return {string, count} }));
+        // console.log(`[ ${acceptSign} ${acceptCount}   -   ${rejectCount} ${rejectSign} ]`);
 
-        const truncatedContent = msg.content.length > truncateQuickReplyMsgTo ? msg.content.substr(0, truncateQuickReplyMsgTo) + "..." : msg.content;
-        const reply = (msg.content ? "> " + truncatedContent : Utilz.getMessageLink(msg))
-            + `\n${acceptSign}\` ${acceptCount}  :  ${rejectCount} \`${rejectSign}    **${scoreToForward-score} to go**`;
+        const truncatedContent = (msg.content.length > truncateQuickReplyMsgTo
+            ? msg.content.substr(0, truncateQuickReplyMsgTo) + "..."
+            : msg.content);
+        const messageReference = (msg.content ? "> " + truncatedContent : Utilz.getMessageLink(msg))
 
+        const reply = messageReference + "\n"
+            + `${acceptSign}\` ${acceptCount}  :  ${rejectCount} \`${rejectSign}    **${scoreToForward-score} to go**`;
         msg.channel.send(reply);
 
         if (toChannels === undefined || toChannels.length === 0) {
@@ -104,6 +116,7 @@ function trackReactions(data: types.Data, isReactionAdd: boolean) {
         }
 
         if (shouldForward) {
+            const acceptUsers = emojiAccepts.map(emoji => emoji.users).flat();
             await forwardMessage(msg, toChannels, acceptUsers);
             wakeUp(data.client);
         }
@@ -135,16 +148,20 @@ async function forwardMessage(msg: Message, toChannels: string[], acceptUsers: U
     const displayName = member?.nickname ?? msg.author.username;
     const forwardTitle = "**" + (member ? displayName + " made an announcement" : displayName) + ":**";
     const forwardContent = msg.content.replace(/@here/g, "`@`here").replace(/@everyone/g, "`@`everyone");
-    const forwardAttachments = msg.attachments.array();
+    const forwardAttachments = Array.from(msg.attachments.values());
     const forwardEmbeds = msg.embeds;
 
     for (const channelID of toChannels) {
-        await msg.client.channels.fetch(channelID).then(channel => {
-            (channel as any).send(forwardTitle + "\n" + forwardContent, ...forwardEmbeds, ...forwardAttachments)
+        await msg.client.channels.fetch(channelID).then((channel: any) => {
+            channel.send(
+                forwardTitle + "\n" + forwardContent,
+                ...forwardEmbeds,
+                ...forwardAttachments)
         }).catch(console.error);
     }
     
     msg.react(announcedEmoji);
+    
     const embed = new MessageEmbed()
         .setColor(0x00bb00)
         .setTitle("Made an announcement!")
@@ -152,50 +169,50 @@ async function forwardMessage(msg: Message, toChannels: string[], acceptUsers: U
     msg.channel.send(embed);
 }
 
-async function isAlreadyAnnounced(reactions: MessageReaction[]) {
-    return reactions.some(reaction =>
-        reaction.users.cache.array().some(usr =>
-            usr.id === usr.client.user!.id
-        ) && reaction.emoji.name === announcedEmoji
-    );
+function isAlreadyAnnounced(message: Message) {
+    const reactions = Array.from(message.reactions.cache.values());
+    return reactions.some(reaction => {
+        const users = Array.from(reaction.users.cache.values());
+        const isAnnouncementEmoji = reaction.emoji.name === announcedEmoji;
+        const botSentThis         = () => users.some(usr => usr.equals(usr.client.user!));
+        return isAnnouncementEmoji && botSentThis();
+    });
 }
 
-async function convertToCustromEmojis(reactions: MessageReaction[]) {
-    return reactions.map(({emoji, count, users}): CountedEmoji => {
-        const isCustom: boolean = emoji instanceof GuildEmoji;
+function convertToCustomEmoji(reaction: MessageReaction) {
+    const {emoji, count} = reaction;
+    const users = Array.from(reaction.users.cache.values());
+    const isCustom = emoji instanceof GuildEmoji;
+    const counted: CountedEmoji = {
+        isCustom,
+        string: (isCustom ? `<:${emoji.name}:${emoji.id}>` : emoji.name),
+        count: count ?? 0,
+        users,
+        isInvalid: isCustom && emoji.id === null || !isCustom && emoji.id != null || count === null || count === 0
+    }
+    return counted;
+}
+
+function removeDuplicateUserReactions(emojis: CountedEmoji[]) {
+    const reactedUsers = new Set<User>();
+    return emojis.map(({isCustom, users, string, isInvalid}): CountedEmoji => {
+        const trueUsers = users.filter(user => {
+            const alreadyReacted = reactedUsers.has(user);
+            reactedUsers.add(user);
+            return !alreadyReacted;
+        });
         return {
             isCustom,
-            string: isCustom ? `<:${emoji.name}:${emoji.id}>` : emoji.name,
-            count: count ?? 0,
-            users: Array.from(users.cache.values()),
-            isInvalid: !isCustom && emoji.id !== null
+            string,
+            count: trueUsers.length,
+            users: trueUsers,
+            isInvalid: isInvalid || trueUsers.length === 0
         };
     }).filter(x => !x.isInvalid);
 }
 
-function removeDuplicateUserReactions(emojis: CountedEmoji[]) {
-    /*
-    const reactedUserIDs: Set<Snowflake> = new Set([]);
-
-    const result = emojis.map(emoji => {
-        emoji.users.forEach(user => {
-            if (reactedUserIDs.has(user.id)) {
-                emoji.count--;
-                emoji.users = emoji.users.filter(x => x.id === user.id);
-            }
-            reactedUserIDs.add(user.id);
-        });
-        return emoji;
-    });
-
-    return result;
-    */
-    // ^^ imperative code doing the exact same thing ^^
-
-    const trackedEmojis = [...acceptEmojis, ...rejectEmojis];
-    return Utilz.nubBy(emojis, (a, b) =>
-        trackedEmojis.includes(a.string) && trackedEmojis.includes(b.string)
-        && a.users.some(x => b.users.some(y => x.id === y.id)));
+function countEmojis(emojis: CountedEmoji[]) {
+    return emojis.reduce((acc, emoji) => acc + emoji.count, 0);
 }
 
 async function cacheMessages(client: Client, channelData: ChannelData) {

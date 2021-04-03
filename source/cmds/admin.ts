@@ -35,11 +35,11 @@ async function cmdMod({ msg, args }: types.CombinedData) {
         const reply = "People count as admins if they have the "
             + (adminRoleID ? `role <@&${adminRoleID}>` : "`Administrator` permission") + ".";
             
-        console.log(reply)
         const embed = new MessageEmbed()
             .setColor(0x00bb00)
             .setDescription(reply);
         msg.channel.send(embed);
+        console.log(`${msg.author.username}#${msg.author.discriminator} has queried the admin role.`);
         return;
     }
 
