@@ -1,5 +1,5 @@
-import * as Utilz from "../classes/utilz";
-import * as types from "../classes/types";
+import * as Utilz from "../_core/core_tools";
+import * as types from "../_core/types";
 import { CategoryChannel, Channel, Client, Guild, GuildChannel, Message, MessageEmbed, VoiceChannel } from "discord.js";
 
 const description = "Sets the base, and the target channels."
@@ -8,17 +8,17 @@ const description = "Sets the base, and the target channels."
     + "\nIf used without arguements, lists the currently set bases and targets.";
 
 const cmd: types.Command = {
-    name: "channel",
     func: cmdChannel,
+    name: "channel",
+    permissions: [ types.adminPermission ],
+    group: "admin",
     aliases: [ "channels" ],
     usage: "channel [<base|target> <channels...>]",
-    description,
-    examples: [ "from", "from #general #announcements 012345678901234567", "to #published-announcements" ],
-    adminCommand: true,
-    group: "admin"
+    description: description,
+    examples: [ "from", "from #general #announcements 012345678901234567", "to #published-announcements" ]
 };
 
-const PREFS_FILE = "channel.json";
+export const CHANNEL_PREFS_FILE = "channel.json";
 
 export interface ChannelData {
     [guildID: string]: {
@@ -51,7 +51,7 @@ async function cmdChannel({data, msg, args}: types.CombinedData) {
     } else {
         // getter
         const guildID = msg.guild!.id;
-        const channelData: ChannelData = Utilz.loadPrefs(PREFS_FILE);
+        const channelData: ChannelData = Utilz.loadPrefs(CHANNEL_PREFS_FILE);
 
         const fromChannels = channelData[guildID]?.fromChannels;
         const toChannels = channelData[guildID]?.toChannels;
@@ -102,7 +102,7 @@ async function fetchChannels(client: Client, guild: Guild, IDs: string[]): Promi
 
 function setChannels(msg: Message, channels: Channel[], fromSetter: boolean) {
     const guildID = msg.guild!.id;
-    const channelData: ChannelData = Utilz.loadPrefs(PREFS_FILE);
+    const channelData: ChannelData = Utilz.loadPrefs(CHANNEL_PREFS_FILE);
 
     if (fromSetter) {
         // from
@@ -119,7 +119,7 @@ function setChannels(msg: Message, channels: Channel[], fromSetter: boolean) {
             toChannels: channels.map(x => x.id)
         };
     }
-    Utilz.savePrefs(PREFS_FILE, channelData);
+    Utilz.savePrefs(CHANNEL_PREFS_FILE, channelData);
     
     const embed = new MessageEmbed()
         .setColor(0x00bb00)

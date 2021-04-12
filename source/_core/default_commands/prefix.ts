@@ -1,7 +1,7 @@
-import * as Utilz from "../classes/utilz";
-import * as types from "../classes/types";
+import * as CoreTools from "../core_tools";
+import * as types from "../types";
 import { MessageEmbed } from "discord.js";
-import { getHelpCmd } from "../commands"
+import { getHelpCmd } from "../commands";
 
 const description = "Sets the prefix the bot uses.\n"
     + "The default prefix is \`{}\`, but this can be changed with this command.\n"
@@ -12,23 +12,24 @@ const cmd: types.Command = {
     func: cmdPrefix,
     name: "prefix",
     group: "admin",
-    adminCommand: true,
+    permissions: [ types.adminPermission ],
     usage: "prefix [new prefix]",
+    description: description,
     examples: [ "", "!!", "." ],
 };
 
-const PREFS_FILE = "prefixes.json";
-const MAX_PREFIX_LENGTH = 4;
-
+export const PREFIX_PREFS_FILE = "prefixes.json";
 export interface PrefixData {
     [guildID: string]: string;
 }
+
+const MAX_PREFIX_LENGTH = 4;
 
 function cmdPrefix({ data, msg, args }: types.CombinedData) {
     const newPrefix = args[0];
 
     if (!newPrefix) {
-        const currentPrefix = Utilz.getPrefix(data, msg.guild!.id);
+        const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
         const embed = new MessageEmbed()
             .setColor(0x00bb00)
             .setDescription(`The current prefix is: \`${currentPrefix ?? data.defaultPrefix}\``);
@@ -44,11 +45,11 @@ function cmdPrefix({ data, msg, args }: types.CombinedData) {
         return;
     }
 
-    const prefixes: PrefixData = Utilz.loadPrefs(PREFS_FILE);
+    const prefixes: PrefixData = CoreTools.loadPrefs(PREFIX_PREFS_FILE);
     prefixes[msg.guild!.id] = newPrefix;
-    Utilz.savePrefs(PREFS_FILE, prefixes);
+    CoreTools.savePrefs(PREFIX_PREFS_FILE, prefixes);
 
-    const currentPrefix = Utilz.getPrefix(data, msg.guild!.id);
+    const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
     const helpCmdName = getHelpCmd()?.name;
 
     const embed = new MessageEmbed()

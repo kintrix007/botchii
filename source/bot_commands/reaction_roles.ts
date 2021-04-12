@@ -1,5 +1,5 @@
-import * as Utilz from "../classes/utilz";
-import * as types from "../classes/types";
+import * as CoreTools from "../_core/core_tools";
+import * as types from "../_core/types";
 import rgiEmojiRegex from "emoji-regex/RGI_Emoji";
 import { Snowflake } from "discord.js";
 

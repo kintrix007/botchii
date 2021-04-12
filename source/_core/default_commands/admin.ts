@@ -1,5 +1,5 @@
-import * as Utilz from "../classes/utilz";
-import * as types from "../classes/types";
+import * as CoreTools from "../core_tools";
+import * as types from "../types";
 import { MessageEmbed } from "discord.js";
 
 const description = "Sets the role the bot looks for to decide whether someone is an admin.\n"
@@ -7,18 +7,17 @@ const description = "Sets the role the bot looks for to decide whether someone i
 + "If called without arguements, displays the currently selected criteria.";
 
 const cmd: types.Command = {
-    setupFunc: async data => cmd.description = description.replace(/\{\}/, data.defaultPrefix),
     func: cmdMod,
     name: "admin",
+    permissions: [ types.adminPermission ],
     group: "admin",
-    adminCommand: true,
     usage: "admin [new admin role]",
+    description: description,
     examples: [ "", "@Mod" ],
     aliases: [ "administrator", "mod", "moderator" ]
 };
 
-const PREFS_FILE = "admin_roles.json";
-
+export const ADMIN_PREFS_FILE = "admin_roles.json";
 export interface AdminData {
     [guildID: string]: {
         readableGuildName: string;
@@ -30,7 +29,7 @@ async function cmdMod({ msg, args }: types.CombinedData) {
     const newModRole = args[0];
 
     if (!newModRole) {
-        const adminRoleID = Utilz.getAdminRole(msg.guild!.id)?.roleID;
+        const adminRoleID = CoreTools.getAdminRole(msg.guild!.id)?.roleID;
         
         const reply = "People count as admins if they have the "
             + (adminRoleID ? `role <@&${adminRoleID}>` : "`Administrator` permission") + ".";
@@ -56,12 +55,12 @@ async function cmdMod({ msg, args }: types.CombinedData) {
         return;
     }
 
-    const modRoles: AdminData = Utilz.loadPrefs(PREFS_FILE);
+    const modRoles: AdminData = CoreTools.loadPrefs(ADMIN_PREFS_FILE);
     modRoles[msg.guild!.id] = {
         readableGuildName: msg.guild!.id,
         roleID: newAdminRoleID!
     };
-    Utilz.savePrefs(PREFS_FILE, modRoles);
+    CoreTools.savePrefs(ADMIN_PREFS_FILE, modRoles);
 
     const embed = new MessageEmbed()
         .setColor(0x00bb00)

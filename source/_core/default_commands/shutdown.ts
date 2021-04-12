@@ -1,21 +1,18 @@
-import * as Utilz from "../classes/utilz";
-import * as types from "../classes/types";
+import * as CoreTools from "../core_tools";
+import * as types from "../types";
 import { MessageEmbed } from "discord.js";
-
-const permanentArgs = ["perm", "permanent"];
 
 const cmd: types.Command = {
     func: cmdKill,
     name: "shutdown",
+    permissions: [ types.ownerPermission ],
     aliases: [ "restart", "kill" ],
-    examples: [ "", ...permanentArgs ],
     group: "owner",
-    ownerCommand: true
+    usage: "shutdown",
+    examples: [ "" ],
 };
 
-function cmdKill({ msg, args }: types.CombinedData) {
-    const isPermanent = permanentArgs.includes(args[0]);
-    
+function cmdKill({ msg }: types.CombinedData) {    
     const embed = new MessageEmbed()
         .setColor(0x00bb00)
         .setTitle("Shutting down... (restart)");

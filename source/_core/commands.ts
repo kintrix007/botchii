@@ -1,5 +1,5 @@
-import * as types from "./classes/types";
-import * as Utilz from "./classes/utilz";
+import * as types from "./types";
+import * as Utilz from "./core_tools";
 import fs from "fs";
 import path from "path";
 import { Message, MessageEmbed, DMChannel } from "discord.js";
@@ -9,11 +9,7 @@ const cmds: types.Command[] = [];
 function createCmd(command: types.Command): void {
     console.log(`loaded command '${command.name}'`);
 
-    if (command.group === "help") {
-        cmds.unshift(command);      // unshift = prepend
-    } else {
-        cmds.push(command);
-    }
+    cmds.push(command);
 }
 
 function loadCmds(cmds_dir: string) {
@@ -56,8 +52,8 @@ export async function createCmdsListeners(data: types.Data, cmds_dir: string) {
         const combData: types.CombinedData = {
             data: data,
             msg: msg,
+            cmdName: commandName,
             args: args,
-            cmdStr: commandName,
             argsStr: args.join(" "),
             cont: cont
         }
@@ -67,18 +63,13 @@ export async function createCmdsListeners(data: types.Data, cmds_dir: string) {
                 Utilz.removeAccents(cmd.name.toLowerCase()) === commandName ||
                 cmd.aliases?.map(x => Utilz.removeAccents(x.toLowerCase()))?.includes(commandName)
             ) {
-                // if admin command called by non-admin, return
-                if (cmd.adminCommand && !Utilz.isAdmin(msg.member)) {
+                const notPermitted = cmd.permissions?.find(({ func }) => !func(msg));
+
+                if (notPermitted) {
+                    const description = notPermitted.description?.(combData) ?? "You do not have permission to use this command.";
                     const embed = new MessageEmbed()
                         .setColor(0xbb0000)
-                        .setDescription(`The command \`${commandName}\` can only be used by admins.`);
-                    msg.channel.send(embed);
-                    return;
-                }
-                if (cmd.ownerCommand && !Utilz.isBotOwner(msg.author)) {
-                    const embed = new MessageEmbed()
-                        .setColor(0xbb0000)
-                        .setDescription(`The command \`${commandName}\` can only be used by the bot's owner.`);
+                        .setDescription(description);
                     msg.channel.send(embed);
                     return;
                 }
@@ -91,8 +82,9 @@ export async function createCmdsListeners(data: types.Data, cmds_dir: string) {
     console.log("-- all message listeners set up --");
 }
 
-export function getCmdList(adminExcluded = false): types.Command[] {
-    return cmds.filter(x => x.usage !== undefined && (adminExcluded && !x.adminCommand || !adminExcluded));
+export function getCmdList(msg: Message, onlyListAvailable = true): types.Command[] {
+    const hasPerms = (x: types.Command) => x.permissions?.every(({ func }) => func(msg))
+    return cmds.filter(x => x.usage !== undefined && (hasPerms(x) || !onlyListAvailable));
 }
 
 export function getHelpCmd() {

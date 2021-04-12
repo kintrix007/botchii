@@ -1,10 +1,11 @@
-import * as Utilz from "../classes/utilz";
-import * as types from "../classes/types";
-import { ChannelData } from "./set_channel"
-import { Client, DMChannel, GuildEmoji, Message, MessageEmbed, MessageReaction, PartialUser, TextChannel, User } from "discord.js";
+import * as CoreTools from "../_core/core_tools";
+import * as types from "../_core/types";
+import { Client, DMChannel, Message, MessageEmbed, MessageReaction, PartialUser, TextChannel, User } from "discord.js";
 import fs from "fs";
 import path from "path";
-import emojiRegex from "emoji-regex/RGI_Emoji";
+import * as Utilz from "../utilz";
+import { ChannelData } from "./set_channel"
+// import emojiRegex from "emoji-regex/RGI_Emoji";
 
 const CHANNEL_PREFS_FILE = "channel.json";
 const EMOJI_PREFS_FILE = "emojis.json";
@@ -32,7 +33,7 @@ const cmd: types.Command = {
 };
 
 async function setup(data: types.Data) {
-    const channelData: ChannelData = Utilz.loadPrefs(CHANNEL_PREFS_FILE);
+    const channelData: ChannelData = CoreTools.loadPrefs(CHANNEL_PREFS_FILE);
     await cacheMessages(data.client, channelData);
 
     data.client.on("messageReactionAdd",    trackReactions(data, true));
@@ -55,7 +56,7 @@ function trackReactions(data: types.Data, isReactionAdd: boolean) {
         if (msg.channel instanceof DMChannel) return;
         const guildID = msg.guild!.id;
 
-        const channelData: ChannelData = Utilz.loadPrefs(CHANNEL_PREFS_FILE);
+        const channelData: ChannelData = CoreTools.loadPrefs(CHANNEL_PREFS_FILE);
         
         const fromChannels = channelData[guildID]?.fromChannels;
         const toChannels = channelData[guildID]?.toChannels;
@@ -93,7 +94,7 @@ function trackReactions(data: types.Data, isReactionAdd: boolean) {
         const truncatedContent = (msg.content.length > truncateQuickReplyMsgTo
             ? msg.content.substr(0, truncateQuickReplyMsgTo) + "..."
             : msg.content);
-        const messageReference = (msg.content ? "> " + truncatedContent : Utilz.getMessageLink(msg))
+        const messageReference = (msg.content ? "> " + truncatedContent : CoreTools.getMessageLink(msg))
 
         const reply = messageReference + "\n"
             + `${acceptSign}\` ${acceptCount}  :  ${rejectCount} \`${rejectSign}    **${scoreToForward-score} to go**`;
@@ -119,7 +120,7 @@ const wakeUp = (() => {
     let timeout: NodeJS.Timeout;
     
     return (client: Client): void => {
-        const picsDir = Utilz.picsDir;
+        const picsDir = CoreTools.PICS_DIR;
         const awakeBotchii  = fs.readFileSync(path.join(picsDir, "botchii-awake.png"));
         const asleepBotchii = fs.readFileSync(path.join(picsDir, "botchii-asleep.png"));
 
@@ -199,7 +200,7 @@ async function cacheMessages(client: Client, channelData: ChannelData) {
     
     for (const [guildID, guildData] of Object.entries(channelData)) {
         if (guildData.fromChannels?.length) {
-            const channelCount = await Utilz.cacheChannelMessages(client, guildData.fromChannels);
+            const channelCount = await CoreTools.cacheChannelMessages(client, guildData.fromChannels);
             console.log(`successfully cached ${channelCount} messages in '${guildData.readableGuildName}'`);
         }
     }
