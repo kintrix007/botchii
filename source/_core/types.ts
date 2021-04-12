@@ -25,8 +25,9 @@ export interface CombinedData {
 type PermissionFunc = (msg: Message) => boolean;
 
 export type CommandPermission = {
-    description?: (combData: CombinedData) => string;
-    func:         PermissionFunc;
+    description?:  string;
+    errorMessage?: (combData: CombinedData) => string
+    func:          PermissionFunc;
 };
 export type CommandPermissions = CommandPermission[];
 
@@ -48,11 +49,13 @@ export interface Command {
 
 export const adminPermission: CommandPermission = {
     func: msg => CoreTools.isAdmin(msg.member),
-    description: ({ cmdName }) =>`The command \`${cmdName}\` can only be used by admins.`
+    description: "Only people with the admin role, or people with `Administrator` permission can use this coommand.",
+    errorMessage: ({ cmdName }) =>`The command \`${cmdName}\` can only be used by admins.`
 };
 export const ownerPermission: CommandPermission = {
     func: msg => CoreTools.isBotOwner(msg.author),
-    description: ({ cmdName }) => `The command \`${cmdName}\` can only be used by the bot's owner.`
+    description: "Only the bot's owner can use this command.",
+    errorMessage: ({ cmdName }) => `The command \`${cmdName}\` can only be used by the bot's owner.`
 };
 
 

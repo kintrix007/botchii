@@ -87,7 +87,7 @@ function querySpecificHelpSheet(combData: types.CombinedData, targetCommand: str
         : "");
 
         const requiredPermission = command.permissions
-            ?.map(x => x.description?.(combData))
+            ?.map(x => x.description)
             ?.filter(x => x)
             ?.reduce((a, b) => a + "\n" + b);
 

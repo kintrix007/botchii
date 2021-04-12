@@ -62,7 +62,7 @@ export async function createCmdsListeners(data: types.Data, cmds_dirs: string[])
                 const notPermitted = cmd.permissions?.find(({ func }) => !func(msg));
 
                 if (notPermitted) {
-                    const description = notPermitted.description?.(combData) ?? "You do not have permission to use this command.";
+                    const description = notPermitted.errorMessage?.(combData) ?? "You do not have permission to use this command.";
                     const embed = new MessageEmbed()
                         .setColor(0xbb0000)
                         .setDescription(description);
