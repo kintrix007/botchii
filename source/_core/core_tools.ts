@@ -4,8 +4,8 @@ import * as types from "./types";
 import { config } from "dotenv";
 import { Client, GuildChannel, GuildMember, Message, Snowflake, TextChannel, User } from "discord.js";
 
-import { PrefixData, PREFIX_PREFS_FILE } from "./default_commands/prefix";
-import { AdminData, ADMIN_PREFS_FILE } from "./default_commands/admin";
+import { PrefixData } from "./default_commands/prefix";
+import { AdminData } from "./default_commands/admin";
 
 config();
 
@@ -17,6 +17,9 @@ export const ROOT_DIR   = path.join(CORE_DIR, "..", "..");
 export const SOURCE_DIR = path.join(ROOT_DIR, "source");
 export const PICS_DIR   = path.join(ROOT_DIR, "images");
 export const PREFS_DIR  = path.join(ROOT_DIR, "prefs");
+
+export const PREFIX_PREFS_FILE = "prefix.json";
+export const ADMIN_PREFS_FILE  = "admin.json";
 
 export async function cacheChannelMessages(client: Client, channelIDs: string[]) {
     let successCount = 0;
@@ -152,7 +155,7 @@ export function getPrefix(data: types.Data, guildID: Snowflake): string {
     return prefix;
 }
 
-export function savePrefs(filename: string, saveData: any): void {
+export function savePrefs(filename: string, saveData: Object): void {
     if (!fs.existsSync(PREFS_DIR)) {
         fs.mkdirSync(PREFS_DIR);
         console.log(`created dir '${PREFS_DIR}' because it did not exist`);

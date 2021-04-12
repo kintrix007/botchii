@@ -1,7 +1,6 @@
 import * as CoreTools from "./core_tools";
 import * as types from "./types";
 import { createCmdsListeners } from "./commands";
-import * as path from "path";
 import { config } from "dotenv";
 import { Client } from "discord.js";
 
@@ -16,9 +15,9 @@ export async function initBot() {
     client.on("ready", async () => {
         console.log("-- bot online --");
 
-        await createCmdsListeners(data, DEFAULT_COMMANDS_DIR);
-        await createCmdsListeners(data, COMMANDS_DIR);
-        
+        await createCmdsListeners(data, [ DEFAULT_COMMANDS_DIR, COMMANDS_DIR ]);
+        console.log("-- all message listeners set up --");
+
         // const currentTime = new Time(new Date());
         // console.log("the current time is:", currentTime.toString());
         console.log("-- bot setup complete --");

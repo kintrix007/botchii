@@ -57,7 +57,7 @@ async function cmdChannel({data, msg, args}: types.CombinedData) {
         const toChannels = channelData[guildID]?.toChannels;
         
         const channelsToString = (channels: string[] | undefined) =>
-            (channels ? channels.map(x => `<#${x}>`).join(", ") : "none");
+            (channels ? channels.map(x => `<#${x}>`).join(", ") : "none set");
         
         const embed = new MessageEmbed()
             .setColor(0x00bb00)

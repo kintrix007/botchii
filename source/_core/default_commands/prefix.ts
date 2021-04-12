@@ -18,7 +18,7 @@ const cmd: types.Command = {
     examples: [ "", "!!", "." ],
 };
 
-export const PREFIX_PREFS_FILE = "prefixes.json";
+const { PREFIX_PREFS_FILE } = CoreTools;
 export interface PrefixData {
     [guildID: string]: string;
 }

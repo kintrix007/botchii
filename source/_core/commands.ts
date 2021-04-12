@@ -1,5 +1,5 @@
 import * as types from "./types";
-import * as Utilz from "./core_tools";
+import * as CoreTools from "./core_tools";
 import fs from "fs";
 import path from "path";
 import { Message, MessageEmbed, DMChannel } from "discord.js";
@@ -13,8 +13,6 @@ function createCmd(command: types.Command): void {
 }
 
 function loadCmds(cmds_dir: string) {
-    console.log("-- started loading commands... --");
-
     const files = fs.readdirSync(cmds_dir)
         .filter(filename => filename.endsWith(".js"))
         .map(filename => filename.slice(0, filename.length-3));
@@ -29,8 +27,6 @@ function loadCmds(cmds_dir: string) {
 }
 
 async function setUpCmds(data: types.Data) {
-    console.log("-- started setting up commands... --");
-
     for (const cmd of cmds) {
         await cmd.setupFunc?.(data);
     }
@@ -38,15 +34,15 @@ async function setUpCmds(data: types.Data) {
     console.log("-- finished setting up commands --");
 }
 
-export async function createCmdsListeners(data: types.Data, cmds_dir: string) {
-    loadCmds(cmds_dir);
+export async function createCmdsListeners(data: types.Data, cmds_dirs: string[]) {
+    cmds_dirs.forEach(dir => loadCmds(dir));
     // console.log(cmds);
     await setUpCmds(data);
 
     data.client.on("message", (msg: Message) => {
         if (msg.channel instanceof DMChannel) return;
         if (msg.author.bot) return;
-        const cont = Utilz.prefixless(data, msg);
+        const cont = CoreTools.prefixless(data, msg);
         if (!cont) return;
         const [commandName, ...args] = cont.trim().split(" ").filter(x => x !== "");
         const combData: types.CombinedData = {
@@ -60,8 +56,8 @@ export async function createCmdsListeners(data: types.Data, cmds_dir: string) {
 
         cmds.forEach(cmd => {
             if (
-                Utilz.removeAccents(cmd.name.toLowerCase()) === commandName ||
-                cmd.aliases?.map(x => Utilz.removeAccents(x.toLowerCase()))?.includes(commandName)
+                CoreTools.removeAccents(cmd.name.toLowerCase()) === commandName ||
+                cmd.aliases?.map(x => CoreTools.removeAccents(x.toLowerCase()))?.includes(commandName)
             ) {
                 const notPermitted = cmd.permissions?.find(({ func }) => !func(msg));
 
@@ -78,12 +74,10 @@ export async function createCmdsListeners(data: types.Data, cmds_dir: string) {
             }
         });
     });
-
-    console.log("-- all message listeners set up --");
 }
 
 export function getCmdList(msg: Message, onlyListAvailable = true): types.Command[] {
-    const hasPerms = (x: types.Command) => x.permissions?.every(({ func }) => func(msg))
+    const hasPerms = (x: types.Command) => !x.permissions?.some(({ func }) => !func(msg))
     return cmds.filter(x => x.usage !== undefined && (hasPerms(x) || !onlyListAvailable));
 }
 

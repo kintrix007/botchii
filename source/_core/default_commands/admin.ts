@@ -17,7 +17,7 @@ const cmd: types.Command = {
     aliases: [ "administrator", "mod", "moderator" ]
 };
 
-export const ADMIN_PREFS_FILE = "admin_roles.json";
+const { ADMIN_PREFS_FILE } = CoreTools;
 export interface AdminData {
     [guildID: string]: {
         readableGuildName: string;
