@@ -57,7 +57,7 @@ async function cmdChannel({data, msg, args}: types.CombinedData) {
         const toChannels = channelData[guildID]?.toChannels;
         
         const channelsToString = (channels: string[] | undefined) =>
-            (channels ? channels.map(x => `<#${x}>`).reduce((a, b) => a + ", " + b) : "none");
+            (channels ? channels.map(x => `<#${x}>`).join(", ") : "none");
         
         const embed = new MessageEmbed()
             .setColor(0x00bb00)
@@ -124,7 +124,7 @@ function setChannels(msg: Message, channels: Channel[], fromSetter: boolean) {
     const embed = new MessageEmbed()
         .setColor(0x00bb00)
         .setTitle(`Successfully set ${fromSetter ? "base" : "target"} channel${channels.length === 1 ? "" : "s"}!`)
-        .setDescription("Channels: " + channels.map(x => `<#${x.id}>`).reduce((a, b) => a + ", " + b));
+        .setDescription("Channels: " + channels.map(x => `<#${x.id}>`).join(", "));
     msg.channel.send(embed);
 }
 

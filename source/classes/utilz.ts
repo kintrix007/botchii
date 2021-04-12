@@ -111,6 +111,23 @@ export function getMessageLink(msg: DC.Message) {
     }
 }
 
+export async function cacheChannelMessages(client: DC.Client, channelIDs: string[]) {
+    let successCount = 0;
+    
+    for (const ID of channelIDs) {
+        try {
+            const channel = await client.channels.fetch(ID) as DC.TextChannel;
+            const messages = await channel.messages.fetch();
+            successCount += messages.size;
+        }
+        catch (err) {
+            console.error(err);
+        }
+    }
+
+    return successCount;
+}
+
 export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean): T[] {
     return arr.filter((x, idx) => {
         const foundIdx = arr.findIndex(a => isEqual(a, x));
@@ -184,3 +201,17 @@ export function loadPrefs(filename: string, silent = false): {[guildID: string]:
 }
 
 // bot-specific
+
+export function convertToCountedEmoji(reaction: DC.MessageReaction) {
+    const {emoji, count} = reaction;
+    const users = Array.from(reaction.users.cache.values());
+    const isCustom = emoji instanceof DC.GuildEmoji;
+    const counted: types.CountedEmoji = {
+        isCustom,
+        string: (isCustom ? `<:${emoji.name}:${emoji.id}>` : emoji.name),
+        count: count ?? 0,
+        users,
+        isInvalid: isCustom && emoji.id === null || !isCustom && emoji.id != null || count === null || count === 0
+    }
+    return counted;
+}

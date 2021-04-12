@@ -10,16 +10,16 @@ const CHANNEL_PREFS_FILE = "channel.json";
 const EMOJI_PREFS_FILE = "emojis.json";
 const HOUR = 3600000;
 
-const acceptSign        = "✅";
-const rejectSign        = "❎";
-const announcedEmoji    = "👌";
-const scoreToForward    = 3;            // the message needs to have this much more accepts than rejects
+const acceptSign     = "✅";
+const rejectSign     = "❎";
+const announcedEmoji = "👌";
+const scoreToForward = 3;               // the message needs to have this much more accepts than rejects
 
 const truncateQuickReplyMsgTo = 40;     // this is how many characters the vote feeback "message quote" gets truncated to
 
 const acceptEmojis  = [ "✅", "☑️", "👍"];
 const rejectEmojis  = [ "❎", "❌", "👎", "✖️", "🇽"];
-const trackedEmojis = [...acceptEmojis, ...rejectEmojis];
+const trackedEmojis = [ ...acceptEmojis, ...rejectEmojis ];
 
 const cmd: types.Command = {
     name: "reactions",
@@ -30,14 +30,6 @@ const cmd: types.Command = {
     // examples: [ "" ],
     setupFunc: setup
 };
-
-interface CountedEmoji {
-    isCustom:   boolean;
-    string:     string;
-    count:      number;
-    users:      User[];
-    isInvalid?: boolean;
-}
 
 async function setup(data: types.Data) {
     const channelData: ChannelData = Utilz.loadPrefs(CHANNEL_PREFS_FILE);
@@ -79,7 +71,7 @@ function trackReactions(data: types.Data, isReactionAdd: boolean) {
         // has to happen after caching the users
         if (isAlreadyAnnounced(msg)) return;
 
-        const rawCountedEmojis = reactions.map(reaction => convertToCustomEmoji(reaction))
+        const rawCountedEmojis = reactions.map(reaction => Utilz.convertToCountedEmoji(reaction))
                                           .filter(x => !x.isInvalid);
 
         const trueEmojis = removeDuplicateUserReactions(rawCountedEmojis);
@@ -146,7 +138,8 @@ const wakeUp = (() => {
 async function forwardMessage(msg: Message, toChannels: string[], acceptUsers: User[]) {
     const member = msg.member;
     const displayName = member?.nickname ?? msg.author.username;
-    const forwardTitle = "**" + (member ? displayName + " made an announcement" : displayName) + ":**";
+    const acceptUserNames = acceptUsers.map(x => msg.guild!.member(x)?.nickname ?? x.username).join(", ");
+    const forwardTitle = "**" + (member ? displayName + " made an announcement" : displayName) + ":**" + ` (accepted by ${acceptUserNames})`;
     const forwardContent = msg.content.replace(/@here/g, "`@`here").replace(/@everyone/g, "`@`everyone");
     const forwardAttachments = Array.from(msg.attachments.values());
     const forwardEmbeds = msg.embeds;
@@ -179,23 +172,9 @@ function isAlreadyAnnounced(message: Message) {
     });
 }
 
-function convertToCustomEmoji(reaction: MessageReaction) {
-    const {emoji, count} = reaction;
-    const users = Array.from(reaction.users.cache.values());
-    const isCustom = emoji instanceof GuildEmoji;
-    const counted: CountedEmoji = {
-        isCustom,
-        string: (isCustom ? `<:${emoji.name}:${emoji.id}>` : emoji.name),
-        count: count ?? 0,
-        users,
-        isInvalid: isCustom && emoji.id === null || !isCustom && emoji.id != null || count === null || count === 0
-    }
-    return counted;
-}
-
-function removeDuplicateUserReactions(emojis: CountedEmoji[]) {
+function removeDuplicateUserReactions(emojis: types.CountedEmoji[]) {
     const reactedUsers = new Set<User>();
-    return emojis.map(({isCustom, users, string, isInvalid}): CountedEmoji => {
+    return emojis.map(({isCustom, users, string, isInvalid}): types.CountedEmoji => {
         const trueUsers = users.filter(user => {
             const alreadyReacted = reactedUsers.has(user);
             reactedUsers.add(user);
@@ -211,7 +190,7 @@ function removeDuplicateUserReactions(emojis: CountedEmoji[]) {
     }).filter(x => !x.isInvalid);
 }
 
-function countEmojis(emojis: CountedEmoji[]) {
+function countEmojis(emojis: types.CountedEmoji[]) {
     return emojis.reduce((acc, emoji) => acc + emoji.count, 0);
 }
 
@@ -220,29 +199,12 @@ async function cacheMessages(client: Client, channelData: ChannelData) {
     
     for (const [guildID, guildData] of Object.entries(channelData)) {
         if (guildData.fromChannels?.length) {
-            const channelCount = await cacheChannelMessages(client, guildData.fromChannels);
+            const channelCount = await Utilz.cacheChannelMessages(client, guildData.fromChannels);
             console.log(`successfully cached ${channelCount} messages in '${guildData.readableGuildName}'`);
         }
     }
 
     console.log("finished caching messages!");
-}
-
-async function cacheChannelMessages(client: Client, channelIDs: string[]) {
-    let successCount = 0;
-    
-    for (const ID of channelIDs) {
-        try {
-            const channel = await client.channels.fetch(ID) as TextChannel;
-            const messages = await channel.messages.fetch();
-            successCount += messages.size;
-        }
-        catch (err) {
-            console.error(err);
-        }
-    }
-
-    return successCount;
 }
 
 module.exports = cmd;

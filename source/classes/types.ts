@@ -31,3 +31,16 @@ export interface Command {
     adminCommand?:  boolean;
     ownerCommand?:  boolean;
 }
+
+// Bot specific
+
+export interface CustomEmoji {
+    isCustom:   boolean;
+    string:     string;
+    isInvalid?: boolean;
+}
+
+export interface CountedEmoji extends CustomEmoji {
+    count:      number;
+    users:      DC.User[];
+}

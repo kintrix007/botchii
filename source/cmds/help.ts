@@ -33,11 +33,11 @@ function cmdHelp({ data, msg, args }: types.CombinedData) {
         }
         const usage = "`" + currentPrefix + command.usage! + "`";
         const commandName = currentPrefix + command.name;
-        const aliases = (command.aliases ? "alias: " + command.aliases.map(x => currentPrefix+x).reduce((a, b) => a + ", " + b) : "");
+        const aliases = (command.aliases ? "alias: " + command.aliases.map(x => currentPrefix+x).join(", ") : "");
         const description = command.description || "**[Description is not set]**";
         const examples = (command.examples ? "**e.g.  " +
             command.examples.map(x => x ? `\`${commandName} ${x}\`` : `\`${commandName}\``) 
-                            .reduce((a, b) => a + ", " + b) + "**"
+                            .join(", ") + "**"
         : "");
 
         const reply = description + "\n\n" + examples;
