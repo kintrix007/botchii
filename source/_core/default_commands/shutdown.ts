@@ -4,11 +4,11 @@ import { MessageEmbed } from "discord.js";
 
 const cmd: types.Command = {
     func: cmdKill,
-    name: "shutdown",
+    name: "restart",
     permissions: [ types.ownerPermission ],
-    aliases: [ "restart", "kill" ],
+    aliases: [ "shutdown", "kill" ],
     group: "owner",
-    usage: "shutdown",
+    // usage: "restart",
     examples: [ "" ],
 };
 

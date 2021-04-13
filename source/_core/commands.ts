@@ -13,6 +13,8 @@ function createCmd(command: types.Command): void {
 }
 
 function loadCmds(cmds_dir: string) {
+    console.log("-- started loading commands... --");
+
     const files = fs.readdirSync(cmds_dir)
         .filter(filename => filename.endsWith(".js"))
         .map(filename => filename.slice(0, filename.length-3));
@@ -27,6 +29,8 @@ function loadCmds(cmds_dir: string) {
 }
 
 async function setUpCmds(data: types.Data) {
+    console.log("-- started setting up commands... --");
+
     for (const cmd of cmds) {
         await cmd.setupFunc?.(data);
     }
@@ -74,6 +78,8 @@ export async function createCmdsListeners(data: types.Data, cmds_dirs: string[])
             }
         });
     });
+
+    console.log("-- all message listeners set up --");
 }
 
 export function getCmdList(msg: Message, onlyListAvailable = true): types.Command[] {

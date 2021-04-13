@@ -1,35 +1,66 @@
 import * as CoreTools from "../_core/core_tools";
 import * as types from "../_core/types";
 import rgiEmojiRegex from "emoji-regex/RGI_Emoji";
-import { Snowflake } from "discord.js";
+import { Snowflake, TextChannel } from "discord.js";
 
 const cmd: types.Command = {
-    name: "rr",
     func: cmdReactionRoles,
+    name: "reactionroles",
+    aliases: [ "rr" ],
+    group: "moderation",
+    permissions: [ types.adminPermission ],
+    usage: "reactionroles [message link]",
+    // description: "",
+    examples: [ "" ],
 };
 
-const emojiRegex = new RegExp(
-    "(?:"
-        +"("
-            + rgiEmojiRegex().source
-        +")" + "|"
-        +"("
-            + /<:[^:]{2,}:\d+>/.source
-        +")"
-    +")"
-);
+async function cmdReactionRoles({ data, args }: types.CombinedData) {
+    console.log("ran");
+    const msgLink = args[0];
+    if (!msgLink) {
+        return;
+    }
+    
+    const parsedMessageLink = CoreTools.parseMessageLink(msgLink);
+    console.log(parsedMessageLink);
+    if (!parsedMessageLink) {
+        return;
+    }
+    
+    const { guildID, channelID, messageID } = parsedMessageLink;
 
-const lineRegex = new RegExp(/^\s*(?:<@&(\d+)>|(\d+))\s*/.source + emojiRegex.source);
-
-// 1st | 2nd group: roleID
-// 3rd       group: default emoji
-// 4th       group: GuildEmoji
-
-function cmdReactionRoles({ data, msg }: types.CombinedData) {
+    let rolesEmojis: { [roleID: string]: types.CustomEmoji };
+    try {
+        const channel = await data.client.channels.fetch(channelID) as TextChannel;
+        const message = await channel.messages.fetch(messageID);
+        const cont = message.content;
+        rolesEmojis = extractEmojisAndRoles(cont.split("\n"));
+    }
+    catch (err) {
+        console.error(err);
+        return;
+    }
     
 }
 
 function extractEmojisAndRoles(lines: string[]) {
+    const emojiRegex = new RegExp(
+        "(?:"
+            +"("
+                + rgiEmojiRegex().source
+            +")" + "|"
+            +"("
+                + /<:[^:]{2,}:\d+>/.source
+            +")"
+        +")"
+    );
+    
+    const lineRegex = new RegExp(/^\s*(?:<@&(\d+)>|(\d+))\s*/.source + emojiRegex.source);
+    
+    // 1st | 2nd group: roleID
+    // 3rd       group: default emoji
+    // 4th       group: GuildEmoji    
+
     const assocList = lines.map(line => {
         const match = line.match(lineRegex);
         if (!match) return undefined;

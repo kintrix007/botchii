@@ -81,17 +81,17 @@ function querySpecificHelpSheet(combData: types.CombinedData, targetCommand: str
         const commandName = currentPrefix + command.name;
         const aliases = (command.aliases ? "alias: " + command.aliases.map(x => currentPrefix+x).join(", ") : "");
         const description = command.description || "**[Description is not set]**";
-        const examples = (command.examples ? "**e.g.  " +
+        const examples = (command.examples ? "**eg:  " +
             command.examples.map(x => x ? `\`${commandName} ${x}\`` : `\`${commandName}\``) 
                             .join(", ") + "**"
         : "");
 
         const requiredPermission = command.permissions
-            ?.map(x => x.description)
+            ?.map(x => x.description ? "- " + x.description : x.description)
             ?.filter(x => x)
             ?.reduce((a, b) => a + "\n" + b);
 
-        const reply = description + "\n\n" + examples + (requiredPermission ? "\n\n" + requiredPermission : "");
+        const reply = description + (requiredPermission ? "\n\n**Permissions:**\n" + requiredPermission : "") + "\n\n" + examples;
         const embed = new MessageEmbed()
             .setColor(0x00bb00)
             .setTitle(usage)

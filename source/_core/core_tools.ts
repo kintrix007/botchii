@@ -98,6 +98,22 @@ export function getMessageLink(msg: Message) {
     }
 }
 
+export function parseMessageLink(url: string) {
+    const regex = /^https:\/\/discord.com\/channels\/(?:(\d+)|@me)\/(\d+)\/(\d+)\/?$/i;
+    const match = url.match(regex);
+    if (!match) return undefined;
+
+    const guildID = match[1] as string | undefined;
+    const channelID = match[2];
+    const messageID = match[3];
+    
+    return {
+        guildID,
+        channelID,
+        messageID
+    };
+}
+
 export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean): T[] {
     return arr.filter((x, idx) => {
         const foundIdx = arr.findIndex(a => isEqual(a, x));
