@@ -1,11 +1,9 @@
-import * as CoreTools from "./core_tools";
+import { DEFAULT_COMMANDS_DIR } from "./core_tools";
 import * as types from "./types";
 import { createCmdsListeners } from "./commands";
 import { config } from "dotenv";
 import { Client } from "discord.js";
 
-
-const { DEFAULT_COMMANDS_DIR, COMMANDS_DIR } = CoreTools
 
 interface SetupData {
     defaultPrefix?: string,

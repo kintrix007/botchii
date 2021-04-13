@@ -1,6 +1,5 @@
 import * as CoreTools from "../core_tools";
 import * as types from "../types";
-import { MessageEmbed } from "discord.js";
 import { getHelpCmd } from "../commands";
 
 const description = "Sets the prefix the bot uses.\n"
@@ -30,17 +29,13 @@ function cmdPrefix({ data, msg, args }: types.CombinedData) {
 
     if (!newPrefix) {
         const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
-        const embed = new MessageEmbed()
-            .setColor(0x00bb00)
-            .setDescription(`The current prefix is: \`${currentPrefix ?? data.defaultPrefix}\``);
+        const embed = CoreTools.createEmbed("neutral", `The current prefix is: \`${currentPrefix ?? data.defaultPrefix}\``);
         msg.channel.send(embed);
         return;
     }
 
     if (newPrefix.length > MAX_PREFIX_LENGTH) {
-        const embed = new MessageEmbed()
-            .setColor(0xbb0000)
-            .setDescription(`The prefix must not be longer than \`${MAX_PREFIX_LENGTH}\`! \`"${newPrefix}"(${newPrefix.length})\``);
+        const embed = CoreTools.createEmbed("error", `The prefix must not be longer than \`${MAX_PREFIX_LENGTH}\`! \`"${newPrefix}"\`(${newPrefix.length})`);
         msg.channel.send(embed);
         return;
     }
@@ -52,10 +47,10 @@ function cmdPrefix({ data, msg, args }: types.CombinedData) {
     const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
     const helpCmdName = getHelpCmd()?.name;
 
-    const embed = new MessageEmbed()
-        .setColor(0x00bb00)
-        .setTitle(`Prefix set to \`${currentPrefix}\``)
-        .setDescription("Successfully changed the prefix." + (helpCmdName ? `\nFor help type: \`${currentPrefix}${helpCmdName}\`` : ""));
+    const embed = CoreTools.createEmbed("ok", {
+        title: `Prefix set to \`${currentPrefix}\``,
+        desc:  "Successfully changed the prefix." + (helpCmdName ? `\nFor help type: \`${currentPrefix}${helpCmdName}\`` : "")
+    });
     msg.channel.send(embed);
     console.log(`${msg.author.username}#${msg.author.discriminator} changed the prefix to ${currentPrefix}`);
 }

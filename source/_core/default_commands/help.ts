@@ -1,7 +1,6 @@
 import * as CoreTools from "../core_tools";
 import * as types from "../types";
 import { getCmdList } from "../commands";
-import { MessageEmbed } from "discord.js";
 
 const cmd: types.Command = {
     func: cmdHelp,
@@ -53,12 +52,11 @@ function queryGeneralHelpSheet({ data, msg }: types.CombinedData) {
                     + commands.reduce((acc, command) => acc + currentPrefix + command.usage! + "\n", "");
             }, "") + "```";
         
-        const embed = new MessageEmbed()
-            .setColor(0x00bb00)
-            .setTitle("**Help:**")
-            .setDescription(reply)
-            .setFooter(footerNote);
-
+        const embed = CoreTools.createEmbed("neutral", {
+            title:  "**Help:**",
+            desc:   reply,
+            footer: footerNote
+        });
         msg.channel.send(embed);
         console.log(`${msg.author.username}#${msg.author.discriminator} queried the general help sheet`);
 }
@@ -68,38 +66,38 @@ function querySpecificHelpSheet(combData: types.CombinedData, targetCommand: str
     const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
 
     const cmdList = getCmdList(msg);
-        const command = cmdList.find(x => CoreTools.removeAccents(x.name.toLowerCase()) === targetCommand
-            || x.aliases?.map(x => CoreTools.removeAccents(x.toLowerCase()))?.includes(targetCommand));
-        if (!command) {
-            const embed = new MessageEmbed()
-                .setColor(0xbb0000)
-                .setDescription(`Command \`${targetCommand}\` does not exist.`);
-            msg.channel.send(embed);
-            return;
-        }
-        const usage = "`" + currentPrefix + command.usage! + "`";
-        const commandName = currentPrefix + command.name;
-        const aliases = (command.aliases ? "alias: " + command.aliases.map(x => currentPrefix+x).join(", ") : "");
-        const description = command.description || "**[Description is not set]**";
-        const examples = (command.examples ? "**eg:  " +
-            command.examples.map(x => x ? `\`${commandName} ${x}\`` : `\`${commandName}\``) 
-                            .join(", ") + "**"
-        : "");
-
-        const requiredPermission = command.permissions
-            ?.map(x => x.description ? "- " + x.description : x.description)
-            ?.filter(x => x)
-            ?.reduce((a, b) => a + "\n" + b);
-
-        const reply = description + (requiredPermission ? "\n\n**Permissions:**\n" + requiredPermission : "") + "\n\n" + examples;
-        const embed = new MessageEmbed()
-            .setColor(0x00bb00)
-            .setTitle(usage)
-            .setDescription(reply)
-            .setFooter(aliases);
+    const command = cmdList.find(x => CoreTools.removeAccents(x.name.toLowerCase()) === targetCommand
+        || x.aliases?.map(x => CoreTools.removeAccents(x.toLowerCase()))?.includes(targetCommand));
         
+    if (!command) {
+        const embed = CoreTools.createEmbed("error", `Command \`${targetCommand}\` does not exist.`);
         msg.channel.send(embed);
-        console.log(`${msg.author.username}#${msg.author.discriminator} queried the help sheet for '${targetCommand}'`);
+        return;
+    }
+    
+    const usage = "`" + currentPrefix + command.usage! + "`";
+    const commandName = currentPrefix + command.name;
+    const aliases = (command.aliases ? "alias: " + command.aliases.map(x => currentPrefix+x).join(", ") : "");
+    const description = command.description || "**[Description not provided]**";
+    const examples = (command.examples ? "**eg:  " +
+        command.examples.map(x => x ? `\`${commandName} ${x}\`` : `\`${commandName}\``) 
+                        .join(", ") + "**"
+    : "");
+
+    const requiredPermission = command.permissions
+        ?.map(x => x.description ? "- " + x.description : x.description)
+        ?.filter(x => x)
+        ?.join("\n");
+
+    const reply = description + (requiredPermission ? "\n\n**Permissions:**\n" + requiredPermission : "") + "\n\n" + examples;
+
+    const embed = CoreTools.createEmbed("neutral", {
+        title:  usage,
+        desc:   reply,
+        footer: aliases
+    });
+    msg.channel.send(embed);
+    console.log(`${msg.author.username}#${msg.author.discriminator} queried the help sheet for '${targetCommand}'`);
 }
 
 module.exports = cmd;

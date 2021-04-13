@@ -1,15 +1,18 @@
 import * as CoreTools from "../core_tools";
 import * as types from "../types";
-import { MessageEmbed } from "discord.js";
 
 const description = "Sets the role the bot looks for to decide whether someone is an admin.\n"
-+ "The default behavior is looking for the permission `Administrator`.\n"
++ "The default behavior is looking for the permission **Administrator**.\n"
 + "If called without arguements, displays the currently selected criteria.";
 
 const cmd: types.Command = {
     func: cmdMod,
     name: "admin",
-    permissions: [ types.adminPermission ],
+    permissions: [{
+        func: msg => msg.member?.hasPermission("ADMINISTRATOR") ?? false,
+        description: "Only people with the **Administrator** permission can use this command.",
+        errorMessage: ({ cmdName }) => `The command \`${cmdName}\` can only be used by people with **Administrator** permission.`
+    }],
     group: "admin",
     usage: "admin [new admin role]",
     description: description,
@@ -32,25 +35,29 @@ async function cmdMod({ msg, args }: types.CombinedData) {
         const adminRoleID = CoreTools.getAdminRole(msg.guild!.id)?.roleID;
         
         const reply = "People count as admins if they have the "
-            + (adminRoleID ? `role <@&${adminRoleID}>` : "`Administrator` permission") + ".";
+            + (adminRoleID ? `role <@&${adminRoleID}>` : "**Administrator** permission") + ".";
             
-        const embed = new MessageEmbed()
-            .setColor(0x00bb00)
-            .setDescription(reply);
+        const embed = CoreTools.createEmbed("ok", reply);
         msg.channel.send(embed);
         console.log(`${msg.author.username}#${msg.author.discriminator} has queried the admin role.`);
         return;
     }
 
-    const regex = /^<@&(\d+)>$/i;
+    const regex = /^(?:<@&(\d+)>|(\d+))$/i;
     const match = newModRole.match(regex);
 
-    const newAdminRoleID = match?.[1];
+    if (!match) {
+        const embed = CoreTools.createEmbed("error", "The given role is invalid!");
+        msg.channel.send(embed);
+        return;
+    }
+    
+    const newAdminRoleID = match[1] ?? match[2];
 
-    if (!(match && await msg.guild!.roles.fetch(newAdminRoleID))) {
-        const embed = new MessageEmbed()
-            .setColor(0xbb0000)
-            .setDescription("No valid roles given!");
+    try {
+        await msg.guild!.roles.fetch(newAdminRoleID);
+    } catch (err) {
+        const embed = CoreTools.createEmbed("error", "The given role is invalid!");
         msg.channel.send(embed);
         return;
     }
@@ -62,10 +69,10 @@ async function cmdMod({ msg, args }: types.CombinedData) {
     };
     CoreTools.savePrefs(ADMIN_PREFS_FILE, modRoles);
 
-    const embed = new MessageEmbed()
-        .setColor(0x00bb00)
-        .setTitle("Changed the tracked admin role!")
-        .setDescription(`From now on, people with the <@&${newAdminRoleID!}> role count as admins.`);
+    const embed = CoreTools.createEmbed("ok", {
+        title: "Successfully changed the tracked admin role!",
+        desc:  `From now on, people with the <@&${newAdminRoleID!}> role count as admins.`
+    });
     msg.channel.send(embed);
     console.log(`${msg.author.username}#${msg.author.discriminator} changed the admin role to '${newAdminRoleID!}'`);
 }

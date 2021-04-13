@@ -1,6 +1,6 @@
 import * as CoreTools from "../_core/core_tools";
 import * as types from "../_core/types";
-import { Client, DMChannel, Message, MessageEmbed, MessageReaction, PartialUser, TextChannel, User } from "discord.js";
+import { Client, DMChannel, Message, MessageReaction, PartialUser, User } from "discord.js";
 import fs from "fs";
 import path from "path";
 import * as Utilz from "../utilz";
@@ -101,9 +101,7 @@ function trackReactions(data: types.Data, isReactionAdd: boolean) {
         msg.channel.send(reply);
 
         if (toChannels === undefined || toChannels.length === 0) {
-            const embed = new MessageEmbed()
-                .setColor(0xbb0000)
-                .setDescription("No target channel set.");
+            const embed = CoreTools.createEmbed("error", "No target channel set.");
             msg.channel.send(embed);
             return;
         }
@@ -156,10 +154,10 @@ async function forwardMessage(msg: Message, toChannels: string[], acceptUsers: U
     
     msg.react(announcedEmoji);
     
-    const embed = new MessageEmbed()
-        .setColor(0x00bb00)
-        .setTitle("Made an announcement!")
-        .setDescription(`On behalf of: ${acceptUsers}`)
+    const embed = CoreTools.createEmbed("ok", {
+        title: "Made an announcement!",
+        desc:  `On behalf of: ${acceptUserNames}`
+    })
     msg.channel.send(embed);
 }
 

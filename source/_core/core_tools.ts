@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import * as types from "./types";
 import { config } from "dotenv";
-import { Client, GuildChannel, GuildMember, Message, Snowflake, TextChannel, User } from "discord.js";
+import { Client, GuildChannel, GuildMember, Message, MessageEmbed, Snowflake, TextChannel, User } from "discord.js";
 
 import { PrefixData } from "./default_commands/prefix";
 import { AdminData } from "./default_commands/admin";
@@ -11,7 +11,6 @@ config();
 
 export const CORE_DIR   = path.join(__dirname);
 export const DEFAULT_COMMANDS_DIR = path.join(CORE_DIR, "default_commands");
-export const COMMANDS_DIR = path.join(__dirname, "..", "bot_commands");
 
 export const ROOT_DIR   = path.join(CORE_DIR, "..", "..");
 export const SOURCE_DIR = path.join(ROOT_DIR, "source");
@@ -122,6 +121,36 @@ export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean): T[] {
 }
 
 // specific
+
+export const createEmbed = (() => {
+    interface BasicEmbedData {
+        title?:  string;
+        desc?:   string;
+        footer?: string;
+        image?:  string;
+    }
+    
+    const colorTable = {
+        ok:      0x00bb00,
+        error:   0xbb0000,
+        neutral: 0x008888
+    };
+
+    return function(type: keyof typeof colorTable, message: BasicEmbedData | string) {
+        const embed = new MessageEmbed().setColor(colorTable[type]);
+
+        if (typeof message === "string") {
+            embed.setDescription(message);
+        } else {
+            if (message.desc)   embed.setDescription(message.desc);
+            if (message.title)  embed.setTitle(message.title);
+            if (message.footer) embed.setFooter(message.footer);
+            if (message.image)  embed.setImage(message.image);
+        }
+
+        return embed
+    };
+})();
 
 export function isAdmin(member: GuildMember | undefined | null) {
     if (!member) return false;

@@ -1,7 +1,7 @@
 {
   "name": "botchii",
   "version": "1.0.0",
-  "description": "A bot to forward discord announcements",
+  "description": "A bot to forward discord announcements and for reaction-roles.",
   "main": "build/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

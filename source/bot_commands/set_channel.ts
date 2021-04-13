@@ -1,11 +1,11 @@
-import * as Utilz from "../_core/core_tools";
+import * as CoreTools from "../_core/core_tools";
 import * as types from "../_core/types";
-import { CategoryChannel, Channel, Client, Guild, GuildChannel, Message, MessageEmbed, VoiceChannel } from "discord.js";
+import { CategoryChannel, Channel, Client, Guild, GuildChannel, Message, VoiceChannel } from "discord.js";
 
-const description = "Sets the base, and the target channels."
+const description = "Sets the base and the target channels."
     + "\nOnce a message in a base channel is accepted, it will be sent in every one of the target channels."
-    + "\nYou can also give the ID's of categories. This way all the channels in a category will be added."
-    + "\nIf used without arguements, lists the currently set bases and targets.";
+    + "\nYou can also provide the ID's of categories. This way, all the channels under a category will be added individually."
+    + "\nIf used without arguements, lists the currently set base and target channels.";
 
 const cmd: types.Command = {
     func: cmdChannel,
@@ -15,7 +15,7 @@ const cmd: types.Command = {
     aliases: [ "channels" ],
     usage: "channel [<base|target> <channels...>]",
     description: description,
-    examples: [ "from", "from #general #announcements 012345678901234567", "to #published-announcements" ]
+    examples: [ "", "from #general #announcements 012345678901234567", "to #published-announcements" ]
 };
 
 export const CHANNEL_PREFS_FILE = "channel.json";
@@ -30,16 +30,15 @@ export interface ChannelData {
 
 async function cmdChannel({data, msg, args}: types.CombinedData) {
     const [option, ...strIDs] = args;
-    const isFromSetter = ["base", "from"].includes(option);
-    const isSetter = (isFromSetter || ["target, to"].includes(option));
+    const isFromSetter = [ "base", "from" ].includes(option);
+    const isToSetter   = [ "target", "to" ].includes(option);
+    const isSetter = (isFromSetter || isToSetter);
 
     const channelIDs = stripIDs(strIDs);
     const channels = await fetchChannels(data.client, msg.guild!, channelIDs);
 
     if (channels.length === 0 && isSetter) {
-        const embed = new MessageEmbed()
-            .setColor(0xbb0000)
-            .setDescription("No channels found.");
+        const embed = CoreTools.createEmbed("error", "No valid channels given!");
         msg.channel.send(embed);
         return;
     }
@@ -51,7 +50,7 @@ async function cmdChannel({data, msg, args}: types.CombinedData) {
     } else {
         // getter
         const guildID = msg.guild!.id;
-        const channelData: ChannelData = Utilz.loadPrefs(CHANNEL_PREFS_FILE);
+        const channelData: ChannelData = CoreTools.loadPrefs(CHANNEL_PREFS_FILE);
 
         const fromChannels = channelData[guildID]?.fromChannels;
         const toChannels = channelData[guildID]?.toChannels;
@@ -59,9 +58,7 @@ async function cmdChannel({data, msg, args}: types.CombinedData) {
         const channelsToString = (channels: string[] | undefined) =>
             (channels ? channels.map(x => `<#${x}>`).join(", ") : "none set");
         
-        const embed = new MessageEmbed()
-            .setColor(0x00bb00)
-            .setDescription(`Base channels: ${channelsToString(fromChannels)}\nTarget channels: ${channelsToString(toChannels)}`);
+        const embed = CoreTools.createEmbed("ok", `**Base channels:** ${channelsToString(fromChannels)}\n**Target channels:** ${channelsToString(toChannels)}`);
         msg.channel.send(embed);
     }
 }
@@ -102,7 +99,7 @@ async function fetchChannels(client: Client, guild: Guild, IDs: string[]): Promi
 
 function setChannels(msg: Message, channels: Channel[], fromSetter: boolean) {
     const guildID = msg.guild!.id;
-    const channelData: ChannelData = Utilz.loadPrefs(CHANNEL_PREFS_FILE);
+    const channelData: ChannelData = CoreTools.loadPrefs(CHANNEL_PREFS_FILE);
 
     if (fromSetter) {
         // from
@@ -119,12 +116,12 @@ function setChannels(msg: Message, channels: Channel[], fromSetter: boolean) {
             toChannels: channels.map(x => x.id)
         };
     }
-    Utilz.savePrefs(CHANNEL_PREFS_FILE, channelData);
+    CoreTools.savePrefs(CHANNEL_PREFS_FILE, channelData);
     
-    const embed = new MessageEmbed()
-        .setColor(0x00bb00)
-        .setTitle(`Successfully set ${fromSetter ? "base" : "target"} channel${channels.length === 1 ? "" : "s"}!`)
-        .setDescription("Channels: " + channels.map(x => `<#${x.id}>`).join(", "));
+    const embed = CoreTools.createEmbed("ok", {
+       title: `Successfully set ${fromSetter ? "base" : "target"} channel${channels.length === 1 ? "" : "s"}!`,
+       desc:  "Channels: " + channels.map(x => `<#${x.id}>`).join(", ")
+    });
     msg.channel.send(embed);
 }
 

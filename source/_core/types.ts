@@ -49,7 +49,7 @@ export interface Command {
 
 export const adminPermission: CommandPermission = {
     func: msg => CoreTools.isAdmin(msg.member),
-    description: "Only people with the admin role, or with the `Administrator` permission can use this coommand.",
+    description: "Only people with the **admin role**, or with the **Administrator** permission can use this command.",
     errorMessage: ({ cmdName }) =>`The command \`${cmdName}\` can only be used by admins.`
 };
 export const ownerPermission: CommandPermission = {
