@@ -38,8 +38,7 @@ async function cmdChannel({data, msg, args}: types.CombinedData) {
     const channels = await fetchChannels(data.client, msg.guild!, channelIDs);
 
     if (channels.length === 0 && isSetter) {
-        const embed = CoreTools.createEmbed("error", "No valid channels given!");
-        msg.channel.send(embed);
+        CoreTools.sendEmbed(msg, "error", "No valid channels given!");
         return;
     }
     
@@ -58,8 +57,7 @@ async function cmdChannel({data, msg, args}: types.CombinedData) {
         const channelsToString = (channels: string[] | undefined) =>
             (channels ? channels.map(x => `<#${x}>`).join(", ") : "none set");
         
-        const embed = CoreTools.createEmbed("ok", `**Base channels:** ${channelsToString(fromChannels)}\n**Target channels:** ${channelsToString(toChannels)}`);
-        msg.channel.send(embed);
+        CoreTools.sendEmbed(msg, "ok", `**Base channels:** ${channelsToString(fromChannels)}\n**Target channels:** ${channelsToString(toChannels)}`);
     }
 }
 
@@ -118,11 +116,10 @@ function setChannels(msg: Message, channels: Channel[], fromSetter: boolean) {
     }
     CoreTools.savePrefs(CHANNEL_PREFS_FILE, channelData);
     
-    const embed = CoreTools.createEmbed("ok", {
+    CoreTools.sendEmbed(msg, "ok", {
        title: `Successfully set ${fromSetter ? "base" : "target"} channel${channels.length === 1 ? "" : "s"}!`,
        desc:  "Channels: " + channels.map(x => `<#${x.id}>`).join(", ")
     });
-    msg.channel.send(embed);
 }
 
 

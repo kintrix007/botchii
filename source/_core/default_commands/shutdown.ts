@@ -13,11 +13,9 @@ const cmd: types.Command = {
 };
 
 function cmdKill({ msg }: types.CombinedData) {    
-    const embed = CoreTools.createEmbed("ok", {
+    CoreTools.sendEmbed(msg, "ok", {
         title: "Shutting down... (restart)"
-    });
-    
-    msg.channel.send(embed).then(sentMsg => {
+    }).then(sentMsg => {
         console.log("-- stopping bot... --");
         process.exit(0);
     }).catch(console.error);

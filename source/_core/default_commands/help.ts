@@ -52,12 +52,11 @@ function queryGeneralHelpSheet({ data, msg }: types.CombinedData) {
                     + commands.reduce((acc, command) => acc + currentPrefix + command.usage! + "\n", "");
             }, "") + "```";
         
-        const embed = CoreTools.createEmbed("neutral", {
+        CoreTools.sendEmbed(msg, "neutral", {
             title:  "**Help:**",
             desc:   reply,
             footer: footerNote
         });
-        msg.channel.send(embed);
         console.log(`${msg.author.username}#${msg.author.discriminator} queried the general help sheet`);
 }
 
@@ -70,8 +69,7 @@ function querySpecificHelpSheet(combData: types.CombinedData, targetCommand: str
         || x.aliases?.map(x => CoreTools.removeAccents(x.toLowerCase()))?.includes(targetCommand));
         
     if (!command) {
-        const embed = CoreTools.createEmbed("error", `Command \`${targetCommand}\` does not exist.`);
-        msg.channel.send(embed);
+        CoreTools.sendEmbed(msg, "error", `Command \`${targetCommand}\` does not exist.`);
         return;
     }
     
@@ -91,12 +89,11 @@ function querySpecificHelpSheet(combData: types.CombinedData, targetCommand: str
 
     const reply = description + (requiredPermission ? "\n\n**Permissions:**\n" + requiredPermission : "") + "\n\n" + examples;
 
-    const embed = CoreTools.createEmbed("neutral", {
+    CoreTools.sendEmbed(msg, "neutral", {
         title:  usage,
         desc:   reply,
         footer: aliases
     });
-    msg.channel.send(embed);
     console.log(`${msg.author.username}#${msg.author.discriminator} queried the help sheet for '${targetCommand}'`);
 }
 

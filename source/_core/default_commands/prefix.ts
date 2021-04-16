@@ -29,14 +29,12 @@ function cmdPrefix({ data, msg, args }: types.CombinedData) {
 
     if (!newPrefix) {
         const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
-        const embed = CoreTools.createEmbed("neutral", `The current prefix is: \`${currentPrefix ?? data.defaultPrefix}\``);
-        msg.channel.send(embed);
+        const embed = CoreTools.sendEmbed(msg, "neutral", `The current prefix is: \`${currentPrefix ?? data.defaultPrefix}\``);
         return;
     }
 
     if (newPrefix.length > MAX_PREFIX_LENGTH) {
-        const embed = CoreTools.createEmbed("error", `The prefix must not be longer than \`${MAX_PREFIX_LENGTH}\`! \`"${newPrefix}"\`(${newPrefix.length})`);
-        msg.channel.send(embed);
+        CoreTools.sendEmbed(msg, "error", `The prefix must not be longer than \`${MAX_PREFIX_LENGTH}\`! \`"${newPrefix}"\`(${newPrefix.length})`);
         return;
     }
 
@@ -47,11 +45,10 @@ function cmdPrefix({ data, msg, args }: types.CombinedData) {
     const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
     const helpCmdName = getHelpCmd()?.name;
 
-    const embed = CoreTools.createEmbed("ok", {
+    CoreTools.sendEmbed(msg, "ok", {
         title: `Prefix set to \`${currentPrefix}\``,
         desc:  "Successfully changed the prefix." + (helpCmdName ? `\nFor help type: \`${currentPrefix}${helpCmdName}\`` : "")
     });
-    msg.channel.send(embed);
     console.log(`${msg.author.username}#${msg.author.discriminator} changed the prefix to ${currentPrefix}`);
 }
 

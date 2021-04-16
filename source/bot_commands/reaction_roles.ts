@@ -11,10 +11,10 @@ interface ReactionRoles {
 
 export interface RRData {
     [guildID: string]: {
-        readableGuildName:      string;
-        targetChannelID:        string;
+        readableGuildName:       string;
+        targetChannelID:         string;
         reactionRolesMessageID?: string;
-        reactionRoles?:         ReactionRoles;
+        reactionRoles?:          ReactionRoles;
     };
 }
 
@@ -25,7 +25,7 @@ const cmd: types.Command = {
     name: "reactionroles",
     aliases: [ "rr" ],
     group: "roles",
-    permissions: [ types.adminPermission ],
+    permissions: [ types.adminPermission, types.ownerPermission ],
     usage: "reactionroles [<channel|data> <channel|message link>]",
     // description: description,
     examples: [ "channel #reaction-roles", "data https://discord.com/channels/123456789012345678/012345678901234567/234567890123456789" ]
@@ -38,6 +38,7 @@ async function cmdReactionRoles(combData: types.CombinedData) {
     const isChannelSetter = [ "target", "to", "channel" ].includes(option);
 
     if (isGetter) {
+        getReactionRolesData(combData);
         return;
     }
 
@@ -47,8 +48,7 @@ async function cmdReactionRoles(combData: types.CombinedData) {
     if (isChannelSetter) {
         await setRRChannel(combData);
     } else {
-        const embed = CoreTools.createEmbed("error", `calling \`${cmd.name}\` with option \`${option}\` is invalid.`);
-        combData.msg.channel.send(embed);
+        CoreTools.sendEmbed(combData.msg, "error", `calling \`${cmd.name}\` with option \`${option}\` is invalid.`);
         return;
     }
 }
@@ -58,15 +58,13 @@ async function setRRChannel({ data, msg, args }: types.CombinedData) {
     const channelIDStr = args[1];
 
     if (!channelIDStr) {
-        const embed = CoreTools.createEmbed("error", `Expected channel after \`${args[0]}\`.`);
-        msg.channel.send(embed);
+        CoreTools.sendEmbed(msg, "error", `Expected channel after \`${args[0]}\`.`);
         return;
     }
 
     const match = channelIDStr.match(regex);
     if (!match) {
-        const embed = CoreTools.createEmbed("error", "The given channel is invalid!");
-        msg.channel.send(embed);
+        CoreTools.sendEmbed(msg, "error", "The given channel is invalid!");
         return;
     }
     const channelID = match[1] ?? match[2];
@@ -75,8 +73,7 @@ async function setRRChannel({ data, msg, args }: types.CombinedData) {
         const channel = await data.client.channels.fetch(channelID);
         // return if not a TextChannel - ChategoryChannel is not a TextChannel
         if (!(channel instanceof TextChannel)) {
-            const embed = CoreTools.createEmbed("error", "The given channel is invalid! (It needs to be a Text Channel)");
-            msg.channel.send(embed);
+            CoreTools.sendEmbed(msg, "error", "The given channel is invalid! (It needs to be a Text Channel)");
             return;
         }
     }
@@ -97,32 +94,28 @@ async function setRRChannel({ data, msg, args }: types.CombinedData) {
     };
     CoreTools.savePrefs(RR_PREFS_FILE, rrData);
 
-    const embed = CoreTools.createEmbed("ok", `**<#${channelID}>** is now set as the reaction roles channel.`)
-    msg.channel.send(embed);
+    CoreTools.sendEmbed(msg, "ok", `**<#${channelID}>** is now set as the reaction roles channel.`)
     console.log(`${msg.author.username}#${msg.author.discriminator} set the reaction roles channel to '${channelID}'`);
 }
 
 async function setRRData({ data, msg, args }: types.CombinedData) {
     const msgLink = args[1];
     if (!msgLink) {
-        const embed = CoreTools.createEmbed("error", `Expected message link after \`${args[0]}\`.`);
-        msg.channel.send(embed);
+        CoreTools.sendEmbed(msg, "error", `Expected message link after \`${args[0]}\`.`);
         return;
     }
     
     // get reactions-roles data message
     const parsedMessageLink = CoreTools.parseMessageLink(msgLink);
     if (!parsedMessageLink) {
-        const embed = CoreTools.createEmbed("error", "The given message link is invalid!");
-        msg.channel.send(embed);
+        CoreTools.sendEmbed(msg, "error", "The given message link is invalid!");
         return;
     }
 
     const { channelID: linkChannelID, messageID: linkMessageID } = parsedMessageLink;
     const reactionRoles = await parseReactionRoles(data.client, linkChannelID, linkMessageID);
     if (!reactionRoles) {
-        const embed = CoreTools.createEmbed("error", "The given message link is invalid, or the message was deleted!");
-        msg.channel.send(embed);
+        CoreTools.sendEmbed(msg, "error", "The given message link is invalid, or the message was deleted!");
         return;
     }
     
@@ -132,8 +125,7 @@ async function setRRData({ data, msg, args }: types.CombinedData) {
 
     // checking if the target channel has already been set up
     if (rrData[guildID] === undefined) {
-        const embed = CoreTools.createEmbed("error", "The reaction-roles target channel isn't set up!");
-        msg.channel.send(embed);
+        CoreTools.sendEmbed(msg, "error", "The reaction-roles target channel isn't set up!");
         return;
     }
 
@@ -148,12 +140,16 @@ async function setRRData({ data, msg, args }: types.CombinedData) {
     };
     CoreTools.savePrefs(RR_PREFS_FILE, rrData);
 
-    const embed = CoreTools.createEmbed("ok", {
+    CoreTools.sendEmbed(msg, "ok", {
         title: "Success!",
         desc:  `The reaction-roles message in <#${rrData[guildID].targetChannelID}> is created, and up-to date!`
     });
-    msg.channel.send(embed);
     console.log(`${msg.author.username}#${msg.author.discriminator} has set up reaction-roles.`);
+}
+
+function getReactionRolesData({ data, msg }: types.CombinedData) {
+    const guildID = msg.guild!.id;
+    const rrData: RRData = CoreTools.loadPrefs(RR_PREFS_FILE);
 }
 
 async function parseReactionRoles(client: Client, channelID: Snowflake, messageID: Snowflake) {

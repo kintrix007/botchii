@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import os, sys
+import os, sys, shutil
 import time, json
 from datetime import datetime
 from functools import reduce
@@ -56,7 +56,7 @@ def assert_dotenv_exists() -> None:
     dotenv_path = os.path.join(root, ".env")
     if not os.path.exists(dotenv_path):
         with open(dotenv_path, "w") as f:
-            f.write("")
+            f.write("OWNER_ID=\"\"\nTOKEN=\"\"")
         print("-- .ENV FILE MISSING --")
         print("Plese put your bot's token and the owner's user ID into the '.env' file")
         exit(41)
@@ -71,6 +71,12 @@ def remove_crash_logs() -> None:
 
 def compile() -> None:
     print("-- compiling... --")
+    
+    try:
+        shutil.rmtree(os.path.join(root, "build"))
+    except OSError as e:
+        print(f"Error: {e.filename} - {e.strerror}")
+    
     tsc_path = os.path.join(root, "node_modules", "typescript", "bin", "tsc")
     tsc_exit_code = os.system(f"{tsc_path} -p {root}")
     if tsc_exit_code != 0:

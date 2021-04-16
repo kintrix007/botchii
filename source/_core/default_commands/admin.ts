@@ -37,8 +37,7 @@ async function cmdMod({ msg, args }: types.CombinedData) {
         const reply = "People count as admins if they have the "
             + (adminRoleID ? `role <@&${adminRoleID}>` : "**Administrator** permission") + ".";
             
-        const embed = CoreTools.createEmbed("ok", reply);
-        msg.channel.send(embed);
+        CoreTools.sendEmbed(msg, "ok", reply);
         console.log(`${msg.author.username}#${msg.author.discriminator} has queried the admin role.`);
         return;
     }
@@ -47,8 +46,7 @@ async function cmdMod({ msg, args }: types.CombinedData) {
     const match = newModRole.match(regex);
 
     if (!match) {
-        const embed = CoreTools.createEmbed("error", "The given role is invalid!");
-        msg.channel.send(embed);
+        CoreTools.sendEmbed(msg, "error", "The given role is invalid!");
         return;
     }
     
@@ -57,8 +55,7 @@ async function cmdMod({ msg, args }: types.CombinedData) {
     try {
         await msg.guild!.roles.fetch(newAdminRoleID);
     } catch (err) {
-        const embed = CoreTools.createEmbed("error", "The given role is invalid!");
-        msg.channel.send(embed);
+        CoreTools.sendEmbed(msg, "error", "The given role is invalid!");
         return;
     }
 
@@ -69,11 +66,10 @@ async function cmdMod({ msg, args }: types.CombinedData) {
     };
     CoreTools.savePrefs(ADMIN_PREFS_FILE, modRoles);
 
-    const embed = CoreTools.createEmbed("ok", {
+    CoreTools.sendEmbed(msg, "ok", {
         title: "Successfully changed the tracked admin role!",
         desc:  `From now on, people with the <@&${newAdminRoleID!}> role count as admins.`
     });
-    msg.channel.send(embed);
     console.log(`${msg.author.username}#${msg.author.discriminator} changed the admin role to '${newAdminRoleID!}'`);
 }
 

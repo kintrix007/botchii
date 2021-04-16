@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import * as types from "./types";
 import { config } from "dotenv";
-import { Client, GuildChannel, GuildMember, Message, MessageEmbed, Snowflake, TextChannel, User } from "discord.js";
+import { Client, DMChannel, GuildChannel, GuildMember, Message, MessageEmbed, NewsChannel, Snowflake, TextChannel, User } from "discord.js";
 
 import { PrefixData } from "./default_commands/prefix";
 import { AdminData } from "./default_commands/admin";
@@ -122,7 +122,7 @@ export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean): T[] {
 
 // specific
 
-export const createEmbed = (() => {
+export const sendEmbed = (() => {
     interface BasicEmbedData {
         title?:  string;
         desc?:   string;
@@ -136,19 +136,36 @@ export const createEmbed = (() => {
         neutral: 0x008888
     };
 
-    return function(type: keyof typeof colorTable, message: BasicEmbedData | string) {
-        const embed = new MessageEmbed().setColor(colorTable[type]);
+    return function(msg: Message, type: keyof typeof colorTable, message: BasicEmbedData | string) {
+        const channel = msg.channel as TextChannel | NewsChannel;
+        const perms = channel.permissionsFor(msg.client.user!)
+        const hasPerms = perms?.has("EMBED_LINKS");
 
-        if (typeof message === "string") {
-            embed.setDescription(message);
+        if (hasPerms) {
+            const embed = new MessageEmbed().setColor(colorTable[type]);
+
+            if (typeof message === "string") {
+                embed.setDescription(message);
+            } else {
+                if (message.title)  embed.setTitle(message.title);
+                if (message.desc)   embed.setDescription(message.desc);
+                if (message.footer) embed.setFooter(message.footer);
+                if (message.image)  embed.setImage(message.image);
+            }
+
+            return msg.channel.send(embed)
         } else {
-            if (message.desc)   embed.setDescription(message.desc);
-            if (message.title)  embed.setTitle(message.title);
-            if (message.footer) embed.setFooter(message.footer);
-            if (message.image)  embed.setImage(message.image);
-        }
+            let content = "";
+            if (typeof message === "string") {
+                content = message;
+            } else {
+                if (message.title)  content += `**${message.title}**\n\n`;
+                if (message.desc)   content += `${message.desc}\n\n`;
+                if (message.footer) content += `*${message.footer}*`;
+            }
 
-        return embed
+            return msg.channel.send(content);
+        }
     };
 })();
 

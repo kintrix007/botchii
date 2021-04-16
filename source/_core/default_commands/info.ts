@@ -17,11 +17,10 @@ function cmdInfo({ msg }: types.CombinedData) {
     const description: string = packageObj.description;
     const homepage: string    = packageObj.homepage;
     
-    const embed = CoreTools.createEmbed("neutral", {
+    CoreTools.sendEmbed(msg, "neutral", {
         title: name,
         desc:  description + "\n**GitHub: **" + homepage
     });
-    msg.channel.send(embed);
     console.log(`${msg.author.username}#${msg.author.discriminator} queried the info about the bot`);
 }
 

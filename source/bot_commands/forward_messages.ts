@@ -23,13 +23,9 @@ const rejectEmojis  = [ "❎", "❌", "👎", "✖️", "🇽"];
 const trackedEmojis = [ ...acceptEmojis, ...rejectEmojis ];
 
 const cmd: types.Command = {
-    name: "reactions",
-    func: cmdChangeEmoji,
-    // adminCommand: true,
-    // usage: "reaction [<accept|reject> <emojis...>]",
-    // description: "",
-    // examples: [ "" ],
-    setupFunc: setup
+    setupFunc: setup,
+    func: () => 0,
+    name: "forwardmessage"
 };
 
 async function setup(data: types.Data) {
@@ -101,8 +97,7 @@ function trackReactions(data: types.Data, isReactionAdd: boolean) {
         msg.channel.send(reply);
 
         if (toChannels === undefined || toChannels.length === 0) {
-            const embed = CoreTools.createEmbed("error", "No target channel set.");
-            msg.channel.send(embed);
+            CoreTools.sendEmbed(msg, "error", "No target channel set.");
             return;
         }
 
@@ -138,7 +133,7 @@ async function forwardMessage(msg: Message, toChannels: string[], acceptUsers: U
     const member = msg.member;
     const displayName = member?.nickname ?? msg.author.username;
     const acceptUserNames = acceptUsers.map(x => msg.guild!.member(x)?.nickname ?? x.username).join(", ");
-    const forwardTitle = "**" + (member ? displayName + " made an announcement" : displayName) + ":**" + ` (accepted by ${acceptUserNames})`;
+    const forwardTitle = "__" + (member ? "**" + displayName + "** made an announcement" : displayName) + ":__" + ` (accepted by ${acceptUserNames})`;
     const forwardContent = msg.content.replace(/@here/g, "`@`here").replace(/@everyone/g, "`@`everyone");
     const forwardAttachments = Array.from(msg.attachments.values());
     const forwardEmbeds = msg.embeds;
@@ -154,11 +149,10 @@ async function forwardMessage(msg: Message, toChannels: string[], acceptUsers: U
     
     msg.react(announcedEmoji);
     
-    const embed = CoreTools.createEmbed("ok", {
+    CoreTools.sendEmbed(msg, "ok", {
         title: "Made an announcement!",
         desc:  `On behalf of: ${acceptUserNames}`
     })
-    msg.channel.send(embed);
 }
 
 function isAlreadyAnnounced(message: Message) {
