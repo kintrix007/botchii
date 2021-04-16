@@ -74,6 +74,7 @@ def compile() -> None:
     
     try:
         shutil.rmtree(os.path.join(root, "build"))
+        os.mkdir("build")
     except OSError as e:
         print(f"Error: {e.filename} - {e.strerror}")
     

@@ -61,7 +61,7 @@ async function cmdMod({ msg, args }: types.CombinedData) {
 
     const modRoles: AdminData = CoreTools.loadPrefs(ADMIN_PREFS_FILE);
     modRoles[msg.guild!.id] = {
-        readableGuildName: msg.guild!.id,
+        readableGuildName: msg.guild!.name,
         roleID: newAdminRoleID!
     };
     CoreTools.savePrefs(ADMIN_PREFS_FILE, modRoles);
