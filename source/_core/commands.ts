@@ -84,7 +84,7 @@ export async function createCmdsListeners(data: types.Data, cmds_dirs: string[])
 
 export function getCmdList(msg: Message, onlyListAvailable = true): types.Command[] {
     const hasPerms = (x: types.Command) => !x.permissions?.some(({ func }) => !func(msg))
-    return cmds.filter(x => x.usage !== undefined && (hasPerms(x) || !onlyListAvailable));
+    return cmds.filter(x => x.usage && (hasPerms(x) || !onlyListAvailable));
 }
 
 export function getHelpCmd() {

@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import * as types from "./types";
 import { config } from "dotenv";
-import { Client, DMChannel, GuildChannel, GuildMember, Message, MessageEmbed, NewsChannel, Snowflake, TextChannel, User } from "discord.js";
+import { Client, GuildChannel, GuildMember, Message, MessageEmbed, NewsChannel, Snowflake, TextChannel, User } from "discord.js";
 
 import { PrefixData } from "./default_commands/prefix";
 import { AdminData } from "./default_commands/admin";
@@ -173,7 +173,7 @@ export function isAdmin(member: GuildMember | undefined | null) {
     if (!member) return false;
     const adminRole = getAdminRole(member.guild.id);
 
-    return adminRole && member.roles.cache.some(role => role.id === adminRole.roleID) || member.hasPermission("ADMINISTRATOR");
+    return member.roles.cache.some(role => role.id === adminRole?.roleID) || member.hasPermission("ADMINISTRATOR");
 }
 
 export function isBotOwner(user: User) {
@@ -181,9 +181,9 @@ export function isBotOwner(user: User) {
 }
 
 export function getAdminRole(guildID: Snowflake): AdminData[string] | undefined {
-    const modRoles: AdminData = loadPrefs(ADMIN_PREFS_FILE, true);
-    const modRole = modRoles[guildID];
-    return modRole;
+    const adminRoles: AdminData = loadPrefs(ADMIN_PREFS_FILE, true);
+    const adminRole = adminRoles[guildID];
+    return adminRole;
 }
 
 const getBotOwnerID = () => process.env.OWNER_ID;
