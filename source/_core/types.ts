@@ -54,7 +54,7 @@ export const adminPermission: CommandPermission = {
 };
 export const ownerPermission: CommandPermission = {
     func: msg => CoreTools.isBotOwner(msg.author),
-    description: "Only the bot's owner can use this command.",
+    description: "Only the bot's **owner** can use this command.",
     errorMessage: ({ cmdName }) => `The command \`${cmdName}\` can only be used by the bot's owner.`
 };
 

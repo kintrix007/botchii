@@ -132,8 +132,8 @@ const wakeUp = (() => {
 async function forwardMessage(msg: Message, toChannels: string[], acceptUsers: User[]) {
     const member = msg.member;
     const displayName = member?.nickname ?? msg.author.username;
-    const acceptUserNames = acceptUsers.map(x => msg.guild!.member(x)?.nickname ?? x.username).join(", ");
-    const forwardTitle = "__" + (member ? "**" + displayName + "** made an announcement" : displayName) + ":__" + ` (accepted by ${acceptUserNames})`;
+    const acceptUserNames = acceptUsers.map(x => "**" + (msg.guild!.member(x)?.nickname ?? x.username) + "**").join(", ");
+    const forwardTitle = "__" + (member ? "**" + displayName + "** made an announcement" : displayName) + ":__";
     const forwardContent = msg.content.replace(/@here/g, "`@`here").replace(/@everyone/g, "`@`everyone");
     const forwardAttachments = Array.from(msg.attachments.values());
     const forwardEmbeds = msg.embeds;
