@@ -27,8 +27,6 @@ export const ownerPermission: CommandPermission = {
 };
 
 
-
-
 export type PermissionFunc = (msg: Message) => boolean;
 
 export type CommandPermission = {
