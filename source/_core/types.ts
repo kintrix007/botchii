@@ -2,11 +2,6 @@ import * as CoreTools from "./core_tools";
 import { Client, Message } from "discord.js";
 import * as ExtensionTypes from "./extension_types";
 
-/*
-* -----------------------------
-* vvv can NOT be modified! vvv
-* -----------------------------
-*/
 
 type BaseCommandGroup = "" | "help" | "admin" | "owner";
 
