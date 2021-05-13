@@ -1,6 +1,6 @@
 import * as CoreTools from "./core_tools";
 import { Client, Message } from "discord.js";
-import * as TypeExtensions from "./type_extensions";
+import * as ExtensionTypes from "./extension_types";
 
 /*
 * -----------------------------
@@ -51,8 +51,8 @@ export interface Command {
     examples?:      string[];
 }
 
-export type CustomData         = TypeExtensions.CustomData;
-export type CustomCommandGroup = TypeExtensions.CustomCommandGroup;
+export type CustomData         = ExtensionTypes.CustomData;
+export type CustomCommandGroup = ExtensionTypes.CustomCommandGroup;
 export type Data               = BaseData & CustomData;
 export type CommandGroup       = BaseCommandGroup | CustomCommandGroup;
 
