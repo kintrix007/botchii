@@ -20,6 +20,12 @@ export const PREFS_DIR  = path.join(ROOT_DIR, "prefs");
 export const PREFIX_PREFS_FILE = "prefix.json";
 export const ADMIN_PREFS_FILE  = "admin.json";
 
+export const messageColors = {
+    ok:      0x00bb00,
+    error:   0xbb0000,
+    neutral: 0x008888
+};
+
 export async function cacheChannelMessages(client: Client, channelIDs: string[]) {
     let successCount = 0;
     
@@ -129,15 +135,9 @@ export const sendEmbed = (() => {
         footer?: string;
         image?:  string;
     }
-    
-    const colorTable = {
-        ok:      0x00bb00,
-        error:   0xbb0000,
-        neutral: 0x008888
-    };
 
     return function<T extends Message | TextChannel | NewsChannel>
-        (sendTarget: T, type: keyof typeof colorTable, message: BasicEmbedData | string)
+        (sendTarget: T, type: keyof typeof messageColors, message: BasicEmbedData | string)
     {
         let channel: TextChannel | NewsChannel;
         
@@ -152,7 +152,7 @@ export const sendEmbed = (() => {
         const hasPerms = perms?.has("EMBED_LINKS");
 
         if (hasPerms) {
-            const embed = new MessageEmbed().setColor(colorTable[type]);
+            const embed = new MessageEmbed().setColor(messageColors[type]);
 
             if (typeof message === "string") {
                 embed.setDescription(message);
