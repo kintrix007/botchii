@@ -9,12 +9,11 @@ import { AdminData } from "./default_commands/admin";
 
 config();
 
-export const CORE_DIR   = path.join(__dirname);
-export const DEFAULT_COMMANDS_DIR = path.join(CORE_DIR, "default_commands");
+export const BOT_CORE_DIR         = path.join(__dirname);
+export const DEFAULT_COMMANDS_DIR = path.join(BOT_CORE_DIR, "default_commands");
 
-export const ROOT_DIR   = path.join(CORE_DIR, "..", "..");
+export const ROOT_DIR   = path.join(BOT_CORE_DIR, "..", "..");
 export const SOURCE_DIR = path.join(ROOT_DIR, "source");
-export const PICS_DIR   = path.join(ROOT_DIR, "images");
 export const PREFS_DIR  = path.join(ROOT_DIR, "prefs");
 
 export const PREFIX_PREFS_FILE = "prefix.json";

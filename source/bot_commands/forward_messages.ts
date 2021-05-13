@@ -114,7 +114,7 @@ const wakeUp = (() => {
     let timeout: NodeJS.Timeout;
     
     return (client: Client): void => {
-        const picsDir = CoreTools.PICS_DIR;
+        const picsDir = Utilz.PICS_DIR;
         const awakeBotchii  = fs.readFileSync(path.join(picsDir, "botchii-awake.png"));
         const asleepBotchii = fs.readFileSync(path.join(picsDir, "botchii-asleep.png"));
 
