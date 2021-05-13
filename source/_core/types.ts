@@ -1,28 +1,35 @@
 import * as CoreTools from "./core_tools";
-import { Client, Message, User } from "discord.js";
-
+import { Client, Message } from "discord.js";
+import { CustomData, CustomCommandGroup } from "./type_extensions";
 
 /*
- * -----------------------------
- * vvv can NOT be modified! vvv
- * -----------------------------
+* -----------------------------
+* vvv can NOT be modified! vvv
+* -----------------------------
 */
 
-export type Data         = BaseData & CustomData;
-export type CommandGroup = BaseCommandGroup | CustomCommandGroup;
+type BaseCommandGroup = "" | "help" | "admin" | "owner";
 
-
-export interface CombinedData {
-    data:       Data;
-    msg:        Message;
-    args:       string[];
-    cmdName:    string;
-    argsStr:    string;
-    cont:       string;
+interface BaseData {
+    client:         Client;
+    defaultPrefix:  string;
 }
 
+export const adminPermission: CommandPermission = {
+    func: msg => CoreTools.isAdmin(msg.member),
+    description: "Only people with the **admin role**, or with the **Administrator** permission can use this command.",
+    errorMessage: ({ cmdName }) =>`The command \`${cmdName}\` can only be used by admins.`
+};
+export const ownerPermission: CommandPermission = {
+    func: msg => CoreTools.isBotOwner(msg.author),
+    description: "Only the bot's **owner** can use this command.",
+    errorMessage: ({ cmdName }) => `The command \`${cmdName}\` can only be used by the bot's owner.`
+};
 
-type PermissionFunc = (msg: Message) => boolean;
+
+
+
+export type PermissionFunc = (msg: Message) => boolean;
 
 export type CommandPermission = {
     description?:  string;
@@ -46,49 +53,16 @@ export interface Command {
     examples?:      string[];
 }
 
+export type CustomData         = CustomData;
+export type CustomCommandGroup = CustomCommandGroup
+export type Data               = BaseData & CustomData;
+export type CommandGroup       = BaseCommandGroup | CustomCommandGroup;
 
-export const adminPermission: CommandPermission = {
-    func: msg => CoreTools.isAdmin(msg.member),
-    description: "Only people with the **admin role**, or with the **Administrator** permission can use this command.",
-    errorMessage: ({ cmdName }) =>`The command \`${cmdName}\` can only be used by admins.`
-};
-export const ownerPermission: CommandPermission = {
-    func: msg => CoreTools.isBotOwner(msg.author),
-    description: "Only the bot's **owner** can use this command.",
-    errorMessage: ({ cmdName }) => `The command \`${cmdName}\` can only be used by the bot's owner.`
-};
-
-
-type BaseCommandGroup = "" | "help" | "admin" | "owner";
-
-interface BaseData {
-    client:         Client;
-    defaultPrefix:  string;
-}
-
-
-/*
- * -------------------------
- * vvv CAN be modified! vvv
- * -------------------------
-*/
-
-type CustomCommandGroup = "moderation" | "roles" | "utility";
-
-interface CustomData {
-    
-};
-
-
-// Bot specific
-
-export interface CustomEmoji {
-    isCustom:   boolean;
-    string:     string;
-    isInvalid?: boolean;
-}
-
-export interface CountedEmoji extends CustomEmoji {
-    count:      number;
-    users:      User[];
+export interface CombinedData {
+    data:       Data;
+    msg:        Message;
+    args:       string[];
+    cmdName:    string;
+    argsStr:    string;
+    cont:       string;
 }

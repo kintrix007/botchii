@@ -2,11 +2,12 @@ import * as CoreTools from "../_core/core_tools";
 import * as types from "../_core/types";
 import rgiEmojiRegex from "emoji-regex/RGI_Emoji";
 import { Client, Message, Snowflake, TextChannel } from "discord.js";
+import { CustomEmoji } from "../custom_types";
 
 export const RR_PREFS_FILE = "reaction_roles.json";
 
 interface ReactionRoles {
-    [roleID: string]: types.CustomEmoji;
+    [roleID: string]: CustomEmoji;
 }
 
 export interface RRData {
@@ -232,7 +233,7 @@ function extractEmojisAndRoles(lines: string[]) {
         const guildEmoji   = match[2];
         const roleID       = match[3] ?? match[4];
         const isCustom     = !!guildEmoji && !defaultEmoji;
-        const emoji: types.CustomEmoji = {
+        const emoji: CustomEmoji = {
             isCustom,
             string: (isCustom ? guildEmoji : defaultEmoji),
             isInvalid: !isCustom && !defaultEmoji

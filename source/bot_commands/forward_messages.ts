@@ -6,6 +6,7 @@ import path from "path";
 import * as Utilz from "../utilz";
 import { ChannelData } from "./set_channel"
 // import emojiRegex from "emoji-regex/RGI_Emoji";
+import { CountedEmoji } from "../custom_types";
 
 const CHANNEL_PREFS_FILE = "channel.json";
 const EMOJI_PREFS_FILE = "emojis.json";
@@ -165,9 +166,9 @@ function isAlreadyAnnounced(message: Message) {
     });
 }
 
-function removeDuplicateUserReactions(emojis: types.CountedEmoji[]) {
+function removeDuplicateUserReactions(emojis: CountedEmoji[]) {
     const reactedUsers = new Set<User>();
-    return emojis.map(({isCustom, users, string, isInvalid}): types.CountedEmoji => {
+    return emojis.map(({isCustom, users, string, isInvalid}): CountedEmoji => {
         const trueUsers = users.filter(user => {
             const alreadyReacted = reactedUsers.has(user);
             reactedUsers.add(user);
@@ -183,7 +184,7 @@ function removeDuplicateUserReactions(emojis: types.CountedEmoji[]) {
     }).filter(x => !x.isInvalid);
 }
 
-function countEmojis(emojis: types.CountedEmoji[]) {
+function countEmojis(emojis: CountedEmoji[]) {
     return emojis.reduce((acc, emoji) => acc + emoji.count, 0);
 }
 

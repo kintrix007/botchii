@@ -10,7 +10,7 @@ interface SetupData {
     commandDirs:    string[]
 };
 
-export async function initBot(setupData: SetupData) {
+export async function initBot(setupData: SetupData, commandData?: types.CustomData) {
     config();
     const client = new Client();
 
@@ -29,7 +29,8 @@ export async function initBot(setupData: SetupData) {
 
     const data: types.Data = {
         client,
-        defaultPrefix
+        defaultPrefix,
+        ...commandData
     };
 
     console.log("-- authenticating bot... --");

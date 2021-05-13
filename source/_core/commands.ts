@@ -2,14 +2,14 @@ import * as types from "./types";
 import * as CoreTools from "./core_tools";
 import fs from "fs";
 import path from "path";
-import { Message, MessageEmbed, DMChannel } from "discord.js";
+import { Message, MessageEmbed, DMChannel, Collection } from "discord.js";
 
-const cmds: types.Command[] = [];
+const cmds = new Set<types.Command>();
 
 function createCmd(command: types.Command): void {
     console.log(`loaded command '${command.name}'`);
 
-    cmds.push(command);
+    cmds.add(command);
 }
 
 function loadCmds(cmds_dir: string) {
@@ -84,9 +84,9 @@ export async function createCmdsListeners(data: types.Data, cmds_dirs: string[])
 
 export function getCmdList(msg: Message, onlyListAvailable = true): types.Command[] {
     const hasPerms = (x: types.Command) => !x.permissions?.some(({ func }) => !func(msg))
-    return cmds.filter(x => x.usage && (hasPerms(x) || !onlyListAvailable));
+    return Array.from(cmds.values()).filter(x => x.usage && (hasPerms(x) || !onlyListAvailable));
 }
 
 export function getHelpCmd() {
-    return cmds.find(x => x.group === "help");
+    return Array.from(cmds.values()).find(x => x.group === "help");
 }
