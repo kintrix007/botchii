@@ -1,6 +1,6 @@
 import * as CoreTools from "../core_tools";
 import * as types from "../types";
-import { getCmdList } from "../commands";
+import { getCmdList, getPermittedCmdList } from "../commands";
 
 const cmd: types.Command = {
     func: cmdHelp,
@@ -26,7 +26,7 @@ function cmdHelp(combData: types.CombinedData) {
 function queryGeneralHelpSheet({ data, msg }: types.CombinedData) {
     const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
 
-    const cmdList = getCmdList(msg);
+    const cmdList = getPermittedCmdList(msg);
         const commandsInGroups: {[K in types.CommandGroup]?: types.Command[]} = {};
         cmdList.forEach(command => {
             const group = command.group ?? ""; // "" means ungrouped
@@ -64,7 +64,7 @@ function querySpecificHelpSheet(combData: types.CombinedData, targetCommand: str
     const { data, msg } = combData;
     const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
 
-    const cmdList = getCmdList(msg);
+    const cmdList = getCmdList();
     const command = cmdList.find(x => CoreTools.removeAccents(x.name.toLowerCase()) === targetCommand
         || x.aliases?.map(x => CoreTools.removeAccents(x.toLowerCase()))?.includes(targetCommand));
         

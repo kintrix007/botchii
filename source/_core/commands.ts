@@ -82,7 +82,11 @@ export async function createCmdsListeners(data: types.Data, cmds_dirs: string[])
     console.log("-- all message listeners set up --");
 }
 
-export function getCmdList(msg: Message, onlyListAvailable = true): types.Command[] {
+export function getCmdList(onlyCommandsWithUsage = true) {
+    return Array.from(cmds.values()).filter(x => x.usage || !onlyCommandsWithUsage);
+}
+
+export function getPermittedCmdList(msg: Message, onlyListAvailable = true): types.Command[] {
     const hasPerms = (x: types.Command) => !x.permissions?.some(({ func }) => !func(msg))
     return Array.from(cmds.values()).filter(x => x.usage && (hasPerms(x) || !onlyListAvailable));
 }

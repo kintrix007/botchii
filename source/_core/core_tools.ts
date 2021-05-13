@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import * as types from "./types";
 import { config } from "dotenv";
-import { Channel, Client, DMChannel, GuildChannel, GuildMember, Message, MessageEmbed, NewsChannel, Snowflake, TextChannel, User } from "discord.js";
+import { Client, GuildChannel, GuildMember, Message, MessageEmbed, NewsChannel, Snowflake, TextChannel, User } from "discord.js";
 
 import { PrefixData } from "./default_commands/prefix";
 import { AdminData } from "./default_commands/admin";
@@ -128,56 +128,79 @@ export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean): T[] {
 
 // specific
 
-export const sendEmbed = (() => {
-    interface BasicEmbedData {
-        title?:  string;
-        desc?:   string;
-        footer?: string;
-        image?:  string;
+type CorrectChannel = TextChannel | NewsChannel;
+
+interface BasicEmbedData {
+    title?:  string;
+    desc?:   string;
+    footer?: string;
+    image?:  string;
+}
+
+export function createEmbed<T extends Message | User | CorrectChannel>
+    (target: T, type: keyof typeof messageColors, message: BasicEmbedData | string)
+{
+    let hasPerms: boolean;
+    
+    if (target instanceof Message) {
+        const msg = target;
+        const channel = msg.channel as CorrectChannel;
+        const perms = channel.permissionsFor(target.client.user!)
+        hasPerms = perms?.has("EMBED_LINKS") ?? false;
+    } else 
+    if (target instanceof User) {
+        hasPerms = true;
+    } else {
+        const channel = target as CorrectChannel;
+        const perms = channel.permissionsFor(target.client.user!)
+        hasPerms = perms?.has("EMBED_LINKS") ?? false;
     }
 
-    return function<T extends Message | TextChannel | NewsChannel>
-        (sendTarget: T, type: keyof typeof messageColors, message: BasicEmbedData | string)
-    {
-        let channel: TextChannel | NewsChannel;
-        
-        if (sendTarget instanceof Message) {
-            const msg = sendTarget;
-            channel = msg.channel as TextChannel | NewsChannel;
+
+    if (hasPerms) {
+        const embed = new MessageEmbed().setColor(messageColors[type]);
+
+        if (typeof message === "string") {
+            embed.setDescription(message);
         } else {
-            channel = sendTarget as TextChannel | NewsChannel;
+            if (message.title)  embed.setTitle(message.title);
+            if (message.desc)   embed.setDescription(message.desc);
+            if (message.footer) embed.setFooter(message.footer);
+            if (message.image)  embed.setImage(message.image);
         }
 
-        const perms = channel.permissionsFor(sendTarget.client.user!)
-        const hasPerms = perms?.has("EMBED_LINKS");
-
-        if (hasPerms) {
-            const embed = new MessageEmbed().setColor(messageColors[type]);
-
-            if (typeof message === "string") {
-                embed.setDescription(message);
-            } else {
-                if (message.title)  embed.setTitle(message.title);
-                if (message.desc)   embed.setDescription(message.desc);
-                if (message.footer) embed.setFooter(message.footer);
-                if (message.image)  embed.setImage(message.image);
-            }
-
-            return channel.send(embed)
+        return embed;
+    } else {
+        let content = "";
+        if (typeof message === "string") {
+            content = message;
         } else {
-            let content = "";
-            if (typeof message === "string") {
-                content = message;
-            } else {
-                if (message.title)  content += `**${message.title}**\n\n`;
-                if (message.desc)   content += `${message.desc}\n\n`;
-                if (message.footer) content += `*${message.footer}*`;
-            }
-
-            return channel.send(content);
+            if (message.title)  content += `**${message.title}**\n\n`;
+            if (message.desc)   content += `${message.desc}\n\n`;
+            if (message.footer) content += `*${message.footer}*`;
         }
-    };
-})();
+
+        return content;
+    }
+}
+
+export function sendEmbed<T extends Message | User | CorrectChannel>
+    (target: T, type: keyof typeof messageColors, message: BasicEmbedData | string)
+{
+    let sendTarget: CorrectChannel | User;
+    
+    if (target instanceof Message) {
+        const msg = target;
+        sendTarget = msg.channel as CorrectChannel;
+    } else
+    if (target instanceof User) {
+        sendTarget = target;
+    } else {
+        const channel = target as CorrectChannel;
+        sendTarget = channel;
+    }
+    return sendTarget.send(createEmbed(target, type, message));
+}
 
 export function isAdmin(member: GuildMember | undefined | null) {
     if (!member) return false;
