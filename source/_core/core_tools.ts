@@ -2,10 +2,11 @@ import fs from "fs";
 import path from "path";
 import * as types from "./types";
 import { config } from "dotenv";
-import { Client, GuildChannel, GuildMember, Message, MessageEmbed, NewsChannel, Snowflake, TextChannel, User } from "discord.js";
+import { Channel, Client, DMChannel, GuildChannel, GuildMember, Message, MessageEmbed, NewsChannel, Snowflake, TextChannel, User } from "discord.js";
 
 import { PrefixData } from "./default_commands/prefix";
 import { AdminData } from "./default_commands/admin";
+import { send } from "node:process";
 
 config();
 
@@ -135,9 +136,19 @@ export const sendEmbed = (() => {
         neutral: 0x008888
     };
 
-    return function(msg: Message, type: keyof typeof colorTable, message: BasicEmbedData | string) {
-        const channel = msg.channel as TextChannel | NewsChannel;
-        const perms = channel.permissionsFor(msg.client.user!)
+    return function<T extends Message | TextChannel | NewsChannel>
+        (sendTarget: T, type: keyof typeof colorTable, message: BasicEmbedData | string)
+    {
+        let channel: TextChannel | NewsChannel;
+        
+        if (sendTarget instanceof Message) {
+            const msg = sendTarget;
+            channel = msg.channel as TextChannel | NewsChannel;
+        } else {
+            channel = sendTarget as TextChannel | NewsChannel;
+        }
+
+        const perms = channel.permissionsFor(sendTarget.client.user!)
         const hasPerms = perms?.has("EMBED_LINKS");
 
         if (hasPerms) {
@@ -152,7 +163,7 @@ export const sendEmbed = (() => {
                 if (message.image)  embed.setImage(message.image);
             }
 
-            return msg.channel.send(embed)
+            return channel.send(embed)
         } else {
             let content = "";
             if (typeof message === "string") {
@@ -163,7 +174,7 @@ export const sendEmbed = (() => {
                 if (message.footer) content += `*${message.footer}*`;
             }
 
-            return msg.channel.send(content);
+            return channel.send(content);
         }
     };
 })();
