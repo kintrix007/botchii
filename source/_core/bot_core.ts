@@ -10,7 +10,7 @@ interface SetupData {
     commandDirs:    string[]
 };
 
-export async function initBot(setupData: SetupData, commandData?: types.CustomData) {
+export async function initBot(setupData: SetupData, commandData: types.CustomData) {
     config();
     const client = new Client();
 
