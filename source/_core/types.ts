@@ -6,7 +6,7 @@ import * as ExtensionTypes from "./extension_types";
 type BaseCommandGroup = "" | "help" | "admin" | "owner";
 
 interface BaseData {
-    client:         Required<Client>;
+    client:         Client;
     defaultPrefix:  string;
 }
 
