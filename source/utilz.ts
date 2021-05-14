@@ -16,7 +16,7 @@ export function convertToCountedEmoji(reaction: MessageReaction) {
         string: (isCustom ? `<:${emoji.name}:${emoji.id}>` : emoji.name),
         count: count ?? 0,
         users,
-        isInvalid: isCustom && emoji.id === null || !isCustom && emoji.id != null || count === null || count === 0
+        isInvalid: isCustom && emoji.id === null || !isCustom && emoji.id !== null || count === null || count === 0
     }
     return counted;
 }

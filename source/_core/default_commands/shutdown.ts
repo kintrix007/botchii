@@ -1,6 +1,5 @@
 import * as CoreTools from "../core_tools";
 import * as types from "../types";
-import { MessageEmbed } from "discord.js";
 
 const cmd: types.Command = {
     func: cmdKill,
@@ -12,7 +11,7 @@ const cmd: types.Command = {
     examples: [ "" ],
 };
 
-function cmdKill({ msg }: types.CombinedData) {    
+function cmdKill({ msg }: types.CombinedData) {
     CoreTools.sendEmbed(msg, "ok", {
         title: "Shutting down... (restart)"
     }).then(sentMsg => {

@@ -6,7 +6,7 @@ import * as ExtensionTypes from "./extension_types";
 type BaseCommandGroup = "" | "help" | "admin" | "owner";
 
 interface BaseData {
-    client:         Client;
+    client:         Required<Client>;
     defaultPrefix:  string;
 }
 
@@ -48,7 +48,8 @@ export interface Command {
 
 export type CustomData         = ExtensionTypes.CustomData;
 export type CustomCommandGroup = ExtensionTypes.CustomCommandGroup;
-export type Data               = BaseData & CustomData;
+
+export type Data               = Readonly<BaseData & CustomData>;
 export type CommandGroup       = BaseCommandGroup | CustomCommandGroup;
 
 export interface CombinedData {

@@ -239,7 +239,7 @@ function extractEmojisAndRoles(lines: string[]) {
             isInvalid: !isCustom && !defaultEmoji
         };
 
-        return [roleID, emoji] as [Snowflake, ReactionRoles[Snowflake]];
+        return [roleID, emoji] as const;
     }).filter(x => x !== undefined && !x[1].isInvalid) as [Snowflake, ReactionRoles[Snowflake]][];
 
     // console.log(Object.fromEntries(assocList));

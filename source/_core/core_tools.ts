@@ -1,37 +1,43 @@
 import fs from "fs";
 import path from "path";
 import * as types from "./types";
-import { config } from "dotenv";
-import { Client, GuildChannel, GuildMember, Message, MessageEmbed, NewsChannel, Snowflake, TextChannel, User } from "discord.js";
-
+import { config } from "dotenv"; config();
+import { Client, DMChannel, GuildChannel, GuildMember, Message, MessageEmbed, NewsChannel, Snowflake, TextChannel, User } from "discord.js";
 import { PrefixData } from "./default_commands/prefix";
 import { AdminData } from "./default_commands/admin";
-import { send } from "node:process";
-
-config();
 
 export const BOT_CORE_DIR         = path.join(__dirname);
 export const DEFAULT_COMMANDS_DIR = path.join(BOT_CORE_DIR, "default_commands");
-
-export const ROOT_DIR   = path.join(BOT_CORE_DIR, "..", "..");
-export const SOURCE_DIR = path.join(ROOT_DIR, "source");
-export const PREFS_DIR  = path.join(ROOT_DIR, "prefs");
-
-export const PREFIX_PREFS_FILE = "prefix.json";
-export const ADMIN_PREFS_FILE  = "admin.json";
+export const ROOT_DIR             = path.join(BOT_CORE_DIR, "..", "..");
+export const SOURCE_DIR           = path.join(ROOT_DIR, "source");
+export const PREFS_DIR            = path.join(ROOT_DIR, "prefs");
+export const PREFIX_PREFS_FILE    = "prefix.json";
+export const ADMIN_PREFS_FILE     = "admin.json";
 
 export const messageColors = {
     ok:      0x00bb00,
     error:   0xbb0000,
     neutral: 0x008888
 };
+type MessageType = keyof typeof messageColors;
+
+interface BasicEmbedData {
+    title?:  string;
+    desc?:   string;
+    footer?: string;
+    image?:  string;
+}
+
+type Prefs = {[guildID: string]: any};
+
 
 export async function cacheChannelMessages(client: Client, channelIDs: string[]) {
     let successCount = 0;
     
     for (const ID of channelIDs) {
         try {
-            const channel = await client.channels.fetch(ID) as TextChannel;
+            const channel = await client.channels.fetch(ID);
+            if (!((channel instanceof TextChannel) || (channel instanceof NewsChannel) || (channel instanceof DMChannel))) continue;
             const messages = await channel.messages.fetch();
             successCount += messages.size;
         }
@@ -128,31 +134,23 @@ export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean): T[] {
 
 // specific
 
-type CorrectChannel = TextChannel | NewsChannel;
-
-interface BasicEmbedData {
-    title?:  string;
-    desc?:   string;
-    footer?: string;
-    image?:  string;
-}
-
-export function createEmbed<T extends Message | User | CorrectChannel>
-    (target: T, type: keyof typeof messageColors, message: BasicEmbedData | string)
-{
+export function createEmbed<T extends string | BasicEmbedData>(
+    target: Message | User | TextChannel | NewsChannel | DMChannel, type: MessageType, message: T
+): T extends string ? string : MessageEmbed;
+export function createEmbed(target: Message | User | TextChannel | NewsChannel | DMChannel, type: MessageType, message: BasicEmbedData | string) {
     let hasPerms: boolean;
     
     if (target instanceof Message) {
         const msg = target;
-        const channel = msg.channel as CorrectChannel;
-        const perms = channel.permissionsFor(target.client.user!)
+        const channel = msg.channel;
+        const perms = (channel instanceof DMChannel ? undefined : channel.permissionsFor(target.client.user!));
         hasPerms = perms?.has("EMBED_LINKS") ?? false;
     } else 
     if (target instanceof User) {
         hasPerms = true;
     } else {
-        const channel = target as CorrectChannel;
-        const perms = channel.permissionsFor(target.client.user!)
+        const channel = target;
+        const perms = (channel instanceof DMChannel ? undefined : channel.permissionsFor(target.client.user!));
         hasPerms = perms?.has("EMBED_LINKS") ?? false;
     }
 
@@ -184,22 +182,26 @@ export function createEmbed<T extends Message | User | CorrectChannel>
     }
 }
 
-export function sendEmbed<T extends Message | User | CorrectChannel>
-    (target: T, type: keyof typeof messageColors, message: BasicEmbedData | string)
-{
-    let sendTarget: CorrectChannel | User;
+export function sendEmbed(
+    target: Message | User | TextChannel | NewsChannel | DMChannel, type: MessageType, message: BasicEmbedData | string
+): Promise<Message>;
+export function sendEmbed(
+    target: Message | User | TextChannel | NewsChannel | DMChannel, type: MessageType, message: BasicEmbedData | string
+) {
+    let sendTarget: User | TextChannel | NewsChannel | DMChannel;
     
     if (target instanceof Message) {
         const msg = target;
-        sendTarget = msg.channel as CorrectChannel;
+        sendTarget = msg.channel;
     } else
     if (target instanceof User) {
         sendTarget = target;
     } else {
-        const channel = target as CorrectChannel;
+        const channel = target as TextChannel | NewsChannel;
         sendTarget = channel;
     }
-    return sendTarget.send(createEmbed(target, type, message));
+    
+    return sendTarget.send(createEmbed(sendTarget, type, message));
 }
 
 export function isAdmin(member: GuildMember | undefined | null) {
@@ -244,13 +246,13 @@ export function prefixless(data: types.Data, msg: Message): string | undefined {
     return undefined;
 }
 
-export function getPrefix(data: types.Data, guildID: Snowflake): string {
+export function getPrefix(data: types.Data, guildID: Snowflake) {
     const prefixes: PrefixData = loadPrefs(PREFIX_PREFS_FILE, true);
     const prefix = prefixes[guildID] ?? data.defaultPrefix;
     return prefix;
 }
 
-export function savePrefs(filename: string, saveData: Object): void {
+export function savePrefs(filename: string, saveData: Prefs) {
     if (!fs.existsSync(PREFS_DIR)) {
         fs.mkdirSync(PREFS_DIR);
         console.log(`created dir '${PREFS_DIR}' because it did not exist`);
@@ -261,7 +263,7 @@ export function savePrefs(filename: string, saveData: Object): void {
     console.log(`saved prefs in '${filename}'`);
 }
 
-export function loadPrefs(filename: string, silent = false): {[guildID: string]: any} {
+export function loadPrefs(filename: string, silent = false) {
     if (!fs.existsSync(PREFS_DIR)) {
         fs.mkdirSync(PREFS_DIR);
         console.log(`created dir '${PREFS_DIR}' because it did not exist`);
@@ -271,7 +273,7 @@ export function loadPrefs(filename: string, silent = false): {[guildID: string]:
     if (!fs.existsSync(filePath)) return {};
 
     const loadDataRaw = fs.readFileSync(filePath).toString();
-    const loadData: {[guildID: string]: any} = JSON.parse(loadDataRaw);
+    const loadData: Prefs = JSON.parse(loadDataRaw);
     if (!silent)
         console.log(`loaded prefs from '${filename}'`);
     return loadData;

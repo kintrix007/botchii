@@ -37,7 +37,7 @@ function queryGeneralHelpSheet({ data, msg }: types.CombinedData) {
         });
 
         const commandsAssocList = (Object.entries(commandsInGroups)
-            .filter(([,commands]) => commands != undefined) as [types.CommandGroup, types.Command[]][])
+            .filter(([,commands]) => commands !== undefined) as [types.CommandGroup, types.Command[]][])
             .sort()
             .sort(([groupA], [groupB]) => {
                 if (groupA === "help" && groupB !== "help") return -1;
