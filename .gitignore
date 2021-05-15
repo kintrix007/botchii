@@ -18,7 +18,7 @@ jspm_packages/
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 
-# Preferences files
+# Preferences directory
 prefs/
 
 # build directory
