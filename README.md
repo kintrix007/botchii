@@ -21,8 +21,8 @@ To invite this bot to your server use [this link](https://discord.com/api/oauth2
 `.channel <from|base> <channels...>` -> Sets base channels.\
 `.channel <to|target> <channels...>` -> Sets target channels.\
 `.channel alias <channel alias> <channels...>` -> Sets a channel alias.\
-  aliases can be used instead of channel ID's. One alias can correspond to multiple.
-
+  aliases can be used instead of channel ID's. One alias can correspond to multiple.\
+\
 Change it, so it **does not** automatically look for reactions on all messages in base channels!
 
 * **Introduce the command `.announce`:**\
