@@ -2,7 +2,7 @@ import * as CoreTools from "../core_tools";
 import * as types from "../types";
 
 const description = "Sets the role the bot looks for to decide whether someone is an admin.\n"
-+ "The default behavior is looking for the permission **Administrator**.\n"
++ "The default behavior is looking for the **Administrator** permission.\n"
 + "If called without arguements, displays the currently selected criteria.";
 
 const cmd: types.Command = {
