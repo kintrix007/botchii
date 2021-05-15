@@ -1,6 +1,6 @@
 # Botchii
 
-### Bot invite link
+### Bot invite
 
 To invite this bot to your server use [this link](https://discord.com/api/oauth2/authorize?client_id=802315557981913130&permissions=268520512&scope=bot).
 
@@ -16,7 +16,7 @@ To invite this bot to your server use [this link](https://discord.com/api/oauth2
 
 ### Todo
 
-#### * Change the way `.channel` behaves:
+* **Change the way `.channel` behaves:**
 `.channel` -> lists tracked base and target channels
 `.channel <from|base> <channels...>` -> sets base channels
 `.channel <to|target> <channels...>` -> sets target channels
@@ -25,6 +25,6 @@ To invite this bot to your server use [this link](https://discord.com/api/oauth2
 
 Change it, so it **does not** automatically look for reactions on all messages in base channels!
 
-#### * Introduce the command `.announce`:
+* **Introduce the command `.announce`:**
 `.announce <message link> [target channel]` -> creates a poll on the message specified
   if target channel isn't specified, it announces to all target channels. Aliases can be used.
