@@ -134,9 +134,9 @@ export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean): T[] {
 
 // specific
 
-export function createEmbed<T extends string | BasicEmbedData>(
-    target: Message | User | TextChannel | NewsChannel | DMChannel, type: MessageType, message: T
-): T extends string ? string : MessageEmbed;
+export function createEmbed<T extends Message | User | TextChannel | NewsChannel | DMChannel>(
+    target: T, type: MessageType, message: string | BasicEmbedData
+): T extends DMChannel ? MessageEmbed : string | MessageEmbed;
 export function createEmbed(target: Message | User | TextChannel | NewsChannel | DMChannel, type: MessageType, message: BasicEmbedData | string) {
     let hasPerms: boolean;
     
