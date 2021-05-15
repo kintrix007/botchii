@@ -27,4 +27,4 @@ Change it, so it **does not** automatically look for reactions on all messages i
 
 * **Introduce the command `.announce`:**\
 `.announce <message link> [target channel]` -> Creates a poll on the message specified.\
-  If target channel isn't specified, it announces to all target channels. Aliases can be used.
+  If `target channel` is omitted, announces to all target channels. Channel aliases can be used.
