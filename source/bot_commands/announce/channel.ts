@@ -1,6 +1,5 @@
 import * as CoreTools from "../../_core/core_tools";
 import * as types from "../../_core/types";
-import { ChannelData, CHANNEL_PREFS_FILE } from "../command_prefs";
 import cmdAlias from "./alias";
 import cmdSetChannel from "./set_channel";
 import cmdGetChannel from "./get_channel"
@@ -16,7 +15,7 @@ const cmd: types.Command = {
     permissions: [ types.adminPermission ],
     group:       "announcement",
     aliases:     [ "channels" ],
-    usage:       "channel <<<alias> <name> <channels...>> | <from|base> <channels...>> | <<to|target> <channels...>>",
+    usage:       "channel <alias> [<name> <channels...>] OR channel <from|base> <channels...> OR channel <to|target> <channels...>]",
     description: description,
     examples:    [ "", "alias", "alias general 123456789012345678", "from #announcements", "to general #memes" ]
 };

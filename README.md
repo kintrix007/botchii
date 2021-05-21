@@ -33,4 +33,5 @@ Change it, so it **does not** automatically look for reactions on all messages i
   Instead of a message link, it can be a message ID, from the same channel.
   Can only point to messages in base announcement channels.
 
-[ ] **Invalidate announcement trackers after a set amount of time**
+[x] **Invalidate announcement trackers after a set amount of time**
+[x] **Indicate on the message, when it's invalidated**

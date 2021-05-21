@@ -11,8 +11,8 @@ export const scoreToForward  = 3;
 export const invalidateAfter = 72;  // hours passed
 
 export async function setup(data: types.Data) {
-    removeExpiredTrackers();
-    setInterval(removeExpiredTrackers, 1000*60*60*6);
+    removeExpiredTrackers(data.client);
+    setInterval(() => removeExpiredTrackers(data.client), 1000*60*60);     // every hour
     
     const announcedPrefs = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE);
     const trackerMsgLinks = Object.values(announcedPrefs).map(x => Object.values(x!.announceMessages).map(x => x.trackerMsgLink)).flat(1);
@@ -24,15 +24,19 @@ export async function setup(data: types.Data) {
 
 }
 
-function removeExpiredTrackers() {
+function removeExpiredTrackers(client: Client) {
     const currentTimestamp = Date.now();
     const invalidateAfterMsPassed = invalidateAfter*60*60*1000;
     const invalidateBefore = currentTimestamp - invalidateAfterMsPassed;
     const announcedPrefs = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true);
     Object.entries(announcedPrefs).forEach(([guildID, announceData]) => {
         Object.entries(announceData!.announceMessages)
-        .forEach(([announceMsgLink, { createdTimestamp }]) => {
+        .forEach(async ([announceMsgLink, { createdTimestamp }]) => {
             if (createdTimestamp < invalidateBefore) {
+                const trackerMsg = await CoreTools.fetchMessageLink(client, announcedPrefs[guildID]!.announceMessages[announceMsgLink].trackerMsgLink);
+                if (trackerMsg) {
+                    await trackerMsg.edit("**-- Timed out... --**");
+                }
                 delete announcedPrefs[guildID]!.announceMessages[announceMsgLink];
             }
         });
@@ -45,7 +49,7 @@ function trackReactions(data: types.Data) {
         if (user.bot) return;
         const message = reaction.message;
         if (!(user instanceof User)) return;
-        const announceData = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE)[message.guild!.id];
+        const announceData = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true)[message.guild!.id];
         if (!announceData) return;
 
         const newAnnData = Object.entries(announceData.announceMessages)

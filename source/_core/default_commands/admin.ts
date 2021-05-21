@@ -17,7 +17,7 @@ const cmd: types.Command = {
     group: "admin",
     usage: "admin [new admin role]",
     description: description,
-    examples: [ "", "@Mod" ],
+    examples: [ "", "@Admin" ],
     aliases: [ "administrator", "mod", "moderator" ]
 };
 

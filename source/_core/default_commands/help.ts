@@ -11,7 +11,7 @@ const cmd: types.Command = {
     examples: [ "", "prefix" ]
 };
 
-const footerNote = "[] means optional arguements\n<> means obligatory arguements.";
+const footerNote = "[] means optional arguements\n<> means obligatory arguements.\n| separates options";
 
 function cmdHelp(combData: types.CombinedData) {
     const targetCommand = combData.args[0];
