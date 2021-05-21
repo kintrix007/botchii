@@ -9,10 +9,12 @@ export const acceptEmoji     = "⬆️"
 export const rejectEmoji     = "⬇️"
 export const scoreToForward  = 3;
 export const invalidateAfter = 72;  // hours passed
+// export const invalidateAfter = 1/60/2;  // hours passed
 
 export async function setup(data: types.Data) {
-    removeExpiredTrackers(data.client);
+    await removeExpiredTrackers(data.client);
     setInterval(() => removeExpiredTrackers(data.client), 1000*60*60);     // every hour
+    // setInterval(() => removeExpiredTrackers(data.client), 1000);     // every second
     
     const announcedPrefs = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE);
     const trackerMsgLinks = Object.values(announcedPrefs).map(x => Object.values(x!.announceMessages).map(x => x.trackerMsgLink)).flat(1);
@@ -24,24 +26,26 @@ export async function setup(data: types.Data) {
 
 }
 
-function removeExpiredTrackers(client: Client) {
+async function removeExpiredTrackers(client: Client) {
     const currentTimestamp = Date.now();
     const invalidateAfterMsPassed = invalidateAfter*60*60*1000;
     const invalidateBefore = currentTimestamp - invalidateAfterMsPassed;
-    const announcedPrefs = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true);
-    Object.entries(announcedPrefs).forEach(([guildID, announceData]) => {
-        Object.entries(announceData!.announceMessages)
-        .forEach(async ([announceMsgLink, { createdTimestamp }]) => {
-            if (createdTimestamp < invalidateBefore) {
+    let announcedPrefs = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true);
+    
+    for (const [guildID, announceData] of Object.entries(announcedPrefs)) {
+        for (const [announceMsgLink, { createdTimestamp }] of Object.entries(announceData!.announceMessages)) {
+            if (createdTimestamp <= invalidateBefore) {
                 const trackerMsg = await CoreTools.fetchMessageLink(client, announcedPrefs[guildID]!.announceMessages[announceMsgLink].trackerMsgLink);
                 if (trackerMsg) {
                     await trackerMsg.edit("**-- Timed out... --**");
                 }
                 delete announcedPrefs[guildID]!.announceMessages[announceMsgLink];
+                console.log("deleted an announcement tracker");
             }
-        });
-    });
-    CoreTools.updatePrefs(ANNOUNCE_PREFS_FILE, announcedPrefs);
+        }
+    }
+    
+    CoreTools.updatePrefs(ANNOUNCE_PREFS_FILE, announcedPrefs, true);
 }
 
 function trackReactions(data: types.Data) {
