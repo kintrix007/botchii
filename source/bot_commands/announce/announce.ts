@@ -5,6 +5,10 @@ import { AnnounceData, ANNOUNCE_PREFS_FILE, ChannelData, CHANNEL_PREFS_FILE } fr
 import * as Utilz from "../../utilz";
 import { setup, acceptEmoji, rejectEmoji, scoreToForward } from "./forward_message"
 
+const description = `Creates an announcement poll for a given message. If accepted it forwards the message to all of the target channels.
+You can specify where to announce the message, which can be a channel alias.
+When omitted announces to the currently set target channels.`;
+
 const cmd: types.Command = {
     setupFunc:   setup,
     func:        cmdAnnounce,
@@ -12,7 +16,7 @@ const cmd: types.Command = {
     group:       "announcement",
     aliases:     [ "forward" ],
     usage:       "announce <message link> [target channels...]",
-    description: "",
+    description: description,
     examples:    [ "https://discord.com/channels/123456789012345678/012345678901234567/234567890123456789", "234567890123456789 #announcements" ]
 };
 

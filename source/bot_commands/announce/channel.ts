@@ -5,6 +5,10 @@ import cmdAlias from "./alias";
 import cmdSetChannel from "./set_channel";
 import cmdGetChannel from "./get_channel"
 
+const description = `Lets you create aliases to channels, set the default announce target, and the channels, where they will be sent from.
+An alias can refer to one or more channels. e.g. \`fun\` could refer to \`#general\` and \`#memes\`.
+The base channels are where the bot is allowed to announce messages from.
+The target channels are what botchii defaults to when using the \`announce\` command.`;
 
 const cmd: types.Command = {
     func:        cmdChannel,
@@ -13,7 +17,7 @@ const cmd: types.Command = {
     group:       "announcement",
     aliases:     [ "channels" ],
     usage:       "channel <<<alias> <name> <channels...>> | <from|base> <channels...>> | <<to|target> <channels...>>",
-    description: "",
+    description: description,
     examples:    [ "", "alias general 123456789012345678", "from #announcements", "to general #memes" ]
 };
 

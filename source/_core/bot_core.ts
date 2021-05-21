@@ -28,8 +28,7 @@ export async function initBot(setupData: SetupData, commandData: types.CustomDat
 
         await createCmdsListeners(data, [ DEFAULT_COMMANDS_DIR, ...setupData.commandDirs ]);
         
-        const date = new Date();
-        console.log(`the current time is: ${date.getHours()}:${date.getMinutes()}`);
+        console.log(`the current time is: ${Date()}`);
         console.log("-- bot setup complete --");
         console.log("-- bot ready --");
     });
