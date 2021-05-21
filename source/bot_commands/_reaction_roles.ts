@@ -3,21 +3,7 @@ import * as types from "../_core/types";
 import rgiEmojiRegex from "emoji-regex/RGI_Emoji";
 import { Client, Message, Snowflake, TextChannel } from "discord.js";
 import { CustomEmoji } from "../custom_types";
-
-export const RR_PREFS_FILE = "reaction_roles.json";
-
-interface ReactionRoles {
-    [roleID: string]: CustomEmoji;
-}
-
-export interface RRData {
-    [guildID: string]: {
-        readableGuildName:       string;
-        targetChannelID:         string;
-        reactionRolesMessageID?: string;
-        reactionRoles?:          ReactionRoles;
-    };
-}
+import { RRData, ReactionRoles, RR_PREFS_FILE } from "./command_prefs";
 
 const description = "";
 
@@ -86,9 +72,9 @@ async function setRRChannel({ data, msg, args }: types.CombinedData) {
     const guildID = msg.guild!.id;
     const guildName = msg.guild!.name;
 
-    const rrData: RRData = CoreTools.loadPrefs(RR_PREFS_FILE);
+    const rrData = CoreTools.loadPrefs<RRData>(RR_PREFS_FILE);
     rrData[guildID] = {
-        readableGuildName:      guildName,
+        guildName:      guildName,
         targetChannelID:        channelID,
         reactionRolesMessageID: rrData[guildID]?.reactionRolesMessageID,
         reactionRoles:          rrData[guildID]?.reactionRoles
@@ -122,7 +108,7 @@ async function setRRData({ data, msg, args }: types.CombinedData) {
     
     const guildID = msg.guild!.id;
     const guildName = msg.guild!.name;
-    const rrData: RRData = CoreTools.loadPrefs(RR_PREFS_FILE);
+    const rrData = CoreTools.loadPrefs<RRData>(RR_PREFS_FILE);
 
     // checking if the target channel has already been set up
     if (rrData[guildID] === undefined) {
@@ -134,23 +120,23 @@ async function setRRData({ data, msg, args }: types.CombinedData) {
 
     // save prefs
     rrData[guildID] = {
-        readableGuildName:      guildName,
-        targetChannelID:        rrData[guildID].targetChannelID,
-        reactionRolesMessageID: rrData[guildID].reactionRolesMessageID,
+        guildName:      guildName,
+        targetChannelID:        rrData[guildID]!.targetChannelID,
+        reactionRolesMessageID: rrData[guildID]?.reactionRolesMessageID,
         reactionRoles:          reactionRoles
     };
     CoreTools.savePrefs(RR_PREFS_FILE, rrData);
 
     CoreTools.sendEmbed(msg, "ok", {
         title: "Success!",
-        desc:  `The reaction-roles message in <#${rrData[guildID].targetChannelID}> is created, and up-to date!`
+        desc:  `The reaction-roles message in <#${rrData[guildID]!.targetChannelID}> is created, and up-to date!`
     });
     console.log(`${msg.author.username}#${msg.author.discriminator} has set up reaction-roles.`);
 }
 
 function getReactionRolesData({ data, msg }: types.CombinedData) {
     const guildID = msg.guild!.id;
-    const rrData: RRData = CoreTools.loadPrefs(RR_PREFS_FILE);
+    const rrData = CoreTools.loadPrefs<RRData>(RR_PREFS_FILE);
 }
 
 async function parseReactionRoles(client: Client, channelID: Snowflake, messageID: Snowflake) {
@@ -168,7 +154,7 @@ async function parseReactionRoles(client: Client, channelID: Snowflake, messageI
     }
 }
 
-async function updateReactionRolesMessage(msg: Message, reactionRoles: ReactionRoles, rrData: RRData) {
+async function updateReactionRolesMessage(msg: Message, reactionRoles: ReactionRoles, rrData: types.Prefs<RRData>) {
     const guildID = msg.guild!.id;
 
     const rrMessageContent = Object.entries(reactionRoles)
@@ -176,26 +162,26 @@ async function updateReactionRolesMessage(msg: Message, reactionRoles: ReactionR
         .join("\n");
 
     try {
-        const channel = await msg.client.channels.fetch(rrData[guildID].targetChannelID);
+        const channel = await msg.client.channels.fetch(rrData[guildID]!.targetChannelID);
         if (!(channel instanceof TextChannel)) return;  // We know it is a TextChannel
         
-        if (rrData[guildID].reactionRolesMessageID === undefined) {
+        if (rrData[guildID]?.reactionRolesMessageID === undefined) {
             
             const message = await channel.send("**Loading...**");
             await message.edit(rrMessageContent);
             await CoreTools.addReactions(message, Object.entries(reactionRoles).map(([, emoji]) => emoji.string));
-            rrData[guildID].reactionRolesMessageID = message.id;
+            rrData[guildID]!.reactionRolesMessageID = message.id;
             
         } else {
 
             let message: Message;
             
             try {
-                message = await channel.messages.fetch(rrData[guildID].reactionRolesMessageID!);
+                message = await channel.messages.fetch(rrData[guildID]?.reactionRolesMessageID!);
             }
             catch (err) {
                 message = await channel.send("Loading...");
-                rrData[guildID].reactionRolesMessageID = message.id;
+                rrData[guildID]!.reactionRolesMessageID = message.id;
             }
 
             await message.edit(rrMessageContent);

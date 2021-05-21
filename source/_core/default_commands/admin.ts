@@ -1,5 +1,6 @@
 import * as CoreTools from "../core_tools";
 import * as types from "../types";
+import { ADMIN_PREFS_FILE, AdminData } from "./command_prefs"
 
 const description = "Sets the role the bot looks for to decide whether someone is an admin.\n"
 + "The default behavior is looking for the **Administrator** permission.\n"
@@ -19,14 +20,6 @@ const cmd: types.Command = {
     examples: [ "", "@Mod" ],
     aliases: [ "administrator", "mod", "moderator" ]
 };
-
-const { ADMIN_PREFS_FILE } = CoreTools;
-export interface AdminData {
-    [guildID: string]: {
-        readableGuildName: string;
-        roleID:            string;
-    };
-}
 
 async function cmdMod({ msg, args }: types.CombinedData) {
     const newModRole = args[0];
@@ -59,12 +52,13 @@ async function cmdMod({ msg, args }: types.CombinedData) {
         return;
     }
 
-    const modRoles: AdminData = CoreTools.loadPrefs(ADMIN_PREFS_FILE);
-    modRoles[msg.guild!.id] = {
-        readableGuildName: msg.guild!.name,
-        roleID: newAdminRoleID!
-    };
-    CoreTools.savePrefs(ADMIN_PREFS_FILE, modRoles);
+    const adminData: types.Prefs<AdminData> = {
+        [msg.guild!.id]: {
+            guildName: msg.guild!.name,
+            roleID:    newAdminRoleID
+        }
+    }
+    CoreTools.updatePrefs(ADMIN_PREFS_FILE, adminData);
 
     CoreTools.sendEmbed(msg, "ok", {
         title: "Successfully changed the tracked admin role!",

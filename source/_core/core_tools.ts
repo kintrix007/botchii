@@ -2,33 +2,29 @@ import fs from "fs";
 import path from "path";
 import * as types from "./types";
 import { config } from "dotenv"; config();
-import { Client, DMChannel, GuildChannel, GuildMember, Message, MessageEmbed, NewsChannel, Snowflake, TextChannel, User } from "discord.js";
-import { PrefixData } from "./default_commands/prefix";
-import { AdminData } from "./default_commands/admin";
+import { Channel, Client, DMChannel, GuildChannel, GuildMember, Message, MessageEmbed, MessageReaction, NewsChannel, PermissionResolvable, PermissionString, Snowflake, TextChannel, User } from "discord.js";
+import { PrefixData, PREFIX_PREFS_FILE, AdminData, ADMIN_PREFS_FILE } from "./default_commands/command_prefs";
 
 export const BOT_CORE_DIR         = path.join(__dirname);
 export const DEFAULT_COMMANDS_DIR = path.join(BOT_CORE_DIR, "default_commands");
 export const ROOT_DIR             = path.join(BOT_CORE_DIR, "..", "..");
 export const SOURCE_DIR           = path.join(ROOT_DIR, "source");
 export const PREFS_DIR            = path.join(ROOT_DIR, "prefs");
-export const PREFIX_PREFS_FILE    = "prefix.json";
-export const ADMIN_PREFS_FILE     = "admin.json";
 
 export const messageColors = {
     ok:      0x00bb00,
     error:   0xbb0000,
     neutral: 0x008888
-};
+} as const;
 type MessageType = keyof typeof messageColors;
 
 interface BasicEmbedData {
-    title?:  string;
-    desc?:   string;
-    footer?: string;
-    image?:  string;
+    title?:     string;
+    desc?:      string;
+    footer?:    string;
+    image?:     string;
+    timestamp?: number | Date;
 }
-
-type Prefs = {[guildID: string]: any};
 
 
 export async function cacheChannelMessages(client: Client, channelIDs: string[]) {
@@ -49,19 +45,55 @@ export async function cacheChannelMessages(client: Client, channelIDs: string[])
     return successCount;
 }
 
-export async function addReactions(msg: Message, reactions: string[], maxTries = 3) {
-    try {
-        for (const reaction of reactions) {
-            await msg.react(reaction);
+export async function fetchMessages(client: Client, msgLinksOrData: string[] | { channelID: Snowflake, messageID: Snowflake }[]) {
+    function isStringArray(arr: any): arr is Array<string> {
+        if (!(arr instanceof Array)) return false;
+        return arr.every(x => typeof x === "string")
+    }
+
+    const msgData = (() => {
+        if (isStringArray(msgLinksOrData)) {
+            const msgLinks = msgLinksOrData;
+            return msgLinks.map(link => {
+                const { channelID, messageID } = parseMessageLink(link)!;
+                return { channelID, messageID };
+            })
+        } else return msgLinksOrData;
+    })();
+
+    let messages: Message[] = [];
+    for (const { channelID, messageID } of msgData) {
+        try {
+            const channel = await client.channels.fetch(channelID);
+            if (!(channel instanceof TextChannel || channel instanceof NewsChannel || channel instanceof DMChannel)) continue;
+            const message = await channel.messages.fetch(messageID);
+            messages.push(message);
+        }
+        catch (err) {
+            continue;
         }
     }
-    catch (err) {
-        if (maxTries === 0) return console.error(err);
+    return messages;
+}
 
-        await msg.reactions.removeAll()
-            .then(() => addReactions(msg, reactions, maxTries-1))
-            .catch(console.error);
+export async function cacheMessages(client: Client, msgLinksOrData: string[] | { channelID: Snowflake, messageID: Snowflake }[]) {
+    return (await fetchMessages(client, msgLinksOrData)).length;
+}
+
+export async function fetchChannels<T extends Channel>(client: Client, channelIDs: Snowflake[]): Promise<Channel[]> {
+    let channels: Channel[] = [];
+
+    for (const channelID of channelIDs) {
+        try {
+            const channel = await client.channels.fetch(channelID);
+            channels.push(channel);
+        }
+        catch (err) {
+            continue;
+        }
     }
+    
+    return channels;
 }
 
 export const removeAccents = (() => {
@@ -91,8 +123,23 @@ export const removeAccents = (() => {
     );
 })();
 
-export function capitalize(str: string): string {
-    return str[0].toUpperCase() + str.slice(1);
+export async function addReactions(msg: Message, reactions: string[]) {
+    const channel = msg.channel
+    const perms = (channel instanceof DMChannel ? undefined : channel.permissionsFor(msg.client.user!));
+    const canReact = perms?.has("ADD_REACTIONS") ?? false;
+
+    if (!canReact) return undefined;
+    const reactionPromises: MessageReaction[] = [];
+
+    for (const reaction of reactions) {
+        reactionPromises.push(await msg.react(reaction));
+    }
+
+    return reactionPromises;
+}
+
+export function quoteMessage(msg: Message, maxLength = 50) {
+    return "> " + (msg.content.length > maxLength ? msg.content.slice(0, maxLength-3) + "..." : msg.content);
 }
 
 export function getUserString(user: User) {
@@ -109,9 +156,9 @@ export function getMessageLink(msg: Message) {
     }
 }
 
-export function parseMessageLink(url: string) {
+export function parseMessageLink(msgLink: string) {
     const regex = /^https:\/\/discord.com\/channels\/(?:(\d+)|@me)\/(\d+)\/(\d+)\/?$/i;
-    const match = url.match(regex);
+    const match = msgLink.match(regex);
     if (!match) return undefined;
 
     const guildID = match[1] as string | undefined;
@@ -125,6 +172,24 @@ export function parseMessageLink(url: string) {
     };
 }
 
+export async function fetchMessageLink(client: Client, msgLink: string) {
+    try {
+        const msgData = parseMessageLink(msgLink);
+        if (!msgData) return undefined;
+        const { channelID, messageID } = msgData;
+        const channel = await client.channels.fetch(channelID);
+        if (!(channel instanceof TextChannel || channel instanceof NewsChannel || channel instanceof DMChannel)) return undefined;
+        return await channel.messages.fetch(messageID);
+    }
+    catch {
+        return undefined;
+    }
+}
+
+export function capitalize(str: string): string {
+    return str[0].toUpperCase() + str.slice(1);
+}
+
 export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean): T[] {
     return arr.filter((x, idx) => {
         const foundIdx = arr.findIndex(a => isEqual(a, x));
@@ -136,7 +201,11 @@ export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean): T[] {
 
 export function createEmbed<T extends Message | User | TextChannel | NewsChannel | DMChannel>(
     target: T, type: MessageType, message: string | BasicEmbedData
-): T extends DMChannel ? MessageEmbed : string | MessageEmbed;
+): T extends DMChannel ? MessageEmbed : (
+    T extends Message ? T["channel"] extends DMChannel
+        ? MessageEmbed
+        : string | MessageEmbed : string | MessageEmbed
+);
 export function createEmbed(target: Message | User | TextChannel | NewsChannel | DMChannel, type: MessageType, message: BasicEmbedData | string) {
     let hasPerms: boolean;
     
@@ -161,10 +230,11 @@ export function createEmbed(target: Message | User | TextChannel | NewsChannel |
         if (typeof message === "string") {
             embed.setDescription(message);
         } else {
-            if (message.title)  embed.setTitle(message.title);
-            if (message.desc)   embed.setDescription(message.desc);
-            if (message.footer) embed.setFooter(message.footer);
-            if (message.image)  embed.setImage(message.image);
+            if (message.title)     embed.setTitle(message.title);
+            if (message.desc)      embed.setDescription(message.desc);
+            if (message.footer)    embed.setFooter(message.footer);
+            if (message.image)     embed.setImage(message.image);
+            if (message.timestamp) embed.setTimestamp(message.timestamp);
         }
 
         return embed;
@@ -201,8 +271,30 @@ export function sendEmbed(
         sendTarget = channel;
     }
     
-    return sendTarget.send(createEmbed(sendTarget, type, message));
+    const embed = createEmbed(sendTarget, type, message);
+    return ( typeof embed == "string" ? sendTarget.send(embed) : sendTarget.send("", embed) );
 }
+
+export const channelSpecificCmdPermission = (() => {
+    function humanReadable(perm: PermissionString) {
+        const words = perm.toLowerCase().split("_");
+        return words.map(capitalize).join(" ");
+    }
+
+    return (permission: PermissionString) => {
+        const cmdPerm: types.CommandPermission = {
+            func: msg => {
+                const channel = msg.channel;
+                if (channel instanceof DMChannel) return true;
+                const perms = channel.permissionsFor(msg.member!);
+                return perms?.has(permission) ?? false;
+            },
+            description: `Only people, who have **${humanReadable(permission)}** permission in a given channel, can use this command.`,
+            errorMessage: ({ cmdName }) => `You can only use \`${cmdName}\` if you have **${humanReadable(permission)}** in this channel!`
+        };
+        return cmdPerm;
+    }
+})();
 
 export function isAdmin(member: GuildMember | undefined | null) {
     if (!member) return false;
@@ -215,8 +307,8 @@ export function isBotOwner(user: User) {
     return user.id === getBotOwnerID();
 }
 
-export function getAdminRole(guildID: Snowflake): AdminData[string] | undefined {
-    const adminRoles: AdminData = loadPrefs(ADMIN_PREFS_FILE, true);
+export function getAdminRole(guildID: Snowflake): AdminData | undefined {
+    const adminRoles = loadPrefs<AdminData>(ADMIN_PREFS_FILE, true);
     const adminRole = adminRoles[guildID];
     return adminRole;
 }
@@ -247,34 +339,41 @@ export function prefixless(data: types.Data, msg: Message): string | undefined {
 }
 
 export function getPrefix(data: types.Data, guildID: Snowflake) {
-    const prefixes: PrefixData = loadPrefs(PREFIX_PREFS_FILE, true);
-    const prefix = prefixes[guildID] ?? data.defaultPrefix;
-    return prefix;
+    const prefixes = loadPrefs<PrefixData>(PREFIX_PREFS_FILE, true);
+    const prefixData: PrefixData = prefixes[guildID] ?? { prefix: data.defaultPrefix };
+    return prefixData.prefix;
 }
 
-export function savePrefs(filename: string, saveData: Prefs) {
+export function savePrefs(filename: string, saveData: types.Prefs<any>, silent = false) {
     if (!fs.existsSync(PREFS_DIR)) {
         fs.mkdirSync(PREFS_DIR);
         console.log(`created dir '${PREFS_DIR}' because it did not exist`);
     }
 
-    const filePath = path.join(PREFS_DIR, filename);
+    const filePath = path.join(PREFS_DIR, filename + ".json");
     fs.writeFileSync(filePath, JSON.stringify(saveData, undefined, 4));
-    console.log(`saved prefs in '${filename}'`);
+    if (!silent) console.log(`saved prefs in '${filename}'`);
 }
 
-export function loadPrefs(filename: string, silent = false) {
+export function loadPrefs<T>(filename: string, silent = false) {
     if (!fs.existsSync(PREFS_DIR)) {
         fs.mkdirSync(PREFS_DIR);
         console.log(`created dir '${PREFS_DIR}' because it did not exist`);
     }
     
-    const filePath = path.join(PREFS_DIR, filename);
+    const filePath = path.join(PREFS_DIR, filename + ".json");
     if (!fs.existsSync(filePath)) return {};
 
     const loadDataRaw = fs.readFileSync(filePath).toString();
-    const loadData: Prefs = JSON.parse(loadDataRaw);
-    if (!silent)
-        console.log(`loaded prefs from '${filename}'`);
+    const loadData = JSON.parse(loadDataRaw) as types.Prefs<T>;
+    
+    if (!silent) console.log(`loaded prefs from '${filename}'`);
+
     return loadData;
+}
+
+export function updatePrefs<T>(filename: string, dataOverload: types.Prefs<T>, silent = false) {
+    const newPrefs: types.Prefs<T> = { ...loadPrefs<T>(filename, true), ...dataOverload };
+    savePrefs(filename, newPrefs, true);
+    if (!silent) console.log(`updated prefs in '${filename}'`);
 }

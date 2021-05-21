@@ -2,7 +2,7 @@ import * as types from "./types";
 import * as CoreTools from "./core_tools";
 import fs from "fs";
 import path from "path";
-import { Message, MessageEmbed, DMChannel, Collection } from "discord.js";
+import { Message, MessageEmbed, DMChannel } from "discord.js";
 
 const cmds = new Set<types.Command>();
 
@@ -16,12 +16,13 @@ function loadCmds(cmds_dir: string) {
     console.log("-- started loading commands... --");
 
     const files = fs.readdirSync(cmds_dir)
-        .filter(filename => filename.endsWith(".js"))
+        .filter(filename => !fs.lstatSync(path.join(cmds_dir, filename)).isDirectory())
         .map(filename => filename.slice(0, filename.length-3));
 
     files.forEach(filename => {
         const cmdPath = path.join(cmds_dir, filename)
         const command: types.Command = require(cmdPath);
+        if (command?.name == undefined) return;
         createCmd(command);
     });
 

@@ -1,6 +1,6 @@
 import * as CoreTools from "./core_tools";
 import { Client, Message } from "discord.js";
-import * as ExtensionTypes from "./extension_types";
+import * as ExtensionTypes from "../extension_types";
 
 
 type BaseCommandGroup = "" | "help" | "admin" | "owner";
@@ -22,6 +22,12 @@ export const ownerPermission: CommandPermission = {
 };
 
 
+export interface Prefs<T extends {}> {
+    [guildID: string]: ({
+        guildName: string;
+    } & T) | undefined;
+}
+
 export type PermissionFunc = (msg: Message) => boolean;
 
 export type CommandPermission = {
@@ -32,9 +38,9 @@ export type CommandPermission = {
 export type CommandPermissions = CommandPermission[];
 
 export interface Command {
-    setupFunc?:     (data: Data) => Promise<any>;
+    setupFunc?:     (data: Data) => void;
     
-    func:           (combData: CombinedData) => any;
+    func:           (combData: CombinedData) => void;
     name:           string;
     aliases?:       string[];
     
@@ -55,8 +61,8 @@ export type CommandGroup       = BaseCommandGroup | CustomCommandGroup;
 export interface CombinedData {
     data:       Data;
     msg:        Message;
-    args:       string[];
     cmdName:    string;
+    args:       string[];
     argsStr:    string;
     cont:       string;
 }

@@ -1,6 +1,8 @@
 import * as CoreTools from "../core_tools";
 import * as types from "../types";
 import { getHelpCmd } from "../commands";
+import { PREFIX_PREFS_FILE, PrefixData } from "./command_prefs"
+import { Guild } from "discord.js";
 
 const description = "Sets the prefix the bot uses.\n"
     + "The default prefix is \`{}\`, but this can be changed with this command.\n"
@@ -16,11 +18,6 @@ const cmd: types.Command = {
     description: description,
     examples: [ "", "!!", "." ],
 };
-
-const { PREFIX_PREFS_FILE } = CoreTools;
-export interface PrefixData {
-    [guildID: string]: string;
-}
 
 const MAX_PREFIX_LENGTH = 4;
 
@@ -38,9 +35,13 @@ function cmdPrefix({ data, msg, args }: types.CombinedData) {
         return;
     }
 
-    const prefixes: PrefixData = CoreTools.loadPrefs(PREFIX_PREFS_FILE);
-    prefixes[msg.guild!.id] = newPrefix;
-    CoreTools.savePrefs(PREFIX_PREFS_FILE, prefixes);
+    const prefixData: types.Prefs<PrefixData> = {
+        [msg.guild!.id]: {
+            guildName: msg.guild!.name,
+            prefix:    newPrefix
+        }
+    };
+    CoreTools.updatePrefs<PrefixData>(PREFIX_PREFS_FILE, prefixData);
 
     const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
     const helpCmdName = getHelpCmd()?.name;

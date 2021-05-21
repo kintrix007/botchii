@@ -75,7 +75,7 @@ function querySpecificHelpSheet(combData: types.CombinedData, targetCommand: str
     
     const usage = "`" + currentPrefix + command.usage! + "`";
     const commandName = currentPrefix + command.name;
-    const aliases = (command.aliases ? "alias: " + command.aliases.map(x => currentPrefix+x).join(", ") : "");
+    const aliases = (command.aliases?.length ? "alias: " + command.aliases.map(x => currentPrefix+x).join(", ") : "");
     const description = command.description || "**[Description not provided]**";
     const examples = (command.examples ? "**eg:  " +
         command.examples.map(x => x ? `\`${commandName} ${x}\`` : `\`${commandName}\``) 

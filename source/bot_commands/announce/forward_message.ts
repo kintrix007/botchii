@@ -1,0 +1,96 @@
+import * as CoreTools from "../../_core/core_tools";
+import * as types from "../../_core/types";
+import * as Utilz from "../../utilz";
+import { AnnounceData, ANNOUNCE_PREFS_FILE, ChannelData, CHANNEL_PREFS_FILE } from "../command_prefs";
+import { DMChannel, Message, MessageReaction, NewsChannel, PartialUser, TextChannel, User } from "discord.js";
+
+export const announcedEmoji = "👌";
+export const acceptEmoji    = "⬆️"
+export const rejectEmoji    = "⬇️"
+export const scoreToForward = 1;
+
+export async function setup(data: types.Data) {
+    const announcedData = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE);
+    const trackedMsgLinks = Object.values(announcedData).map(x => Object.keys(x!.announceMessages)).flat(1)
+    const cachedMsgCount = await CoreTools.cacheMessages(data.client, trackedMsgLinks);
+    console.log(`cached ${cachedMsgCount} announcement tracker messages`);
+
+    data.client.on("messageReactionAdd",    trackReactions(data));
+    data.client.on("messageReactionRemove", trackReactions(data));
+}
+
+function trackReactions(data: types.Data) {
+    return async (reaction: MessageReaction, user: User | PartialUser) => {
+        if (user.bot) return;
+        const message = reaction.message;
+        if (!(user instanceof User)) return;
+        const announceData = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE)[message.guild!.id];
+        if (!announceData) return;
+
+        const newAnnData = Object.entries(announceData.announceMessages)
+            .map(([announceMsgLink, { trackerMsgLink, targetChannels }]) => { return { announceMsgLink, trackerMsgLink, targetChannels } })
+        const trackedMsgData = newAnnData.find(({ trackerMsgLink }) => CoreTools.getMessageLink(message) === trackerMsgLink);
+        if (!trackedMsgData) return;
+        const { announceMsgLink, trackerMsgLink, targetChannels: customTargetChannels } = trackedMsgData;
+
+        const targetChannelIDs = customTargetChannels ?? CoreTools.loadPrefs<ChannelData>(CHANNEL_PREFS_FILE, true)[message.guild!.id]?.toChannels;
+
+        if (!targetChannelIDs) {
+            CoreTools.sendEmbed(message, "error", {
+                title: "No target channels are given!",
+                desc:  "Type \`.channel\` to see the default target channels."
+            });
+            return;
+        }
+
+        const reactions = Array.from(message.reactions.cache.values());
+        const userReactions = await Utilz.convertToUserReactions(reactions);
+        delete userReactions[data.client.user!.id];
+
+        const acceptUserIDs = new Set(Object.entries(userReactions).filter(([,emojiStr]) => emojiStr.has(acceptEmoji)).map(([userID]) => userID));
+        const rejectUserIDs = Utilz.difference(
+            new Set(Object.entries(userReactions).filter(([,emojiStr]) => emojiStr.has(rejectEmoji)).map(([userID]) => userID)),
+            acceptUserIDs
+        );
+
+        const score         = acceptUserIDs.size - rejectUserIDs.size;
+        const scoreToGo     = Math.max(scoreToForward - score, 0);
+        const shouldForward = scoreToGo === 0;
+
+        const trackerMsg  = (await CoreTools.fetchMessageLink(data.client, trackerMsgLink))!;
+        const announceMsg = (await CoreTools.fetchMessageLink(data.client, announceMsgLink))!;
+        const content = announceMsgLink
+            + (announceMsg.content ? "\n" + CoreTools.quoteMessage(announceMsg, 75) : "")
+            + (targetChannelIDs.length ? "\n**to:** " + targetChannelIDs.map(x => "<#"+x+">").join(", ") : "")
+            + "\n" + (shouldForward ? `**-- Announced by ${[...acceptUserIDs].map(x => "<@"+x+">").join(", ")} --**` : `**${scoreToGo} to go**`);
+        
+        await trackerMsg.edit(content);
+
+        if (shouldForward) {
+            const targetChannels = (await CoreTools.fetchChannels(data.client, targetChannelIDs ?? []))
+                .filter((x): x is TextChannel | NewsChannel | DMChannel => Utilz.isTextChannel(x));
+            await forwardMessage(announceMsg, targetChannels);
+
+            const newAnnounceData = {
+                [message.guild!.id]: {
+                    guildName: message.guild!.name,
+                    announceMessages: { ...announceData.announceMessages, [announceMsgLink]: undefined }
+                }
+            } as types.Prefs<AnnounceData>;
+            CoreTools.updatePrefs(ANNOUNCE_PREFS_FILE, newAnnounceData);
+        }
+    }
+}
+
+async function forwardMessage(announceMsg: Message, targetChannels: Array<TextChannel | NewsChannel | DMChannel>) {
+    const announcerName = announceMsg.member?.nickname ?? announceMsg.author.username;
+    const title         = "__" + (announceMsg.member ? `**${announcerName}** made an announcement` : announcerName) + "__:"
+    const content       = announceMsg.content.replace(/@here/g, "`@`here").replace(/@everyone/g, "`@`everyone");
+    const attachments   = Array.from(announceMsg.attachments.values());
+    const embeds        = announceMsg.embeds;
+    const timestamp     = announceMsg.createdTimestamp;
+
+    targetChannels.forEach(channel => {
+        channel.send(title + "\n" + content, [...attachments, ...embeds]);
+    });
+}

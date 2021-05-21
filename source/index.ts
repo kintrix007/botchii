@@ -5,7 +5,7 @@ initBot(
     {
         defaultPrefix: ".",
         commandDirs: [
-            path.join(__dirname, "bot_commands")
+            path.join(__dirname, "bot_commands", "announce")
         ]
     },
     {}

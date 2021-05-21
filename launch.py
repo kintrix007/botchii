@@ -31,26 +31,31 @@ def main():
         exit_code = os.system(f"node .")
         
         if exit_code == 0:
-            print("-- bot stopped --")
-            print("-- waiting to update bot... --")
-            print("-- ^C to stop --")
-            time.sleep(5)
-            update()
-            update_dependencies()
-            compile()
+            try:
+                print("-- bot stopped --")
+                print("-- waiting to update bot... --")
+                print("-- ^C to stop --")
+                time.sleep(5)
+                update()
+                update_dependencies()
+                compile()
+            except KeyboardInterrupt:
+                exit(2)
         else:
             current_time = datetime.now().strftime("%Y-%m-%d - %H:%M:%S")
-            crash_log = f"stopped at: {current_time}\nexit code: {exit_code}\n"
-            print("\n---\n\n" + crash_log + "\n---\n")
+            crash_log = f"stopped at: {current_time}\nexit code: {exit_code}"
+            print("\n---\n" + crash_log)
             with open(f"{CRASH_LOG_DIR}/crash{iter}.log", "w") as f:
                 f.write(crash_log)
             
             iter += 1
-        
-        print("-- waiting to restart bot... --")
-        print("-- ^C to stop --")
-        time.sleep(5)       # wait 5 seconds before restarting
-        print("-- restarting bot... --")
+        try:
+            print("-- waiting to restart bot... --")
+            print("-- ^C to stop --")
+            time.sleep(5)       # wait 5 seconds before restarting
+            print("-- restarting bot... --")
+        except KeyboardInterrupt:
+            exit(2)
 
 def assert_dotenv_exists() -> None:
     dotenv_path = os.path.join(root, ".env")
