@@ -18,7 +18,7 @@ To invite this bot to your server use [this link](https://discord.com/api/oauth2
 
 # Todo
 
-[x] **Change the way `.channel` behaves:**\
+- [x] **Change the way `.channel` behaves:**\
 `.channel` -> Lists tracked base and target channels.\
 `.channel <from|base> <channels...>` -> Sets base channels.\
 `.channel <to|target> <channels...>` -> Sets target channels.\
@@ -27,11 +27,11 @@ To invite this bot to your server use [this link](https://discord.com/api/oauth2
 \
 Change it, so it **does not** automatically look for reactions on all messages in base channels!
 
-[x] **Introduce the command `.announce`:**\
+- [x] **Introduce the command `.announce`:**\
 `.announce <message link> [target channels...]` -> Creates a poll on the message specified.\
   If 'target channel' is omitted, announces to all target channels. Channel aliases can be used.
   Instead of a message link, it can be a message ID, from the same channel.
   Can only point to messages in base announcement channels.
 
-[x] **Invalidate announcement trackers after a set amount of time**
-[x] **Indicate on the message, when it's invalidated**
+- [x] **Invalidate announcement trackers after a set amount of time**
+- [x] **Indicate on the message, when it's invalidated**
