@@ -8,7 +8,7 @@ export const announcedEmoji  = "👌";
 export const acceptEmoji     = "⬆️"
 export const rejectEmoji     = "⬇️"
 export const scoreToForward  = 3;
-export const invalidateAfter = 72; // hours passed
+export const invalidateAfter = 72;  // hours passed
 
 export async function setup(data: types.Data) {
     removeExpiredTrackers();
