@@ -4,8 +4,9 @@ import { CustomEmoji } from "../custom_types";
 export interface AnnounceData {
     announceMessages: {
         [announceMsgLink: string]: {
-            trackerMsgLink:  string;
-            targetChannels?: Snowflake[];
+            trackerMsgLink:   string;
+            createdTimestamp: number;
+            targetChannels?:  Snowflake[];
         };
     };
 }

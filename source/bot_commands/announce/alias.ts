@@ -18,7 +18,9 @@ export default async function cmdAlias({ msg, args }: types.CombinedData) {
         return;
     }
 
-    const channelIDs = Utilz.parseChannels(msg.guild!, channelIDsOrAliases);
+    // removing duplicates by convertiong to set and back
+    // keeping it a list, so that JSON can handle it
+    const channelIDs = [...new Set(Utilz.parseChannels(msg.guild!, channelIDsOrAliases))];
     const channels = await Utilz.fetchTextChannels(msg.client, channelIDs);
 
     if (channels.length === 0) {

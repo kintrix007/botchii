@@ -7,7 +7,8 @@ import { setup, acceptEmoji, rejectEmoji, scoreToForward } from "./forward_messa
 
 const description = `Creates an announcement poll for a given message. If accepted it forwards the message to all of the target channels.
 You can specify where to announce the message, which can be a channel alias.
-When omitted announces to the currently set target channels.`;
+When omitted announces to the currently set target channels.
+Every announcement message is only valid for 3 days. After this time, it counts as rejected.`;
 
 const cmd: types.Command = {
     setupFunc:   setup,
@@ -65,6 +66,7 @@ async function cmdAnnounce({ msg, args }: types.CombinedData) {
                 ...(announcePrefs[msg.guild!.id]?.announceMessages ?? {}),
                 ...{[CoreTools.getMessageLink(announceMsg)]: {
                     trackerMsgLink:  CoreTools.getMessageLink(trackerMsg),
+                    createdTimestamp: msg.createdTimestamp,
                     targetChannels:  targetChannelIDs.length ? targetChannelIDs : undefined
                 }}
             }

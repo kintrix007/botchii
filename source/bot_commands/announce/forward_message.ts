@@ -2,21 +2,42 @@ import * as CoreTools from "../../_core/core_tools";
 import * as types from "../../_core/types";
 import * as Utilz from "../../utilz";
 import { AnnounceData, ANNOUNCE_PREFS_FILE, ChannelData, CHANNEL_PREFS_FILE } from "../command_prefs";
-import { DMChannel, Message, MessageReaction, NewsChannel, PartialUser, TextChannel, User } from "discord.js";
+import { Client, DMChannel, Message, MessageReaction, NewsChannel, PartialUser, TextChannel, User } from "discord.js";
 
-export const announcedEmoji = "👌";
-export const acceptEmoji    = "⬆️"
-export const rejectEmoji    = "⬇️"
-export const scoreToForward = 3;
+export const announcedEmoji  = "👌";
+export const acceptEmoji     = "⬆️"
+export const rejectEmoji     = "⬇️"
+export const scoreToForward  = 3;
+export const invalidateAfter = 72; // hours passed
 
 export async function setup(data: types.Data) {
-    const announcedData = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE);
-    const trackerMsgLinks = Object.values(announcedData).map(x => Object.values(x!.announceMessages).map(x => x.trackerMsgLink)).flat(1);
+    removeExpiredTrackers();
+    setInterval(removeExpiredTrackers, 1000*60*60*6);
+    
+    const announcedPrefs = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE);
+    const trackerMsgLinks = Object.values(announcedPrefs).map(x => Object.values(x!.announceMessages).map(x => x.trackerMsgLink)).flat(1);
     const cachedMessageCount = await CoreTools.cacheMessages(data.client, trackerMsgLinks);
     console.log(`cached ${cachedMessageCount} announcement tracker messages`);
 
     data.client.on("messageReactionAdd",    trackReactions(data));
     data.client.on("messageReactionRemove", trackReactions(data));
+
+}
+
+function removeExpiredTrackers() {
+    const currentTimestamp = Date.now();
+    const invalidateAfterMsPassed = invalidateAfter*60*60*1000;
+    const invalidateBefore = currentTimestamp - invalidateAfterMsPassed;
+    const announcedPrefs = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true);
+    Object.entries(announcedPrefs).forEach(([guildID, announceData]) => {
+        Object.entries(announceData!.announceMessages)
+        .forEach(([announceMsgLink, { createdTimestamp }]) => {
+            if (createdTimestamp < invalidateBefore) {
+                delete announcedPrefs[guildID]!.announceMessages[announceMsgLink];
+            }
+        });
+    });
+    CoreTools.updatePrefs(ANNOUNCE_PREFS_FILE, announcedPrefs);
 }
 
 function trackReactions(data: types.Data) {

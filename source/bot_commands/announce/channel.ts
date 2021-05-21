@@ -18,7 +18,7 @@ const cmd: types.Command = {
     aliases:     [ "channels" ],
     usage:       "channel <<<alias> <name> <channels...>> | <from|base> <channels...>> | <<to|target> <channels...>>",
     description: description,
-    examples:    [ "", "alias general 123456789012345678", "from #announcements", "to general #memes" ]
+    examples:    [ "", "alias", "alias general 123456789012345678", "from #announcements", "to general #memes" ]
 };
 
 async function cmdChannel({ data, msg, args } : types.CombinedData) {
