@@ -53,7 +53,7 @@ function queryGeneralHelpSheet({ data, msg }: types.CombinedData) {
             }, "") + "```";
         
         CoreTools.sendEmbed(msg, "neutral", {
-            title:  "**Help:**",
+            title:  "Help:",
             desc:   reply,
             footer: footerNote
         });

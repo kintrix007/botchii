@@ -77,7 +77,9 @@ export async function fetchMessages(client: Client, msgLinksOrData: string[] | {
 }
 
 export async function cacheMessages(client: Client, msgLinksOrData: string[] | { channelID: Snowflake, messageID: Snowflake }[]) {
-    return (await fetchMessages(client, msgLinksOrData)).length;
+    const messages = await fetchMessages(client, msgLinksOrData);
+    for (const msg of messages) await msg.fetch();
+    return messages.length;
 }
 
 export async function fetchChannels<T extends Channel>(client: Client, channelIDs: Snowflake[]): Promise<Channel[]> {

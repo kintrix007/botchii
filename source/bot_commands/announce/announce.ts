@@ -1,7 +1,7 @@
 import * as types from "../../_core/types";
 import * as CoreTools from "../../_core/core_tools";
 import { DMChannel, NewsChannel, TextChannel } from "discord.js";
-import { AnnounceData, ANNOUNCE_PREFS_FILE } from "../command_prefs";
+import { AnnounceData, ANNOUNCE_PREFS_FILE, ChannelData, CHANNEL_PREFS_FILE } from "../command_prefs";
 import * as Utilz from "../../utilz";
 import { setup, acceptEmoji, rejectEmoji, scoreToForward } from "./forward_message"
 
@@ -49,9 +49,21 @@ async function cmdAnnounce({ msg, args }: types.CombinedData) {
         return;
     }
 
-    const targetChannelIDs = Utilz.parseChannels(msg.guild!, targetChannelAliases);
+    const customTargetChannels = Utilz.parseChannels(msg.guild!, targetChannelAliases);
+    const targetChannelIDs = (customTargetChannels.length === 0
+        ? CoreTools.loadPrefs<ChannelData>(CHANNEL_PREFS_FILE, true)[msg.guild!.id]?.toChannels
+        : customTargetChannels);
+    
+    if (!targetChannelIDs) {
+        CoreTools.sendEmbed(msg, "error", {
+            title: "No target channels are given!",
+            desc:  "Type \`.channel\` to see the default target channels."
+        });
+        return;
+    }
+
     const content = CoreTools.getMessageLink(announceMsg)
-        + (announceMsg.content ? "\n" + CoreTools.quoteMessage(announceMsg, 75) : "")
+        + (announceMsg.content ? "\n" + CoreTools.quoteMessage(announceMsg, 75) : "") + "\n"
         + (targetChannelIDs.length ? "\n**to:** " + targetChannelIDs.map(x => "<#"+x+">").join(", ") : "")
         + `\n**${scoreToForward} to go**`;
 

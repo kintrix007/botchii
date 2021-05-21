@@ -11,9 +11,9 @@ export const scoreToForward = 1;
 
 export async function setup(data: types.Data) {
     const announcedData = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE);
-    const trackedMsgLinks = Object.values(announcedData).map(x => Object.keys(x!.announceMessages)).flat(1)
-    const cachedMsgCount = await CoreTools.cacheMessages(data.client, trackedMsgLinks);
-    console.log(`cached ${cachedMsgCount} announcement tracker messages`);
+    const trackerMsgLinks = Object.values(announcedData).map(x => Object.values(x!.announceMessages).map(x => x.trackerMsgLink)).flat(1);
+    const cachedMessageCount = await CoreTools.cacheMessages(data.client, trackerMsgLinks);
+    console.log(`cached ${cachedMessageCount} announcement tracker messages`);
 
     data.client.on("messageReactionAdd",    trackReactions(data));
     data.client.on("messageReactionRemove", trackReactions(data));
@@ -60,7 +60,7 @@ function trackReactions(data: types.Data) {
         const trackerMsg  = (await CoreTools.fetchMessageLink(data.client, trackerMsgLink))!;
         const announceMsg = (await CoreTools.fetchMessageLink(data.client, announceMsgLink))!;
         const content = announceMsgLink
-            + (announceMsg.content ? "\n" + CoreTools.quoteMessage(announceMsg, 75) : "")
+            + (announceMsg.content ? "\n" + CoreTools.quoteMessage(announceMsg, 75) : "") + "\n"
             + (targetChannelIDs.length ? "\n**to:** " + targetChannelIDs.map(x => "<#"+x+">").join(", ") : "")
             + "\n" + (shouldForward ? `**-- Announced by ${[...acceptUserIDs].map(x => "<@"+x+">").join(", ")} --**` : `**${scoreToGo} to go**`);
         
@@ -90,7 +90,10 @@ async function forwardMessage(announceMsg: Message, targetChannels: Array<TextCh
     const embeds        = announceMsg.embeds;
     const timestamp     = announceMsg.createdTimestamp;
 
-    targetChannels.forEach(channel => {
-        channel.send(title + "\n" + content, [...attachments, ...embeds]);
-    });
+    const msgPromises = targetChannels.map(ch => ch.send(title + "\n" + content, [...attachments, ...embeds]));
+
+    for (const msgPromise of msgPromises) {
+        const msg = await msgPromise;
+        msg.suppressEmbeds(false);
+    };
 }
