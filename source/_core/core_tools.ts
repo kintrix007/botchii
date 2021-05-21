@@ -141,7 +141,7 @@ export async function addReactions(msg: Message, reactions: string[]) {
 }
 
 export function quoteMessage(msg: Message, maxLength = 50) {
-    return "> " + (msg.content.length > maxLength ? msg.content.slice(0, maxLength-3) + "..." : msg.content);
+    return "> " + (msg.content.length > maxLength ? msg.content.slice(0, maxLength-3) + "..." : msg.content).replace(/\s+/g, " ");
 }
 
 export function getUserString(user: User) {
