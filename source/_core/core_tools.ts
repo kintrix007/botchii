@@ -199,8 +199,6 @@ export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean): T[] {
     });
 }
 
-// specific
-
 export function createEmbed<T extends Message | User | TextChannel | NewsChannel | DMChannel>(
     target: T, type: MessageType, message: string | BasicEmbedData
 ): T extends DMChannel ? MessageEmbed : (
@@ -277,6 +275,8 @@ export function sendEmbed(
     return ( typeof embed == "string" ? sendTarget.send(embed) : sendTarget.send("", embed) );
 }
 
+// specific
+
 export const channelSpecificCmdPermission = (() => {
     function humanReadable(perm: PermissionString) {
         const words = perm.toLowerCase().split("_");
@@ -346,7 +346,7 @@ export function getPrefix(data: types.Data, guildID: Snowflake) {
     return prefixData.prefix;
 }
 
-export function savePrefs(filename: string, saveData: types.Prefs<any>, silent = false) {
+export function savePrefs(filename: string, saveData: types.Prefs<{}>, silent = false) {
     if (!fs.existsSync(PREFS_DIR)) {
         fs.mkdirSync(PREFS_DIR);
         console.log(`created dir '${PREFS_DIR}' because it did not exist`);

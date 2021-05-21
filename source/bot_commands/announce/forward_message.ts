@@ -7,7 +7,7 @@ import { DMChannel, Message, MessageReaction, NewsChannel, PartialUser, TextChan
 export const announcedEmoji = "👌";
 export const acceptEmoji    = "⬆️"
 export const rejectEmoji    = "⬇️"
-export const scoreToForward = 1;
+export const scoreToForward = 3;
 
 export async function setup(data: types.Data) {
     const announcedData = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE);

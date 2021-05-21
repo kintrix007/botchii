@@ -9,9 +9,8 @@ const cmd: types.Command = {
     setupFunc:   setup,
     func:        cmdAnnounce,
     name:        "announce",
-    permissions: [ CoreTools.channelSpecificCmdPermission("SEND_MESSAGES") ],
     group:       "announcement",
-    // aliases:     [  ],
+    aliases:     [ "forward" ],
     usage:       "announce <message link> [target channels...]",
     description: "",
     examples:    [ "https://discord.com/channels/123456789012345678/012345678901234567/234567890123456789", "234567890123456789 #announcements" ]
@@ -26,23 +25,7 @@ async function cmdAnnounce({ msg, args }: types.CombinedData) {
         return;
     }
 
-    const { channelID, messageID } = CoreTools.parseMessageLink(args[0]) ?? { channelID: undefined, messageID: args[0] };
-
-    const getMessage = async () => {
-        try {
-            if (channelID === undefined) {
-                return await msg.channel.messages.fetch(messageID);
-            } else {
-                const channel = await msg.client.channels.fetch(channelID) as TextChannel | NewsChannel | DMChannel;
-                return await channel.messages.fetch(messageID);
-            }
-        }
-        catch (err) {
-            return undefined;
-        }
-    }
-
-    const announceMsg = await getMessage();
+    const announceMsg = await getMessage(msg.channel, announceMessageLink);
 
     if (!announceMsg) {
         CoreTools.sendEmbed(msg, "error", "Gib gud message link .-.");
@@ -84,6 +67,23 @@ async function cmdAnnounce({ msg, args }: types.CombinedData) {
         }
     };
     CoreTools.updatePrefs(ANNOUNCE_PREFS_FILE, announceData);
+}
+
+async function getMessage(ch: TextChannel | NewsChannel | DMChannel, msgLinkOrMessageID: string) {
+    const { channelID, messageID } = CoreTools.parseMessageLink(msgLinkOrMessageID) ?? { channelID: undefined, messageID: msgLinkOrMessageID };
+
+    try {
+        if (channelID === undefined) {
+            return await ch.messages.fetch(messageID);
+        } else {
+            const channel = await ch.client.channels.fetch(channelID);
+            if (!Utilz.isTextChannel(channel)) return undefined;
+            return await channel.messages.fetch(messageID);
+        }
+    }
+    catch (err) {
+        return undefined;
+    }
 }
 
 module.exports = cmd;

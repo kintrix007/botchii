@@ -2,7 +2,6 @@ import * as CoreTools from "../core_tools";
 import * as types from "../types";
 import { getHelpCmd } from "../commands";
 import { PREFIX_PREFS_FILE, PrefixData } from "./command_prefs"
-import { Guild } from "discord.js";
 
 const description = "Sets the prefix the bot uses.\n"
     + "The default prefix is \`{}\`, but this can be changed with this command.\n"

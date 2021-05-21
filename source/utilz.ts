@@ -22,7 +22,7 @@ export function convertToCountedEmoji(reaction: MessageReaction) {
     return counted;
 }
 
-export function parseChannel(guild: Guild, channelIDsOrAliases: string) {
+function parseChannel(guild: Guild, channelIDsOrAliases: string) {
     const channelRegex = /(\d+)|<#(\d+)>/i;
     const match = channelIDsOrAliases.match(channelRegex);
     const channelID = match?.[1] ?? match?.[2];
