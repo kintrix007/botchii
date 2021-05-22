@@ -22,11 +22,11 @@ export function convertToCountedEmoji(reaction: MessageReaction) {
     return counted;
 }
 
-function parseChannel(guild: Guild, channelIDsOrAliases: string) {
-    const channelRegex = /(\d+)|<#(\d+)>/i;
-    const match = channelIDsOrAliases.match(channelRegex);
+function parseChannel(guild: Guild, channelIDOrAlias: string) {
+    const channelRegex = /^(?:(\d+)|<#(\d+)>)$/i;
+    const match = channelIDOrAlias.match(channelRegex);
     const channelID = match?.[1] ?? match?.[2];
-    const channelIDs = (match ? [ channelID ] : fromChannelAlias(guild, channelIDsOrAliases)?.filter(x => x !== undefined));
+    const channelIDs = (match ? [ channelID ] : fromChannelAlias(guild, channelIDOrAlias)?.filter(x => x !== undefined));
     return channelIDs as Snowflake[] | undefined;
 }
 

@@ -30,10 +30,19 @@ async function cmdAnnounce({ msg, args }: types.CombinedData) {
         return;
     }
 
+    const channelData = CoreTools.loadPrefs<ChannelData>(CHANNEL_PREFS_FILE)[msg.guild!.id];
     const announceMsg = await getMessage(msg.channel, announceMessageLink);
 
     if (!announceMsg) {
-        CoreTools.sendEmbed(msg, "error", "Gib gud message link .-.");
+        CoreTools.sendEmbed(msg, "error", "The message link is either invalid, or points to a message the bot cannot see.");
+        return;
+    }
+
+    if (!channelData?.fromChannels?.includes(announceMsg.channel.id)) {
+        CoreTools.sendEmbed(msg, "error", {
+            title: "Can only announce messages from the base channels!",
+            desc:  "Use the command \`channel\` to see the currently set base channels."
+        });
         return;
     }
 
@@ -45,7 +54,7 @@ async function cmdAnnounce({ msg, args }: types.CombinedData) {
     if (!targetChannelIDs) {
         CoreTools.sendEmbed(msg, "error", {
             title: "No target channels are given!",
-            desc:  "Type \`.channel\` to see the default target channels."
+            desc:  "Use the command \`channel\` to see the default target channels."
         });
         return;
     }
