@@ -2,11 +2,12 @@ import { DEFAULT_COMMANDS_DIR } from "./core_tools";
 import * as types from "./types";
 import { createCmdsListeners } from "./commands";
 import { config } from "dotenv";
-import { Client } from "discord.js";
+import { Client, ClientOptions } from "discord.js";
 
 interface SetupData {
-    defaultPrefix?: string,
-    commandDirs:    string[]
+    commandDirs:    string[];
+    defaultPrefix?: string;
+    options:        ClientOptions;
 };
 
 const DEFAULT_PREFIX = "!";
@@ -16,6 +17,10 @@ export async function initBot(setupData: SetupData, commandData: types.CustomDat
     const client = new Client();
 
     const defaultPrefix = setupData.defaultPrefix ?? DEFAULT_PREFIX;
+
+    Object.entries(setupData.options).forEach(([key, value]) => {
+        client.options[key as keyof Required<ClientOptions>] = value;
+    })
 
     const data: types.Data = {
         client,

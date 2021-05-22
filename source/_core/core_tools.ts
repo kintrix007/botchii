@@ -78,8 +78,10 @@ export async function fetchMessages(client: Client, msgLinksOrData: string[] | {
 
 export async function cacheMessages(client: Client, msgLinksOrData: string[] | { channelID: Snowflake, messageID: Snowflake }[]) {
     const messages = await fetchMessages(client, msgLinksOrData);
-    for (const msg of messages) await msg.fetch();
-    return messages.length;
+    for (const msg of messages) {
+        await msg.fetch();
+    }
+    return messages;
 }
 
 export async function fetchChannels<T extends Channel>(client: Client, channelIDs: Snowflake[]): Promise<Channel[]> {
@@ -374,8 +376,8 @@ export function loadPrefs<T>(filename: string, silent = false) {
     return loadData;
 }
 
-export function updatePrefs<T>(filename: string, dataOverload: types.Prefs<T>, silent = false) {
-    const newPrefs: types.Prefs<T> = { ...loadPrefs<T>(filename, true), ...dataOverload };
+export function updatePrefs<T>(filename: string, overwriteData: types.Prefs<T>, silent = false) {
+    const newPrefs: types.Prefs<T> = { ...loadPrefs<T>(filename, true), ...overwriteData };
     savePrefs(filename, newPrefs, true);
     if (!silent) console.log(`updated prefs in '${filename}'`);
 }

@@ -18,8 +18,14 @@ export async function setup(data: types.Data) {
     
     const announcedPrefs = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE);
     const trackerMsgLinks = Object.values(announcedPrefs).map(x => Object.values(x!.announceMessages).map(x => x.trackerMsgLink)).flat(1);
-    const cachedMessageCount = await CoreTools.cacheMessages(data.client, trackerMsgLinks);
-    console.log(`cached ${cachedMessageCount} announcement tracker messages`);
+
+    const cachedMessages = await CoreTools.cacheMessages(data.client, trackerMsgLinks);
+    console.log(`cached ${cachedMessages.length} announcement tracker messages`);
+    cachedMessages.forEach(msg => {
+        const firstReaction = msg.reactions.cache.first();
+        if (!firstReaction) return;
+        trackReactions(data)(firstReaction, undefined);
+    });
 
     data.client.on("messageReactionAdd",    trackReactions(data));
     data.client.on("messageReactionRemove", trackReactions(data));
@@ -49,10 +55,12 @@ async function removeExpiredTrackers(client: Client) {
 }
 
 function trackReactions(data: types.Data) {
-    return async (reaction: MessageReaction, user: User | PartialUser) => {
-        if (user.bot) return;
+    // user is undefined, if it's simulated
+    return async (reaction: MessageReaction, user: User | PartialUser | undefined) => {
+        if (user?.bot) return;
+        if (!(user instanceof User) && !(typeof user === "undefined")) return;
+        
         const message = reaction.message;
-        if (!(user instanceof User)) return;
         const announceData = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true)[message.guild!.id];
         if (!announceData) return;
 
@@ -113,7 +121,7 @@ function trackReactions(data: types.Data) {
 
 async function forwardMessage(announceMsg: Message, targetChannels: Array<TextChannel | NewsChannel | DMChannel>) {
     const announcerName = announceMsg.member?.nickname ?? announceMsg.author.username;
-    const title         = "__" + (announceMsg.member ? `**${announcerName}** made an announcement` : announcerName) + "__:"
+    const title         = (announceMsg.system ? `__**${announcerName}** made an announcement__` : `**${announcerName}**`) + ":";
     const content       = announceMsg.content.replace(/@here/g, "`@`here").replace(/@everyone/g, "`@`everyone");
     const attachments   = Array.from(announceMsg.attachments.values());
     const embeds        = announceMsg.embeds;
@@ -123,6 +131,6 @@ async function forwardMessage(announceMsg: Message, targetChannels: Array<TextCh
 
     for (const msgPromise of msgPromises) {
         const msg = await msgPromise;
-        msg.suppressEmbeds(false);
+        // msg.suppressEmbeds(false);
     };
 }
