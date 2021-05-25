@@ -9,7 +9,6 @@ export const acceptEmoji     = "⬆️"
 export const rejectEmoji     = "⬇️"
 export const scoreToForward  = 3;
 export const invalidateAfter = 72;  // hours passed
-// export const invalidateAfter = 1/60/2;  // hours passed
 
 export async function setup(data: types.Data) {
     await removeExpiredTrackers(data.client);
@@ -36,17 +35,24 @@ async function removeExpiredTrackers(client: Client) {
     const currentTimestamp = Date.now();
     const invalidateAfterMsPassed = invalidateAfter*60*60*1000;
     const invalidateBefore = currentTimestamp - invalidateAfterMsPassed;
+
     let announcedPrefs = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true);
     
     for (const [guildID, announceData] of Object.entries(announcedPrefs)) {
         for (const [announceMsgLink, { createdTimestamp }] of Object.entries(announceData!.announceMessages)) {
-            if (createdTimestamp <= invalidateBefore) {
-                const trackerMsg = await CoreTools.fetchMessageLink(client, announcedPrefs[guildID]!.announceMessages[announceMsgLink].trackerMsgLink);
-                if (trackerMsg) {
-                    await trackerMsg.edit("**-- Timed out... --**");
+            const shouldDelete = createdTimestamp <= invalidateBefore;
+            if (shouldDelete) {
+                try {
+                    const trackerMsg = await CoreTools.fetchMessageLink(client, announcedPrefs[guildID]!.announceMessages[announceMsgLink].trackerMsgLink);
+                    delete announcedPrefs[guildID]!.announceMessages[announceMsgLink];
+                    if (trackerMsg) {
+                        await trackerMsg.edit("**-- Timed out! --**").catch(err => console.warn(err));
+                    }
+                    console.log(`deleted an announcement tracker in '${announcedPrefs[guildID]!.guildName}'`);
                 }
-                delete announcedPrefs[guildID]!.announceMessages[announceMsgLink];
-                console.log("deleted an announcement tracker");
+                catch (err) {
+                    continue;
+                }
             }
         }
     }

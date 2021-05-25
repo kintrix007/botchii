@@ -15,9 +15,13 @@ const cmd: types.Command = {
     permissions: [ types.adminPermission ],
     group:       "announcement",
     aliases:     [ "channels" ],
-    usage:       "channel <alias> [<name> <channels...>] OR channel <from|base> <channels...> OR channel <to|target> <channels...>]",
+    usage: [
+        "channel <alias> [<name> <channels...>]",
+        "channel <from|base> <channels...>",
+        "channel <to|target> <channels...>"
+    ],
     description: description,
-    examples:    [ "", "alias", "alias general 123456789012345678", "from #announcements", "to general #memes" ]
+    examples:    [ [], ["alias"], ["alias", "general", "123456789012345678"], ["from", "#announcements"], ["to", "general", "#memes"] ]
 };
 
 async function cmdChannel({ data, msg, args } : types.CombinedData) {

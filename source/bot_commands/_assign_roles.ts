@@ -4,7 +4,7 @@ import { RR_PREFS_FILE, RRData } from "./command_prefs";
 
 const cmd: types.Command = {
     setupFunc: setupFunc,
-    func: () => 0,
+    func: () => {},
     name: "assignroles"
 };
 

@@ -1,6 +1,6 @@
 import * as CoreTools from "../core_tools";
 import * as types from "../types";
-import { getCmdList, getPermittedCmdList } from "../commands";
+import { getCmd, getPermittedCmdList } from "../commands";
 
 const cmd: types.Command = {
     func: cmdHelp,
@@ -8,83 +8,83 @@ const cmd: types.Command = {
     group: "help",
     usage: "help [command name]",
     description: "Gives you a list of commands, or it can give further information about a specific command.",
-    examples: [ "", "prefix" ]
+    examples: [ [], ["prefix"] ]
 };
 
-const footerNote = "[] means optional arguements\n<> means obligatory arguements.\n| separates options";
+const footerNote = "[] means optional arguements, <> means obligatory arguements, | separates options";
 
 function cmdHelp(combData: types.CombinedData) {
     const targetCommand = combData.args[0];
 
-    if (targetCommand) {
-        querySpecificHelpSheet(combData, targetCommand);
-    } else {
+    if (targetCommand === undefined) {
         queryGeneralHelpSheet(combData);
+    } else {
+        querySpecificHelpSheet(combData, targetCommand);
     }
 }
 
 function queryGeneralHelpSheet({ data, msg }: types.CombinedData) {
     const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
+    const cmdList = getPermittedCmdList(msg, true);
 
-    const cmdList = getPermittedCmdList(msg);
-        const commandsInGroups: {[K in types.CommandGroup]?: types.Command[]} = {};
-        cmdList.forEach(command => {
-            const group = command.group ?? ""; // "" means ungrouped
-            if (commandsInGroups[group] === undefined) {
-                commandsInGroups[group] = [];
-            }
-            commandsInGroups[group]!.push(command);
-        });
+    type ExtendedGroup = types.CommandGroup | "uncategorized";
+    let commandsInGroups: { [K in ExtendedGroup]?: types.Command[] } = {};
 
-        const commandsAssocList = (Object.entries(commandsInGroups)
-            .filter(([,commands]) => commands !== undefined) as [types.CommandGroup, types.Command[]][])
-            .sort()
-            .sort(([groupA], [groupB]) => {
-                if (groupA === "help" && groupB !== "help") return -1;
-                if (groupA !== "help" && groupB === "help") return 1;
-                return 0;
-            });
+    cmdList.forEach(command => {
+        const group = command.group ?? "uncategorized";
+        if (commandsInGroups[group] === undefined) {
+            commandsInGroups[group] = [];
+        }
+        commandsInGroups[group]!.push(command);
+    });
 
-        const reply = "```\n"
-            + commandsAssocList.reduce((acc, [group, commands]) => {
-                const isValidGroup = group && group !== "help";     // help should not be shown separately
-                return acc + (isValidGroup ? "```\n**" + CoreTools.capitalize(group) + ":**\n```" : "")
-                    + commands.reduce((acc, command) => acc + currentPrefix + command.usage! + "\n", "");
-            }, "") + "```";
-        
-        CoreTools.sendEmbed(msg, "neutral", {
-            title:  "Help:",
-            desc:   reply,
-            footer: footerNote
-        });
-        console.log(`${msg.author.username}#${msg.author.discriminator} queried the general help sheet`);
+    const commandsAssocList = Object.entries(commandsInGroups)
+    .filter((x): x is [ExtendedGroup, types.Command[]] => x[1] !== undefined)
+    .sort((a, b) => {
+        const [ [groupA], [groupB] ] = [a, b];
+        const [ isHelpA, isHelpB ] = [ groupA === "help", groupB === "help" ];
+        const [ isNoneA, isNoneB ] = [ groupA === "uncategorized", groupB === "uncategorized" ];
+        const boost = (+isHelpB - +isHelpA) * 2 + (+isNoneA - +isNoneB) * 2;
+        return a.toString().localeCompare(b.toString()) + boost;
+    });
+    
+    const reply = commandsAssocList.map(([group, commands]) => {
+        const isShownGroup = group !== "help";
+        const commandsUsage = commands.map(
+            cmd => (cmd.usage instanceof Array
+            ? cmd.usage.map(x => currentPrefix + x).join(" OR\n")
+            : currentPrefix + cmd.usage!)
+        ).join("\n");
+        return (isShownGroup ? `**${CoreTools.capitalize(group)}**:\n` : "") + "```" + commandsUsage + "```";
+    }).join("\n");
+    
+    CoreTools.sendEmbed(msg, "neutral", {
+        title:  "Help:",
+        desc:   reply,
+        footer: footerNote
+    });
 }
 
-function querySpecificHelpSheet(combData: types.CombinedData, targetCommand: string) {
-    const { data, msg } = combData;
+function querySpecificHelpSheet({ data, msg }: types.CombinedData, targetCommand: string) {
     const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
-
-    const cmdList = getCmdList();
-    const command = cmdList.find(x => CoreTools.removeAccents(x.name.toLowerCase()) === targetCommand
-        || x.aliases?.map(x => CoreTools.removeAccents(x.toLowerCase()))?.includes(targetCommand));
+    const command = getCmd(targetCommand);
         
     if (!command) {
-        CoreTools.sendEmbed(msg, "error", `Command \`${targetCommand}\` does not exist.`);
+        CoreTools.sendEmbed(msg, "error", `Help sheet for \`${targetCommand}\` not found, or the command doesn't exist.`);
         return;
     }
     
-    const usage = "`" + currentPrefix + command.usage! + "`";
+    const usage       = "`" + currentPrefix + command.usage! + "`";
     const commandName = currentPrefix + command.name;
-    const aliases = (command.aliases?.length ? "alias: " + command.aliases.map(x => currentPrefix+x).join(", ") : "");
+    const aliases     = (command.aliases?.length ? "alias: " + command.aliases.map(x => currentPrefix+x).join(", ") : "");
     const description = command.description || "**[Description not provided]**";
-    const examples = (command.examples ? "**eg:  " +
-        command.examples.map(x => x ? `\`${commandName} ${x}\`` : `\`${commandName}\``) 
-                        .join(", ") + "**"
-    : "");
+    const examples    = (command.examples
+        ? "**eg:  " + command.examples.map(ex => "`" + [commandName, ...ex].join(" ") + "`").join(", ") + "**"
+        : "");
 
     const requiredPermission = command.permissions
-        ?.map(x => x.description ? "- " + x.description : x.description)
-        ?.filter(x => x)
+        ?.map(perm => perm.description ? "- " + perm.description : undefined)
+        ?.filter((x): x is string => x !== undefined)
         ?.join("\n");
 
     const reply = description + (requiredPermission ? "\n\n**Permissions:**\n" + requiredPermission : "") + "\n\n" + examples;
@@ -94,7 +94,6 @@ function querySpecificHelpSheet(combData: types.CombinedData, targetCommand: str
         desc:   reply,
         footer: aliases
     });
-    console.log(`${msg.author.username}#${msg.author.discriminator} queried the help sheet for '${targetCommand}'`);
 }
 
 module.exports = cmd;

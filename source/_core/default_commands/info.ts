@@ -7,7 +7,8 @@ const cmd: types.Command = {
     func: cmdInfo,
     name: "botinfo",
     usage: "botinfo",
-    examples: [ "" ]
+    description: "Shows basic information of the bot",
+    examples: [ [] ]
 }
 
 function cmdInfo({ msg }: types.CombinedData) {
@@ -21,7 +22,6 @@ function cmdInfo({ msg }: types.CombinedData) {
         title: name,
         desc:  description + "\n**GitHub: **" + homepage
     });
-    console.log(`${msg.author.username}#${msg.author.discriminator} queried the info about the bot`);
 }
 
 module.exports = cmd;

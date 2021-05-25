@@ -190,15 +190,21 @@ export async function fetchMessageLink(client: Client, msgLink: string) {
     }
 }
 
-export function capitalize(str: string): string {
-    return str[0].toUpperCase() + str.slice(1);
-}
-
-export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean): T[] {
-    return arr.filter((x, idx) => {
-        const foundIdx = arr.findIndex(a => isEqual(a, x));
-        return foundIdx === idx || foundIdx === -1;
-    });
+// UNTESTED!!!
+export async function getReplyMessage(message: Message) {
+    if (message.system) return undefined;
+    const reference = message.reference;
+    if (reference === null) return undefined;
+    const { channelID, messageID } = reference;
+    if (messageID === null) return undefined;
+    if (message.channel.id !== channelID) return undefined;
+    try {
+        const replyMessage = await message.channel.messages.fetch(messageID);
+        return replyMessage;
+    }
+    catch (err) {
+        return undefined;
+    }
 }
 
 export function createEmbed<T extends Message | User | TextChannel | NewsChannel | DMChannel>(
@@ -275,6 +281,17 @@ export function sendEmbed(
     
     const embed = createEmbed(sendTarget, type, message);
     return ( typeof embed == "string" ? sendTarget.send(embed) : sendTarget.send("", embed) );
+}
+
+export function capitalize(str: string): string {
+    return str[0].toUpperCase() + str.slice(1);
+}
+
+export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean): T[] {
+    return arr.filter((x, idx) => {
+        const foundIdx = arr.findIndex(a => isEqual(a, x));
+        return foundIdx === idx || foundIdx === -1;
+    });
 }
 
 // specific

@@ -15,7 +15,7 @@ const cmd: types.Command = {
     permissions: [ types.adminPermission, types.ownerPermission ],
     usage: "reactionroles [<channel|data> <channel|message link>]",
     // description: description,
-    examples: [ "channel #reaction-roles", "data https://discord.com/channels/123456789012345678/012345678901234567/234567890123456789" ]
+    examples: [ ["channel", "#reaction-roles"], ["data", "https://discord.com/channels/123456789012345678/012345678901234567/234567890123456789"] ]
 };
 
 async function cmdReactionRoles(combData: types.CombinedData) {

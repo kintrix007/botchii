@@ -8,7 +8,7 @@ const cmd: types.Command = {
     aliases: [ "shutdown", "kill" ],
     group: "owner",
     // usage: "restart",
-    examples: [ "" ],
+    examples: [ [] ],
 };
 
 function cmdKill({ msg }: types.CombinedData) {

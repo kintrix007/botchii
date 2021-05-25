@@ -2,6 +2,7 @@ import * as CoreTools from "../core_tools";
 import * as types from "../types";
 import { getHelpCmd } from "../commands";
 import { PREFIX_PREFS_FILE, PrefixData } from "./command_prefs"
+import { Message } from "discord.js";
 
 const description = "Sets the prefix the bot uses.\n"
     + "The default prefix is \`{}\`, but this can be changed with this command.\n"
@@ -15,7 +16,7 @@ const cmd: types.Command = {
     permissions: [ types.adminPermission ],
     usage: "prefix [new prefix]",
     description: description,
-    examples: [ "", "!!", "." ],
+    examples: [ [], ["!!"], ["."] ],
 };
 
 const MAX_PREFIX_LENGTH = 4;
@@ -24,8 +25,7 @@ function cmdPrefix({ data, msg, args }: types.CombinedData) {
     const newPrefix = args[0];
 
     if (!newPrefix) {
-        const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
-        const embed = CoreTools.sendEmbed(msg, "neutral", `The current prefix is: \`${currentPrefix ?? data.defaultPrefix}\``);
+        getPrefix(data, msg);
         return;
     }
 
@@ -43,13 +43,16 @@ function cmdPrefix({ data, msg, args }: types.CombinedData) {
     CoreTools.updatePrefs<PrefixData>(PREFIX_PREFS_FILE, prefixData);
 
     const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
-    const helpCmdName = getHelpCmd()?.name;
 
     CoreTools.sendEmbed(msg, "ok", {
         title: `Prefix set to \`${currentPrefix}\``,
-        desc:  "Successfully changed the prefix." + (helpCmdName ? `\nFor help type: \`${currentPrefix}${helpCmdName}\`` : "")
+        desc:  `Successfully changed the prefix.\nFor help type: \`${currentPrefix}help\``
     });
-    console.log(`${msg.author.username}#${msg.author.discriminator} changed the prefix to ${currentPrefix}`);
+}
+
+function getPrefix(data: types.Data, msg: Message) {
+    const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
+    CoreTools.sendEmbed(msg, "neutral", `The current prefix is: \`${currentPrefix ?? data.defaultPrefix}\``);
 }
 
 module.exports = cmd;

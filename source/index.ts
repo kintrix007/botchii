@@ -2,6 +2,7 @@ import { initBot } from "./_core/bot_core";
 import path from "path";
 
 initBot(
+    {},
     {
         defaultPrefix: ".",
         options: {
@@ -11,7 +12,9 @@ initBot(
         },
         commandDirs: [
             path.join(__dirname, "bot_commands", "announce")
-        ]
-    },
-    {}
+        ],
+        onready: data => {
+            console.log(`the current time is: ${Date()}`);
+        }
+    }
 );

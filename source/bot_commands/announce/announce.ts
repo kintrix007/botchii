@@ -18,7 +18,7 @@ const cmd: types.Command = {
     aliases:     [ "forward" ],
     usage:       "announce <message link> [target channels...]",
     description: description,
-    examples:    [ "https://discord.com/channels/123456789012345678/012345678901234567/234567890123456789", "234567890123456789 #announcements" ]
+    examples:    [ ["https://discord.com/channels/123456789012345678/012345678901234567/234567890123456789"], ["234567890123456789", "#announcements"] ]
 };
 
 async function cmdAnnounce({ msg, args }: types.CombinedData) {

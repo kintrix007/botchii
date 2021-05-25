@@ -3,7 +3,7 @@ import { Client, Message } from "discord.js";
 import * as ExtensionTypes from "../extension_types";
 
 
-type BaseCommandGroup = "" | "help" | "admin" | "owner";
+type BaseCommandGroup = "help" | "admin" | "owner";
 
 interface BaseData {
     client:         Client;
@@ -35,21 +35,20 @@ export type CommandPermission = {
     errorMessage?: (combData: CombinedData) => string
     func:          PermissionFunc;
 };
-export type CommandPermissions = CommandPermission[];
 
+type Parameters = string[];
 export interface Command {
-    setupFunc?:     (data: Data) => void;
-    
-    func:           (combData: CombinedData) => void;
+    setupFunc?:     (data: Data) => Promise<unknown> | void;
+    func:           (combData: CombinedData) => Promise<unknown> | void;
     name:           string;
     aliases?:       string[];
     
-    permissions?:   CommandPermissions;
+    permissions?:   CommandPermission[];
     group?:         CommandGroup;
     
-    usage?:         string;
+    usage?:         string | string[];
     description?:   string;
-    examples?:      string[];
+    examples?:      Parameters[];
 }
 
 export type CustomData         = ExtensionTypes.CustomData;
