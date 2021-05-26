@@ -7,7 +7,7 @@ import { Client, DMChannel, Message, MessageReaction, NewsChannel, PartialUser, 
 export const announcedEmoji  = "👌";
 export const acceptEmoji     = "⬆️"
 export const rejectEmoji     = "⬇️"
-export const scoreToForward  = 1;
+export const scoreToForward  = 3;
 export const invalidateAfter = 72;  // hours passed
 
 export async function setup(data: types.Data) {
