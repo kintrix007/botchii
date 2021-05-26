@@ -45,16 +45,15 @@ async function removeExpiredTrackers(client: Client) {
                 try {
                     const trackerMsg = await CoreTools.fetchMessageLink(client, announcedPrefs[guildID]!.announceMessages[announceMsgLink].trackerMsgLink);
                     delete announcedPrefs[guildID]!.announceMessages[announceMsgLink];
+                    console.log(`deleted an announcement tracker in '${announcedPrefs[guildID]!.guildName}'`);
                     if (trackerMsg) {
                         await trackerMsg.edit("**-- Timed out! --**").catch(err => console.warn(err));
                     }
-                    console.log(`deleted an announcement tracker in '${announcedPrefs[guildID]!.guildName}'`);
                 }
                 catch (err) {
-                    console.error(err);
                     continue;
                 }
-            } else console.log("didn't delete:", { createdTimestamp, invalidateBefore, shouldDelete });
+            }
         }
     }
     
