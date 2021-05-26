@@ -40,7 +40,7 @@ async function removeExpiredTrackers(client: Client) {
     
     for (const [guildID, announceData] of Object.entries(announcedPrefs)) {
         for (const [announceMsgLink, { createdTimestamp }] of Object.entries(announceData!.announceMessages)) {
-            const shouldDelete = createdTimestamp <= invalidateBefore;
+            const shouldDelete = createdTimestamp === undefined || createdTimestamp <= invalidateBefore;
             if (shouldDelete) {
                 try {
                     const trackerMsg = await CoreTools.fetchMessageLink(client, announcedPrefs[guildID]!.announceMessages[announceMsgLink].trackerMsgLink);
