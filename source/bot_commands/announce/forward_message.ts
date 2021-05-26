@@ -8,7 +8,7 @@ export const announcedEmoji  = "👌";
 export const acceptEmoji     = "⬆️"
 export const rejectEmoji     = "⬇️"
 export const scoreToForward  = 3;
-export const invalidateAfter = 72;  // hours passed
+export const invalidateFor = 72;  // hours passed
 
 export async function setup(data: types.Data) {
     await removeExpiredTrackers(data.client);
@@ -33,8 +33,8 @@ export async function setup(data: types.Data) {
 
 async function removeExpiredTrackers(client: Client) {
     const currentTimestamp = Date.now();
-    const invalidateAfterMsPassed = invalidateAfter*60*60*1000;
-    const invalidateBefore = currentTimestamp - invalidateAfterMsPassed;
+    const invalidateForMsPassed = invalidateFor*60*60*1000;
+    const invalidateBefore = currentTimestamp - invalidateForMsPassed;
 
     let announcedPrefs = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true);
     
@@ -51,9 +51,10 @@ async function removeExpiredTrackers(client: Client) {
                     console.log(`deleted an announcement tracker in '${announcedPrefs[guildID]!.guildName}'`);
                 }
                 catch (err) {
+                    console.error(err);
                     continue;
                 }
-            }
+            } else console.log("didn't delete:", { createdTimestamp, invalidateBefore, shouldDelete });
         }
     }
     
