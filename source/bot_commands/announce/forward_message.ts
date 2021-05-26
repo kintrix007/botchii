@@ -7,7 +7,7 @@ import { Client, DMChannel, Message, MessageReaction, NewsChannel, PartialUser, 
 export const announcedEmoji  = "👌";
 export const acceptEmoji     = "⬆️"
 export const rejectEmoji     = "⬇️"
-export const scoreToForward  = 3;
+export const scoreToForward  = 1;
 export const invalidateAfter = 72;  // hours passed
 
 export async function setup(data: types.Data) {
@@ -127,7 +127,9 @@ function trackReactions(data: types.Data) {
 
 async function forwardMessage(announceMsg: Message, targetChannels: Array<TextChannel | NewsChannel | DMChannel>) {
     const announcerName = announceMsg.member?.nickname ?? announceMsg.author.username;
-    const title         = (announceMsg.system ? `__**${announcerName}** made an announcement__` : `**${announcerName}**`) + ":";
+    const title         = (/* announceMsg.member && */ !announceMsg.system 
+                          ? `__**${announcerName}** made an announcement__`
+                          : `**${announcerName}**`) + ":";
     const content       = announceMsg.content.replace(/@here/g, "`@`here").replace(/@everyone/g, "`@`everyone");
     const attachments   = Array.from(announceMsg.attachments.values());
     const embeds        = announceMsg.embeds;

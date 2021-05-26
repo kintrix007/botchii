@@ -22,8 +22,9 @@ const cmd: types.Command = {
 };
 
 async function cmdAnnounce({ msg, args }: types.CombinedData) {
-    const announceMessageLink = args[0];
-    const targetChannelAliases = args.slice(1);
+    const replyMessage = await CoreTools.getReplyMessage(msg);
+    const announceMessageLink = (replyMessage ? CoreTools.getMessageLink(replyMessage) : args[0]);
+    const targetChannelAliases = (replyMessage ? args.slice(0) : args.slice(1));
 
     if (!announceMessageLink) {
         CoreTools.sendEmbed(msg, "error", "Gib Msseage link .-.");
