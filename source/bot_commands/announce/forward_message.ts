@@ -127,7 +127,7 @@ function trackReactions(data: types.Data) {
 
 async function forwardMessage(announceMsg: Message, targetChannels: Array<TextChannel | NewsChannel | DMChannel>) {
     const announcerName = announceMsg.member?.nickname ?? announceMsg.author.username;
-    const title         = (/* announceMsg.member && */ !announceMsg.system 
+    const title         = (!!announceMsg.member /* && !announceMsg.system */
                           ? `__**${announcerName}** made an announcement__`
                           : `**${announcerName}**`) + ":";
     const content       = announceMsg.content.replace(/@here/g, "`@`here").replace(/@everyone/g, "`@`everyone");
