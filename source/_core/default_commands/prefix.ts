@@ -25,7 +25,7 @@ function cmdPrefix({ data, msg, args }: types.CombinedData) {
     const newPrefix = args[0];
 
     if (!newPrefix) {
-        getPrefix(data, msg);
+        showPrefix(data, msg);
         return;
     }
 
@@ -42,7 +42,7 @@ function cmdPrefix({ data, msg, args }: types.CombinedData) {
     };
     CoreTools.updatePrefs<PrefixData>(PREFIX_PREFS_FILE, prefixData);
 
-    const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
+    const currentPrefix = CoreTools.getPrefix(msg.guild!.id);
 
     CoreTools.sendEmbed(msg, "ok", {
         title: `Prefix set to \`${currentPrefix}\``,
@@ -50,8 +50,8 @@ function cmdPrefix({ data, msg, args }: types.CombinedData) {
     });
 }
 
-function getPrefix(data: types.Data, msg: Message) {
-    const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
+function showPrefix(data: types.Data, msg: Message) {
+    const currentPrefix = CoreTools.getPrefix(msg.guild!.id);
     CoreTools.sendEmbed(msg, "neutral", `The current prefix is: \`${currentPrefix ?? data.defaultPrefix}\``);
 }
 

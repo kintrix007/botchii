@@ -15,7 +15,7 @@ export async function createCmdsListeners(data: types.Data, cmdDirs: string[]) {
     data.client.on("message", (msg: Message) => {
         if (msg.channel instanceof DMChannel) return;
         if (msg.author.bot) return;
-        const cont = CoreTools.prefixless(data, msg);
+        const cont = CoreTools.prefixless(msg);
         if (!cont) return;
         const [commandName, ...args] = cont.trim().split(" ").filter(x => x !== "");
         const combData: types.CombinedData = {

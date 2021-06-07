@@ -14,7 +14,7 @@ initBot(
             path.join(__dirname, "bot_commands", "announce")
         ],
         onready: data => {
-            console.log(`the current time is: ${Date()}`);
+            console.log(`Current time: ${Date()}`);
         }
     }
 );

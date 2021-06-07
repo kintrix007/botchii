@@ -1,4 +1,4 @@
-import { DEFAULT_COMMANDS_DIR } from "./core_tools";
+import { DEFAULT_COMMANDS_DIR, setDefaultPrefix } from "./core_tools";
 import * as types from "./types";
 import { createCmdsListeners } from "./commands";
 import { config } from "dotenv";
@@ -19,12 +19,14 @@ export async function initBot(
     { commandDirs, defaultPrefix = DEFAULT_PREFIX, onready, options }: SetupData
 ) {
     config();
+    setDefaultPrefix(defaultPrefix);
     const client = new Client();
 
-    if (options)
-    Object.entries(options).forEach(([key, value]) => {
-        client.options[key as keyof ClientOptions] = value;
-    })
+    if (options) {
+        Object.entries(options).forEach(([key, value]) => {
+            client.options[key as keyof ClientOptions] = value;
+        });
+    }
 
     const data: types.Data = {
         client,
@@ -41,6 +43,12 @@ export async function initBot(
         
         console.log("-- bot setup complete --");
         console.log("-- bot ready --");
+
+        const guilds = Array.from(data.client.guilds.cache.values());
+        console.log(
+            `Added to ${guilds.length} guild${guilds.length === 1 ? '' : 's'}:`,
+            guilds.map(x => x.name)
+        );
 
         onready?.(data);
     });

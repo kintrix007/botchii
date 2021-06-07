@@ -24,7 +24,7 @@ function cmdHelp(combData: types.CombinedData) {
 }
 
 function queryGeneralHelpSheet({ data, msg }: types.CombinedData) {
-    const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
+    const currentPrefix = CoreTools.getPrefix(msg.guild!.id);
     const cmdList = getPermittedCmdList(msg, true);
 
     type ExtendedGroup = types.CommandGroup | "uncategorized";
@@ -66,7 +66,7 @@ function queryGeneralHelpSheet({ data, msg }: types.CombinedData) {
 }
 
 function querySpecificHelpSheet({ data, msg }: types.CombinedData, targetCommand: string) {
-    const currentPrefix = CoreTools.getPrefix(data, msg.guild!.id);
+    const currentPrefix = CoreTools.getPrefix(msg.guild!.id);
     const command = getCmd(targetCommand);
         
     if (!command) {

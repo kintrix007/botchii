@@ -38,5 +38,5 @@ Change it, so it **does not** automatically look for reactions on all messages i
 - [x] **Invalidate announcement trackers after a set amount of time**
 - [x] **Indicate on the message, when it's invalidated**
 - [ ] **Re-add profile picture change after announcing**
-- [ ] **Change the way `getPrefix` works, so it's called without arguements**
+- [x] **Change the way `getPrefix` works, so it's called without arguements**
 - [ ] **Add proper logging**

@@ -1,9 +1,10 @@
 import fs from "fs";
 import path from "path";
 import * as types from "./types";
-import { config } from "dotenv"; config();
-import { Channel, Client, DMChannel, GuildChannel, GuildMember, Message, MessageEmbed, MessageReaction, NewsChannel, PermissionResolvable, PermissionString, Snowflake, TextChannel, User } from "discord.js";
+import { config } from "dotenv";
+import { Channel, Client, DMChannel, GuildChannel, GuildMember, Message, MessageEmbed, MessageReaction, NewsChannel, PermissionString, Snowflake, TextChannel, User } from "discord.js";
 import { PrefixData, PREFIX_PREFS_FILE, AdminData, ADMIN_PREFS_FILE } from "./default_commands/command_prefs";
+config();
 
 export const BOT_CORE_DIR         = path.join(__dirname);
 export const DEFAULT_COMMANDS_DIR = path.join(BOT_CORE_DIR, "default_commands");
@@ -26,6 +27,11 @@ interface BasicEmbedData {
     timestamp?: number | Date;
 }
 
+let defaultPrefix: string;
+
+export function setDefaultPrefix(newPrefix: string) {
+    defaultPrefix = newPrefix;
+}
 
 export async function cacheChannelMessages(client: Client, channelIDs: string[]) {
     let successCount = 0;
@@ -190,7 +196,6 @@ export async function fetchMessageLink(client: Client, msgLink: string) {
     }
 }
 
-// UNTESTED!!!
 export async function getReplyMessage(message: Message) {
     if (message.system) return undefined;
     const reference = message.reference;
@@ -334,7 +339,7 @@ export function getAdminRole(guildID: Snowflake): AdminData | undefined {
     return adminRole;
 }
 
-const getBotOwnerID = () => process.env.OWNER_ID;
+export const getBotOwnerID = () => process.env.OWNER_ID;
 
 export function getBotOwner(data: types.Data) {
     const ownerID = process.env.OWNER_ID;
@@ -342,26 +347,22 @@ export function getBotOwner(data: types.Data) {
 }
 
 // returns the string following the bot's prefix, without accents and in lowercase
-export function prefixless(data: types.Data, msg: Message): string | undefined {
-    const cont = removeAccents(msg.content.toLowerCase());
-    const prefix = removeAccents(getPrefix(data, msg.guild!.id).toLowerCase());
-    const regex = new RegExp(`^(<@!?${data.client.user!.id}>).+$`);
-    
-    if (cont.startsWith(prefix.toLowerCase())) {
-        return cont.slice(prefix.length);
-    }
+export function prefixless(msg: Message): string | undefined {
+    const guild = msg.guild;
+    if (!guild) return undefined;
+    const cont = removeAccents(msg.content);
+    const prefix = removeAccents(getPrefix(guild.id));
+    const regex = new RegExp(`^(?:${prefix}|<@!?${msg.client.user!.id}>)\s+(.+?)\s*$`, "i");
     
     const match = cont.match(regex);
-    if (match) {
-        return cont.slice(match[1].length).trim();
-    }
-    
-    return undefined;
+    if (!match) return undefined;
+
+    return match[1]?.toLowerCase();
 }
 
-export function getPrefix(data: types.Data, guildID: Snowflake) {
+export function getPrefix(guildID: Snowflake) {
     const prefixes = loadPrefs<PrefixData>(PREFIX_PREFS_FILE, true);
-    const prefixData: PrefixData = prefixes[guildID] ?? { prefix: data.defaultPrefix };
+    const prefixData: PrefixData = prefixes[guildID] ?? { prefix: defaultPrefix };
     return prefixData.prefix;
 }
 
