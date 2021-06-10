@@ -46,7 +46,7 @@ export async function initBot(
 
         const guilds = Array.from(data.client.guilds.cache.values());
         console.log(
-            `Added to ${guilds.length} guild${guilds.length === 1 ? '' : 's'}:`,
+            `Online in ${guilds.length} guild${guilds.length === 1 ? '' : 's'}:`,
             guilds.map(x => x.name)
         );
 

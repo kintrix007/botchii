@@ -4,6 +4,8 @@
   "description": "A bot to forward discord announcements and for reaction-roles.",
   "main": "build/index.js",
   "scripts": {
+    "start": "echo \"-- compiling... --\" && tsc && echo \"-- finished compilation --\" && node .",
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -17,7 +19,7 @@
   },
   "homepage": "https://github.com/kintrix007/botchii#readme",
   "dependencies": {
-    "discord.js": "^12.5.3",
+    "discord.js": "^12.5.2",
     "dotenv": "^8.2.0",
     "emoji-regex": "^9.2.2",
     "typescript": "^4.3.2"

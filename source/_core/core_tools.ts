@@ -352,8 +352,12 @@ export function prefixless(msg: Message): string | undefined {
     if (!guild) return undefined;
     const cont = removeAccents(msg.content);
     const prefix = removeAccents(getPrefix(guild.id));
-    const regex = new RegExp(`^(?:${prefix}|<@!?${msg.client.user!.id}>)\s+(.+?)\s*$`, "i");
     
+    if (cont.startsWith(prefix)) {
+        return cont.slice(prefix.length);
+    }
+
+    const regex = new RegExp(`^<@!?${msg.client.user!.id}>\\s*(.+?)\\s*$`, "i");
     const match = cont.match(regex);
     if (!match) return undefined;
 

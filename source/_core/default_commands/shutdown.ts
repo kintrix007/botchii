@@ -15,7 +15,7 @@ function cmdKill({ msg }: types.CombinedData) {
     CoreTools.sendEmbed(msg, "ok", {
         title: "Shutting down... (restart)"
     }).then(sentMsg => {
-        console.log("-- stopping bot... --");
+        console.log("stopping bot...");
         process.exit(0);
     }).catch(console.error);
 }

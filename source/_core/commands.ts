@@ -9,7 +9,6 @@ const cmds = new Set<types.Command>();
 
 export async function createCmdsListeners(data: types.Data, cmdDirs: string[]) {
     cmdDirs.forEach(dir => loadCmds(dir));
-    // console.log(cmds);
     await setUpCmds(data);
 
     data.client.on("message", (msg: Message) => {
@@ -39,6 +38,7 @@ export async function createCmdsListeners(data: types.Data, cmdDirs: string[]) {
                     return;
                 }
 
+                console.log(`ran cmd '${cmd.name}' in '${msg.guild!.name}' by user '${CoreTools.getUserString(msg.author)} (${msg.author.id})'`);
                 cmd.func(combData);
             }
         });

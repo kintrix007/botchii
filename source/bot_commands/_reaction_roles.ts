@@ -82,7 +82,6 @@ async function setRRChannel({ data, msg, args }: types.CombinedData) {
     CoreTools.savePrefs(RR_PREFS_FILE, rrData);
 
     CoreTools.sendEmbed(msg, "ok", `**<#${channelID}>** is now set as the reaction roles channel.`)
-    console.log(`${msg.author.username}#${msg.author.discriminator} set the reaction roles channel to '${channelID}'`);
 }
 
 async function setRRData({ data, msg, args }: types.CombinedData) {
@@ -131,7 +130,6 @@ async function setRRData({ data, msg, args }: types.CombinedData) {
         title: "Success!",
         desc:  `The reaction-roles message in <#${rrData[guildID]!.targetChannelID}> is created, and up-to date!`
     });
-    console.log(`${msg.author.username}#${msg.author.discriminator} has set up reaction-roles.`);
 }
 
 function getReactionRolesData({ data, msg }: types.CombinedData) {

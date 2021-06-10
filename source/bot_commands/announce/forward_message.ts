@@ -19,7 +19,7 @@ export async function setup(data: types.Data) {
     const trackerMsgLinks = Object.values(announcedPrefs).map(x => Object.values(x!.announceMessages).map(x => x.trackerMsgLink)).flat(1);
 
     const cachedMessages = await CoreTools.cacheMessages(data.client, trackerMsgLinks);
-    console.log(`cached ${cachedMessages.length} announcement tracker messages`);
+    console.log(`cached '${cachedMessages.length}' announcement tracker messages`);
     cachedMessages.forEach(msg => {
         const firstReaction = msg.reactions.cache.first();
         if (!firstReaction) return;

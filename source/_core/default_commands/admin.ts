@@ -31,7 +31,6 @@ async function cmdMod({ msg, args }: types.CombinedData) {
             + (adminRoleID ? `role <@&${adminRoleID}>` : "**Administrator** permission") + ".";
             
         CoreTools.sendEmbed(msg, "ok", reply);
-        console.log(`${msg.author.username}#${msg.author.discriminator} has queried the admin role.`);
         return;
     }
 
@@ -64,7 +63,6 @@ async function cmdMod({ msg, args }: types.CombinedData) {
         title: "Successfully changed the tracked admin role!",
         desc:  `From now on, people with the <@&${newAdminRoleID!}> role count as admins.`
     });
-    console.log(`${msg.author.username}#${msg.author.discriminator} changed the admin role to '${newAdminRoleID!}'`);
 }
 
 module.exports = cmd;
