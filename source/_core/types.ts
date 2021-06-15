@@ -1,45 +1,55 @@
-import * as CoreTools from "./core_tools";
 import { Client, Message } from "discord.js";
 import * as ExtensionTypes from "../extension_types";
 
 
 type BaseCommandGroup = "help" | "admin" | "owner";
 
-interface BaseData {
+interface BaseCoreData {
     client:         Client;
     defaultPrefix:  string;
 }
 
-export const adminPermission: CommandPermission = {
-    func: msg => CoreTools.isAdmin(msg.member),
-    description: "Only people with the **admin role**, or with the **Administrator** permission can use this command.",
-    errorMessage: ({ cmdName }) =>`The command \`${cmdName}\` can only be used by admins.`
-};
-export const ownerPermission: CommandPermission = {
-    func: msg => CoreTools.isBotOwner(msg.author),
-    description: "Only the bot's **owner** can use this command.",
-    errorMessage: ({ cmdName }) => `The command \`${cmdName}\` can only be used by the bot's owner.`
-};
-
-
+export type PrefsData<T extends {}> = { guildName: string } & T
 export interface Prefs<T extends {}> {
-    [guildID: string]: ({
-        guildName: string;
-    } & T) | undefined;
+    [guildID: string]: PrefsData<T>;
 }
 
-export type PermissionFunc = (msg: Message) => boolean;
-
 export type CommandPermission = {
-    description?:  string;
-    errorMessage?: (combData: CombinedData) => string
-    func:          PermissionFunc;
+    test:          (cmdCall: CommandCallData) => boolean;
+    errorMessage?: (cmdCall: CommandCallData) => string;
+    description?:  (cmd: Command) => string
 };
 
-type Parameters = string[];
+export type CustomCoreData     = ExtensionTypes.CustomCoreData;
+export type CustomCommandGroup = ExtensionTypes.CustomCommandGroup;
+
+export type CoreData     = Readonly<BaseCoreData & CustomCoreData>;
+export type CommandGroup = BaseCommandGroup | CustomCommandGroup;
+
+export type CommandCallData = Readonly<{
+    coreData:   CoreData;
+    msg:        Message;
+    cmdName:    string;
+    args:       string[];
+    argsStr:    string;
+    cont:       string;
+}>;
+
+/**
+ * @param setup is called once the bot starts. Ideal to set up reaction listeners, or similar.
+ * @param call is called when a user uses the given command.
+ * @param permissions A member has permission to use a commmand, if they have ALL needed permissions. If undefined, anyone can use it.
+ * A command is called either by it's name, or any of its aliases.
+ * If multiple commands have the same name, a random one is executed.
+ * @param group is only used for the help sheet.
+ * @param usage Only commands which have a usage show up in the help sheet.
+ * @param description is only used in the help sheet. Should briefly explain how the command works.
+ * @param examples are the examples shown in the examples shown in the help sheet. A string array represents one way of calling it.
+ * For example the help command would have examples `[[], ["prefix"]]`, as it can be called without any arguements, or one arguement.
+ */
 export interface Command {
-    setupFunc?:     (data: Data) => Promise<unknown> | void;
-    func:           (combData: CombinedData) => Promise<unknown> | void;
+    setup?:     (coreData: CoreData) => Promise<unknown> | void;
+    call:           (cmdCall: CommandCallData) => Promise<unknown> | void;
     name:           string;
     aliases?:       string[];
     
@@ -48,20 +58,5 @@ export interface Command {
     
     usage?:         string | string[];
     description?:   string;
-    examples?:      Parameters[];
-}
-
-export type CustomData         = ExtensionTypes.CustomData;
-export type CustomCommandGroup = ExtensionTypes.CustomCommandGroup;
-
-export type Data               = Readonly<BaseData & CustomData>;
-export type CommandGroup       = BaseCommandGroup | CustomCommandGroup;
-
-export interface CombinedData {
-    data:       Data;
-    msg:        Message;
-    cmdName:    string;
-    args:       string[];
-    argsStr:    string;
-    cont:       string;
+    examples?:      string[][];
 }

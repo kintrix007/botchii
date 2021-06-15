@@ -1,12 +1,12 @@
 import * as types from "./_core/types";
-import * as CoreTools from "./_core/core_tools";
+import * as BotUtils from "./_core/bot_utils";
 import { CountedEmoji, UserReactions } from "./custom_types";
 import { CategoryChannel, Channel, Client, DMChannel, Guild, GuildEmoji, MessageReaction, NewsChannel, Snowflake, TextChannel } from "discord.js";
 import path from "path";
 import { AliasData, ALIAS_PREFS_FILE } from "./bot_commands/command_prefs";
 
 
-export const PICS_DIR = path.join(CoreTools.ROOT_DIR, "images");
+export const PICS_DIR = path.join(BotUtils.ROOT_DIR, "images");
 
 export function convertToCountedEmoji(reaction: MessageReaction) {
     const {emoji, count} = reaction;
@@ -22,6 +22,7 @@ export function convertToCountedEmoji(reaction: MessageReaction) {
     return counted;
 }
 
+
 function parseChannel(guild: Guild, channelIDOrAlias: string) {
     const channelRegex = /^(?:(\d+)|<#(\d+)>)$/i;
     const match = channelIDOrAlias.match(channelRegex);
@@ -30,10 +31,11 @@ function parseChannel(guild: Guild, channelIDOrAlias: string) {
     return channelIDs as Snowflake[] | undefined;
 }
 
-export function parseChannels(guild: Guild, channelAliasesOrIDs: string[]): Snowflake[] {
-    return channelAliasesOrIDs.map(channelIDOrAlias => {
-        return parseChannel(guild, channelIDOrAlias);
-    }).flat(1).filter(x => x !== undefined) as string[];
+export function parseChannels(guild: Guild, channelAliasesOrIDs: string[] | Set<string>): Snowflake[] {
+    return [...channelAliasesOrIDs]
+    .map(aliasOrID => parseChannel(guild, aliasOrID))
+    .flat(1)
+    .filter((x): x is string => x !== undefined);
 }
 
 export function createChannelAlias(
@@ -44,33 +46,34 @@ export function createChannelAlias(
 
     if (!channels.every(isTextChannel)) return;     // Just a runtime check as well...
 
-    const aliasPrefs = CoreTools.loadPrefs<AliasData>(ALIAS_PREFS_FILE, true);
+    const aliasPrefs = BotUtils.loadPrefs<AliasData>(ALIAS_PREFS_FILE, true);
     const aliasData = {
         [guild.id]: {
             guildName: guild.name,
             aliases:   { ...(aliasPrefs[guild.id]?.aliases ?? {}), [alias]: channels.map(x => x.id) }
         }
     } as types.Prefs<AliasData>;
-    CoreTools.updatePrefs(ALIAS_PREFS_FILE, aliasData);
+    BotUtils.updatePrefs(ALIAS_PREFS_FILE, aliasData);
 }
 
 export function removeChannelAlias(guild: Guild, alias: string) {
-    const aliasPrefs = CoreTools.loadPrefs<AliasData>(ALIAS_PREFS_FILE, true);
+    const aliasPrefs = BotUtils.loadPrefs<AliasData>(ALIAS_PREFS_FILE, true);
     const aliasData = {
         [guild.id]: {
             guildName: guild.name,
             aliases:   { ...(aliasPrefs[guild.id]?.aliases ?? {}), [alias]: undefined }
         }
     } as types.Prefs<AliasData>;
-    CoreTools.updatePrefs(ALIAS_PREFS_FILE, aliasData);
+    BotUtils.updatePrefs(ALIAS_PREFS_FILE, aliasData);
 }
 
 export function fromChannelAlias(guild: Guild, alias: string) {
-    const aliasData = CoreTools.loadPrefs<AliasData>(ALIAS_PREFS_FILE);
+    const aliasData = BotUtils.loadPrefs<AliasData>(ALIAS_PREFS_FILE);
     return aliasData[guild.id]?.aliases?.[alias];
 }
 
-export async function fetchTextChannels(client: Client, channelIDs: string[]) {
+
+export async function fetchTextChannels(client: Client, channelIDs: string[] | Set<string>) {
     let channels: Array<TextChannel | NewsChannel | DMChannel> = [];
     
     for (const channelID of channelIDs) {
@@ -94,9 +97,10 @@ export async function fetchTextChannels(client: Client, channelIDs: string[]) {
     return channels;
 }
 
-export function isTextChannel(channel: Channel): channel is TextChannel | NewsChannel |DMChannel {
+export function isTextChannel(channel: Channel): channel is TextChannel | NewsChannel | DMChannel {
     return channel instanceof TextChannel || channel instanceof NewsChannel || channel instanceof DMChannel;
 }
+
 
 export async function convertToUserReactions(reactions: MessageReaction[], fromCache = false) {
     if (!fromCache) for (const reaction of reactions) await reaction.users.fetch();
@@ -112,6 +116,7 @@ export async function convertToUserReactions(reactions: MessageReaction[], fromC
 
     return userReactions;
 }
+
 
 export function union<T>(a: Set<T>, b: Set<T>): Set<T> {
     return new Set([...a, ...b]);

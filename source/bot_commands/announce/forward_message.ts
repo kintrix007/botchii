@@ -1,8 +1,9 @@
-import * as CoreTools from "../../_core/core_tools";
-import * as types from "../../_core/types";
+import * as BotUtils from "../../_core/bot_utils";
+import { CoreData, Prefs } from "../../_core/types";
 import * as Utilz from "../../utilz";
-import { AnnounceData, ANNOUNCE_PREFS_FILE, ChannelData, CHANNEL_PREFS_FILE } from "../command_prefs";
+import { AnnounceData, ANNOUNCE_PREFS_FILE, ChannelData, CHANNEL_PREFS_FILE, EXPIRED_MESSAGE_TEXT } from "../command_prefs";
 import { Client, DMChannel, Message, MessageReaction, NewsChannel, PartialUser, TextChannel, User } from "discord.js";
+// import { UserReactions } from "../../custom_types";
 
 export const announcedEmoji  = "👌";
 export const acceptEmoji     = "⬆️"
@@ -10,24 +11,26 @@ export const rejectEmoji     = "⬇️"
 export const scoreToForward  = 3;
 export const invalidateFor = 72;  // hours passed
 
-export async function setup(data: types.Data) {
-    await removeExpiredTrackers(data.client);
-    setInterval(() => removeExpiredTrackers(data.client), 1000*60*60);     // every hour
-    // setInterval(() => removeExpiredTrackers(data.client), 1000);     // every second
+export async function setup(coreData: CoreData) {
+    await removeExpiredTrackers(coreData.client);
+    setInterval(() => removeExpiredTrackers(coreData.client), 1000*60*60);     // every hour
+    // setInterval(() => removeExpiredTrackers(coreData.client), 1000);     // every second
     
-    const announcedPrefs = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE);
-    const trackerMsgLinks = Object.values(announcedPrefs).map(x => Object.values(x!.announceMessages).map(x => x.trackerMsgLink)).flat(1);
+    const announcedPrefs = BotUtils.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE);
+    const trackerMsgLinks = Object.values(announcedPrefs).map(x => Object.values(x.announceMessages).map(x => x.trackerMsgLink)).flat(1);
 
-    const cachedMessages = await CoreTools.cacheMessages(data.client, trackerMsgLinks);
+    const cachedMessages = await BotUtils.cacheMessages(coreData.client, trackerMsgLinks);
     console.log(`cached '${cachedMessages.length}' announcement tracker messages`);
+
+    // check tracker messages, in case they changed while the bot was offline
     cachedMessages.forEach(msg => {
         const firstReaction = msg.reactions.cache.first();
-        if (!firstReaction) return;
-        trackReactions(data)(firstReaction, undefined);
+        if (firstReaction === undefined) return;
+        trackReactions(coreData)(firstReaction, undefined);
     });
 
-    data.client.on("messageReactionAdd",    trackReactions(data));
-    data.client.on("messageReactionRemove", trackReactions(data));
+    coreData.client.on("messageReactionAdd",    trackReactions(coreData));
+    coreData.client.on("messageReactionRemove", trackReactions(coreData));
 
 }
 
@@ -36,60 +39,70 @@ async function removeExpiredTrackers(client: Client) {
     const invalidateForMsPassed = invalidateFor*60*60*1000;
     const invalidateBefore = currentTimestamp - invalidateForMsPassed;
 
-    let announcedPrefs = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true);
-    
+    let announcedPrefs = BotUtils.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true);
+    let msgEditPromises: Promise<Message | void>[] = [];
+
     for (const [guildID, announceData] of Object.entries(announcedPrefs)) {
-        for (const [announceMsgLink, { createdTimestamp }] of Object.entries(announceData!.announceMessages)) {
-            const shouldDelete = createdTimestamp === undefined || createdTimestamp <= invalidateBefore;
-            if (shouldDelete) {
-                try {
-                    const trackerMsg = await CoreTools.fetchMessageLink(client, announcedPrefs[guildID]!.announceMessages[announceMsgLink].trackerMsgLink);
-                    delete announcedPrefs[guildID]!.announceMessages[announceMsgLink];
-                    console.log(`deleted an announcement tracker in '${announcedPrefs[guildID]!.guildName}'`);
-                    if (trackerMsg) {
-                        await trackerMsg.edit("**-- Timed out! --**").catch(err => console.warn(err));
-                    }
-                }
-                catch (err) {
-                    continue;
-                }
+        for (const [announceMsgLink, { createdTimestamp, trackerMsgLink }] of Object.entries(announceData.announceMessages)) {
+            const shouldDelete = createdTimestamp <= invalidateBefore;
+            if (!shouldDelete) continue;
+
+            try {
+                const trackerMsg = await BotUtils.fetchMessageLink(client, trackerMsgLink);
+                delete announcedPrefs[guildID]!.announceMessages[announceMsgLink];
+                console.log(`deleted an announcement tracker in '${announcedPrefs[guildID]!.guildName}'`);
+                const editPromise = trackerMsg?.edit(EXPIRED_MESSAGE_TEXT)?.catch(err => console.warn(err));
+                if (editPromise !== undefined) msgEditPromises.push(editPromise);
+            }
+            catch (err) {
+                continue;
             }
         }
     }
+
+    for (const promise of msgEditPromises) {
+        await promise;
+    }
     
-    CoreTools.updatePrefs(ANNOUNCE_PREFS_FILE, announcedPrefs, true);
+    BotUtils.updatePrefs(ANNOUNCE_PREFS_FILE, announcedPrefs, true);
 }
 
-function trackReactions(data: types.Data) {
+function trackReactions(coreData: CoreData) {
     // user is undefined, if it's simulated
     return async (reaction: MessageReaction, user: User | PartialUser | undefined) => {
         if (user?.bot) return;
-        if (!(user instanceof User) && !(typeof user === "undefined")) return;
+        // return if PartialUser
+        if (!(user instanceof User || user === undefined)) return;
         
         const message = reaction.message;
-        const announceData = CoreTools.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true)[message.guild!.id];
-        if (!announceData) return;
+        const announceData = BotUtils.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true)[message.guild!.id];
+        if (announceData === undefined) return;
 
         const newAnnData = Object.entries(announceData.announceMessages)
-            .map(([announceMsgLink, { trackerMsgLink, targetChannels }]) => { return { announceMsgLink, trackerMsgLink, targetChannels } })
-        const trackedMsgData = newAnnData.find(({ trackerMsgLink }) => CoreTools.getMessageLink(message) === trackerMsgLink);
-        if (!trackedMsgData) return;
+        .map(([announceMsgLink, { trackerMsgLink, targetChannels }]) => { return { announceMsgLink, trackerMsgLink, targetChannels } });
+        
+        const trackedMsgData = newAnnData.find(({ trackerMsgLink }) => BotUtils.getMessageLink(message) === trackerMsgLink);
+        if (trackedMsgData === undefined) return;
         const { announceMsgLink, trackerMsgLink, targetChannels: customTargetChannels } = trackedMsgData;
 
-        const targetChannelIDs = customTargetChannels ?? CoreTools.loadPrefs<ChannelData>(CHANNEL_PREFS_FILE, true)[message.guild!.id]?.toChannels;
+        const targetChannelIDs = customTargetChannels ?? BotUtils.loadPrefs<ChannelData>(CHANNEL_PREFS_FILE, true)[message.guild!.id]?.toChannels;
 
-        if (!targetChannelIDs) {
-            CoreTools.sendEmbed(message, "error", {
+        if (targetChannelIDs === undefined) {
+            BotUtils.sendEmbed(message, "error", {
                 title: "No target channels are given!",
-                desc:  "Type \`.channel\` to see the default target channels."
+                desc:  `Type \`${BotUtils.getPrefix(message.guild!.id)}channel\` to see the default target channels.`
             });
             return;
         }
 
         const reactions = Array.from(message.reactions.cache.values());
-        const userReactions = await Utilz.convertToUserReactions(reactions);
-        delete userReactions[data.client.user!.id];
-
+        const userReactions = await (async () => {
+            let userReactions = await Utilz.convertToUserReactions(reactions);
+            delete userReactions[coreData.client.user!.id];
+            return userReactions;
+        })();
+        // const userReactions = {...await Utilz.convertToUserReactions(reactions), ...{ [coreData.client.user!.id]: undefined }} as UserReactions;
+        
         const acceptUserIDs = new Set(Object.entries(userReactions).filter(([,emojiStr]) => emojiStr.has(acceptEmoji)).map(([userID]) => userID));
         const rejectUserIDs = Utilz.difference(
             new Set(Object.entries(userReactions).filter(([,emojiStr]) => emojiStr.has(rejectEmoji)).map(([userID]) => userID)),
@@ -100,28 +113,28 @@ function trackReactions(data: types.Data) {
         const scoreToGo     = Math.max(scoreToForward - score, 0);
         const shouldForward = scoreToGo === 0;
 
-        const trackerMsg  = (await CoreTools.fetchMessageLink(data.client, trackerMsgLink))!;
-        const announceMsg = (await CoreTools.fetchMessageLink(data.client, announceMsgLink))!;
+        const trackerMsg  = (await BotUtils.fetchMessageLink(coreData.client, trackerMsgLink))!;
+        const announceMsg = (await BotUtils.fetchMessageLink(coreData.client, announceMsgLink))!;
         const content = announceMsgLink
-            + (announceMsg.content ? "\n" + CoreTools.quoteMessage(announceMsg, 75) : "") + "\n"
-            + (targetChannelIDs.length ? "\n**to:** " + targetChannelIDs.map(x => "<#"+x+">").join(", ") : "")
-            + "\n" + (shouldForward ? `**-- Announced by ${[...acceptUserIDs].map(x => "<@"+x+">").join(", ")} --**` : `**${scoreToGo} to go**`);
+        + (announceMsg.content ? "\n" + BotUtils.quoteMessage(announceMsg, 75) : "") + "\n"
+        + (targetChannelIDs.length ? "\n**to:** " + targetChannelIDs.map(x => "<#"+x+">").join(", ") : "")
+        + "\n" + (shouldForward ? `**-- Announced by ${[...acceptUserIDs].map(x => "<@"+x+">").join(", ")} --**` : `**${scoreToGo} to go**`);
         
-        await trackerMsg.edit(content);
-
         if (shouldForward) {
-            const targetChannels = (await CoreTools.fetchChannels(data.client, targetChannelIDs ?? []))
-                .filter((x): x is TextChannel | NewsChannel | DMChannel => Utilz.isTextChannel(x));
+            const targetChannels = (await BotUtils.fetchChannels(coreData.client, targetChannelIDs))
+            .filter((x): x is TextChannel | NewsChannel | DMChannel => Utilz.isTextChannel(x));
             await forwardMessage(announceMsg, targetChannels);
-
+            
             const newAnnounceData = {
                 [message.guild!.id]: {
                     guildName: message.guild!.name,
                     announceMessages: { ...announceData.announceMessages, [announceMsgLink]: undefined }
                 }
-            } as types.Prefs<AnnounceData>;
-            CoreTools.updatePrefs(ANNOUNCE_PREFS_FILE, newAnnounceData);
+            } as Prefs<AnnounceData>;
+            BotUtils.updatePrefs(ANNOUNCE_PREFS_FILE, newAnnounceData);
         }
+
+        await trackerMsg.edit(content);
     }
 }
 
@@ -129,7 +142,7 @@ async function forwardMessage(announceMsg: Message, targetChannels: Array<TextCh
     const announcerName = announceMsg.member?.nickname ?? announceMsg.author.username;
     const title         = (!!announceMsg.member /* && !announceMsg.system */
                           ? `__**${announcerName}** made an announcement__`
-                          : `**${announcerName}**`) + ":";
+                          : `__**${announcerName}**__`) + ":";
     const content       = announceMsg.content.replace(/@here/g, "`@`here").replace(/@everyone/g, "`@`everyone");
     const attachments   = Array.from(announceMsg.attachments.values());
     const embeds        = announceMsg.embeds;

@@ -1,19 +1,18 @@
-import * as CoreTools from "../core_tools";
-import * as types from "../types";
+import * as BotUtils from "../bot_utils";
+import { Command, CommandCallData } from "../types";
 
-const cmd: types.Command = {
-    func: cmdKill,
-    name: "restart",
-    permissions: [ types.ownerPermission ],
-    aliases: [ "shutdown", "kill" ],
+const cmd: Command = {
+    call: cmdKill,
+    name: "shutdown",
+    permissions: [ BotUtils.ownerPermission ],
+    aliases: [ "kill" ],
     group: "owner",
-    // usage: "restart",
     examples: [ [] ],
 };
 
-function cmdKill({ msg }: types.CombinedData) {
-    CoreTools.sendEmbed(msg, "ok", {
-        title: "Shutting down... (restart)"
+function cmdKill({ msg }: CommandCallData) {
+    BotUtils.sendEmbed(msg, "ok", {
+        title: "Shutting down..."
     }).then(sentMsg => {
         console.log("stopping bot...");
         process.exit(0);

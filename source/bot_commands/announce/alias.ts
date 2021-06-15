@@ -1,15 +1,14 @@
-import * as CoreTools from "../../_core/core_tools";
-import * as types from "../../_core/types";
+import * as BotUtils from "../../_core/bot_utils";
+import { CommandCallData } from "../../_core/types";
 import * as Utilz from "../../utilz";
 import { AliasData, ALIAS_PREFS_FILE } from "../command_prefs";
 import { Message } from "discord.js";
 
-export default async function cmdAlias({ msg, args }: types.CombinedData) {
-    const alias = args[0] as string | undefined;
-    const channelIDsOrAliases = args.slice(1);
+export default async function cmdAlias({ msg, args }: CommandCallData) {
+    const [alias, ...channelIDsOrAliases] = args;
 
-    if (!alias) {
-        getAliases(msg);
+    if (alias === undefined) {
+        sendAliases(msg);
         return;
     }
 
@@ -18,34 +17,33 @@ export default async function cmdAlias({ msg, args }: types.CombinedData) {
         return;
     }
 
-    // removing duplicates by convertiong to set and back
-    // keeping it a list, so that JSON can handle it
-    const channelIDs = [...new Set(Utilz.parseChannels(msg.guild!, channelIDsOrAliases))];
+    // removing duplicates by converting to set
+    const channelIDs = new Set(Utilz.parseChannels(msg.guild!, channelIDsOrAliases));
     const channels = await Utilz.fetchTextChannels(msg.client, channelIDs);
 
     if (channels.length === 0) {
-        CoreTools.sendEmbed(msg, "error", "No valid channels given.");
+        BotUtils.sendEmbed(msg, "error", "No valid channels given.");
         return;
     }
 
     Utilz.createChannelAlias(msg.guild!, alias, channels);
-    CoreTools.sendEmbed(msg, "ok", `Successfully added channel alias \`${alias}\` for ${channels.join(", ")}`);
+    BotUtils.sendEmbed(msg, "ok", `Successfully added channel alias \`${alias}\` for ${channels.join(", ")}`);
 }
 
 function removeAlias(msg: Message, alias: string) {
     Utilz.removeChannelAlias(msg.guild!, alias);
-    CoreTools.sendEmbed(msg, "ok", `Successfully removed channel alias \`${alias}\`.`);
+    BotUtils.sendEmbed(msg, "ok", `Successfully removed channel alias \`${alias}\`.`);
 }
 
-function getAliases(msg: Message) {
-    const aliasData = CoreTools.loadPrefs<AliasData>(ALIAS_PREFS_FILE)[msg.guild!.id];
+function sendAliases(msg: Message) {
+    const aliasData = BotUtils.loadPrefs<AliasData>(ALIAS_PREFS_FILE)[msg.guild!.id];
 
     if (aliasData === undefined || Object.values(aliasData.aliases).length === 0) {
-        CoreTools.sendEmbed(msg, "neutral", "No aliases set...");
+        BotUtils.sendEmbed(msg, "neutral", "No aliases set...");
         return;
     }
 
-    CoreTools.sendEmbed(msg, "neutral", {
+    BotUtils.sendEmbed(msg, "neutral", {
         title: `${aliasData.guildName} aliases:`,
         desc: Object.entries(aliasData.aliases)
             .map(([alias, channelIDs]) =>

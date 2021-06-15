@@ -1,5 +1,5 @@
 export type CustomCommandGroup = "roles" | "announcement";
 
-export interface CustomData {
+export interface CustomCoreData {
     
 };

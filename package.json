@@ -4,8 +4,10 @@
   "description": "A bot to forward discord announcements and for reaction-roles.",
   "main": "build/index.js",
   "scripts": {
-    "start": "echo \"-- compiling... --\" && tsc && echo \"-- finished compilation --\" && node .",
-    "build": "tsc",
+    "prestart": "npm run build",
+    "start": "echo \"-- starting bot... --\" && node .",
+    "prebuild": "[ -f .env ] || echo \"missing file: '.env'\"",
+    "build": "echo \"-- compiling... --\" && tsc && echo \"-- finished compilation --\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

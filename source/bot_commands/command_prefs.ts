@@ -13,7 +13,7 @@ export interface AnnounceData {
 
 export interface AliasData {
     aliases: {
-        [alias: string]: Snowflake[] | undefined;
+        [alias: string]: Snowflake[];
     }
 }
 
@@ -36,3 +36,5 @@ export const ANNOUNCE_PREFS_FILE = "announce_messages";
 export const ALIAS_PREFS_FILE    = "aliases";
 export const RR_PREFS_FILE       = "reaction_roles";
 export const CHANNEL_PREFS_FILE  = "channel";
+
+export const EXPIRED_MESSAGE_TEXT = "**-- Announcement timed out! --**"

@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import * as types from "./types";
+import { CommandPermission, CoreData, Prefs } from "./types";
 import { config } from "dotenv";
 import { Channel, Client, DMChannel, GuildChannel, GuildMember, Message, MessageEmbed, MessageReaction, NewsChannel, PermissionString, Snowflake, TextChannel, User } from "discord.js";
 import { PrefixData, PREFIX_PREFS_FILE, AdminData, ADMIN_PREFS_FILE } from "./default_commands/command_prefs";
@@ -9,8 +9,8 @@ config();
 export const BOT_CORE_DIR         = path.join(__dirname);
 export const DEFAULT_COMMANDS_DIR = path.join(BOT_CORE_DIR, "default_commands");
 export const ROOT_DIR             = path.join(BOT_CORE_DIR, "..", "..");
-export const SOURCE_DIR           = path.join(ROOT_DIR, "source");
-export const PREFS_DIR            = path.join(ROOT_DIR, "prefs");
+export const SOURCE_DIR = path.join(ROOT_DIR, "source");
+export const PREFS_DIR  = path.join(ROOT_DIR, "prefs");
 
 export const messageColors = {
     ok:      0x00bb00,
@@ -29,9 +29,8 @@ interface BasicEmbedData {
 
 let defaultPrefix: string;
 
-export function setDefaultPrefix(newPrefix: string) {
-    defaultPrefix = newPrefix;
-}
+
+// general utility
 
 export async function cacheChannelMessages(client: Client, channelIDs: string[]) {
     let successCount = 0;
@@ -106,6 +105,7 @@ export async function fetchChannels<T extends Channel>(client: Client, channelID
     return channels;
 }
 
+// NEEDS WORK!
 export const removeAccents = (() => {
     const nonAccents: {[nonAccent: string]: string[]} = {
         "a": ["á", "å", "ǎ", "ä", "ȧ"],
@@ -133,19 +133,30 @@ export const removeAccents = (() => {
     );
 })();
 
-export async function addReactions(msg: Message, reactions: string[]) {
-    const channel = msg.channel
+export async function addReactions(msg: Message, reactions: string[] | Set<string>) {
+    const channel = msg.channel;
     const perms = (channel instanceof DMChannel ? undefined : channel.permissionsFor(msg.client.user!));
     const canReact = perms?.has("ADD_REACTIONS") ?? false;
 
     if (!canReact) return undefined;
-    const reactionPromises: MessageReaction[] = [];
-
-    for (const reaction of reactions) {
-        reactionPromises.push(await msg.react(reaction));
+    
+    if (reactions instanceof Array) {
+        let reactionsResolved: MessageReaction[] = [];
+        for (const reaction of reactions) {
+            reactionsResolved.push(await msg.react(reaction));
+        }
+        return reactionsResolved;
+    } else {
+        const reactionPromises = [...reactions].map(r => msg.react(r));
+        let reactionsResolved: MessageReaction[] = [];
+        
+        for (const rp of reactionPromises) {
+            reactionsResolved.push(await rp);
+        }
+        
+        return reactionsResolved;
     }
 
-    return reactionPromises;
 }
 
 export function quoteMessage(msg: Message, maxLength = 50) {
@@ -171,9 +182,9 @@ export function parseMessageLink(msgLink: string) {
     const match = msgLink.match(regex);
     if (!match) return undefined;
 
-    const guildID = match[1] as string | undefined;
-    const channelID = match[2];
-    const messageID = match[3];
+    const guildID = match[1];
+    const channelID = match[2]!;
+    const messageID = match[3]!;
     
     return {
         guildID,
@@ -212,13 +223,6 @@ export async function getReplyMessage(message: Message) {
     }
 }
 
-export function createEmbed<T extends Message | User | TextChannel | NewsChannel | DMChannel>(
-    target: T, type: MessageType, message: string | BasicEmbedData
-): T extends DMChannel ? MessageEmbed : (
-    T extends Message ? T["channel"] extends DMChannel
-        ? MessageEmbed
-        : string | MessageEmbed : string | MessageEmbed
-);
 export function createEmbed(target: Message | User | TextChannel | NewsChannel | DMChannel, type: MessageType, message: BasicEmbedData | string) {
     let hasPerms: boolean;
     
@@ -267,9 +271,6 @@ export function createEmbed(target: Message | User | TextChannel | NewsChannel |
 
 export function sendEmbed(
     target: Message | User | TextChannel | NewsChannel | DMChannel, type: MessageType, message: BasicEmbedData | string
-): Promise<Message>;
-export function sendEmbed(
-    target: Message | User | TextChannel | NewsChannel | DMChannel, type: MessageType, message: BasicEmbedData | string
 ) {
     let sendTarget: User | TextChannel | NewsChannel | DMChannel;
     
@@ -289,7 +290,8 @@ export function sendEmbed(
 }
 
 export function capitalize(str: string): string {
-    return str[0].toUpperCase() + str.slice(1);
+    if (str.length === 0) return "";
+    return str[0]!.toUpperCase() + str.slice(1);
 }
 
 export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean): T[] {
@@ -299,28 +301,54 @@ export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean): T[] {
     });
 }
 
-// specific
+// framework-specific utility
 
-export const channelSpecificCmdPermission = (() => {
-    function humanReadable(perm: PermissionString) {
-        const words = perm.toLowerCase().split("_");
-        return words.map(capitalize).join(" ");
-    }
+export function setDefaultPrefix(newPrefix: string) {
+    defaultPrefix = newPrefix;
+}
 
-    return (permission: PermissionString) => {
-        const cmdPerm: types.CommandPermission = {
-            func: msg => {
-                const channel = msg.channel;
-                if (channel instanceof DMChannel) return true;
-                const perms = channel.permissionsFor(msg.member!);
-                return perms?.has(permission) ?? false;
-            },
-            description: `Only people, who have **${humanReadable(permission)}** permission in a given channel, can use this command.`,
-            errorMessage: ({ cmdName }) => `You can only use \`${cmdName}\` if you have **${humanReadable(permission)}** in this channel!`
-        };
-        return cmdPerm;
-    }
-})();
+export const adminPermission: CommandPermission = {
+    test:         ({ msg }) => isAdmin(msg.member),
+    errorMessage: ({ cmdName }) =>`The command \`${cmdName}\` can only be used by admins.`,
+    description:  cmd => "Only people with the **admin role**, or with the **Administrator** permission can use this command."
+};
+export const ownerPermission: CommandPermission = {
+    test:         ({ msg }) => isBotOwner(msg.author),
+    errorMessage: ({ cmdName }) => `The command \`${cmdName}\` can only be used by the bot's owner.`,
+    description:  cmd => "Only the bot's **owner** can use this command."
+};
+
+
+function humanReadable(perm: PermissionString) {
+    const words = perm.toLowerCase().split("_");
+    return words.map(capitalize).join(" ");
+}
+
+export function createCommandPermission(permission: PermissionString) {
+    const humanReadablePermission = humanReadable(permission);
+    const cmdPerm: CommandPermission = {
+        test:         ({ msg }) => msg.member?.hasPermission(permission) ?? false,
+        errorMessage: ({ cmdName }) => `The command \`${cmdName}\` can only be used by people with **${humanReadablePermission}** permission.`,
+        description:  cmd => `Only people with **${humanReadablePermission}** permission can use this command.`
+    };
+    return cmdPerm;
+}
+
+export function createChannelSpecificCmdPermission(permission: PermissionString) {
+    const humanReadablePermission = humanReadable(permission);
+    const cmdPerm: CommandPermission = {
+        test: ({ msg }) => {
+            const channel = msg.channel;
+            if (channel instanceof DMChannel) return true;
+            const perms = channel.permissionsFor(msg.member!);
+            return perms?.has(permission) ?? false;
+        },
+        description: cmd => `Only people, who have **${humanReadablePermission}** permission in a given channel, can use this command.`,
+        errorMessage: ({ cmdName }) => `You can only use \`${cmdName}\` if you have **${humanReadablePermission}** in this channel!`
+    };
+    return cmdPerm;
+}
+
 
 export function isAdmin(member: GuildMember | undefined | null) {
     if (!member) return false;
@@ -333,7 +361,7 @@ export function isBotOwner(user: User) {
     return user.id === getBotOwnerID();
 }
 
-export function getAdminRole(guildID: Snowflake): AdminData | undefined {
+export function getAdminRole(guildID: Snowflake) {
     const adminRoles = loadPrefs<AdminData>(ADMIN_PREFS_FILE, true);
     const adminRole = adminRoles[guildID];
     return adminRole;
@@ -341,7 +369,7 @@ export function getAdminRole(guildID: Snowflake): AdminData | undefined {
 
 export const getBotOwnerID = () => process.env.OWNER_ID;
 
-export function getBotOwner(data: types.Data) {
+export function getBotOwner(data: CoreData) {
     const ownerID = process.env.OWNER_ID;
     return data.client.users.fetch(ownerID ?? "");  // returns a Promise
 }
@@ -366,11 +394,12 @@ export function prefixless(msg: Message): string | undefined {
 
 export function getPrefix(guildID: Snowflake) {
     const prefixes = loadPrefs<PrefixData>(PREFIX_PREFS_FILE, true);
-    const prefixData: PrefixData = prefixes[guildID] ?? { prefix: defaultPrefix };
+    const prefixData = prefixes[guildID] ?? { prefix: defaultPrefix };
     return prefixData.prefix;
 }
 
-export function savePrefs(filename: string, saveData: types.Prefs<{}>, silent = false) {
+
+export function savePrefs(filename: string, saveData: Prefs<{}>, silent = false) {
     if (!fs.existsSync(PREFS_DIR)) {
         fs.mkdirSync(PREFS_DIR);
         console.log(`created dir '${PREFS_DIR}' because it did not exist`);
@@ -381,6 +410,7 @@ export function savePrefs(filename: string, saveData: types.Prefs<{}>, silent = 
     if (!silent) console.log(`saved prefs in '${filename}'`);
 }
 
+/** returns {} if the given prefs file does not exist */
 export function loadPrefs<T>(filename: string, silent = false) {
     if (!fs.existsSync(PREFS_DIR)) {
         fs.mkdirSync(PREFS_DIR);
@@ -391,15 +421,21 @@ export function loadPrefs<T>(filename: string, silent = false) {
     if (!fs.existsSync(filePath)) return {};
 
     const loadDataRaw = fs.readFileSync(filePath).toString();
-    const loadData = JSON.parse(loadDataRaw) as types.Prefs<T>;
+    const loadData = JSON.parse(loadDataRaw) as Prefs<T>;
     
     if (!silent) console.log(`loaded prefs from '${filename}'`);
 
     return loadData;
 }
 
-export function updatePrefs<T>(filename: string, overwriteData: types.Prefs<T>, silent = false) {
-    const newPrefs: types.Prefs<T> = { ...loadPrefs<T>(filename, true), ...overwriteData };
+/** 
+ * Overwrites a part of the prefs file.
+ * Where the keys overlap, it saves the data from `overwriteData`,
+ * otherwise the data from the JSON prefs file.
+ * Since the keys are always the guildID's it makes it easier to update the prefs for a single guild.
+*/
+export function updatePrefs<T>(filename: string, overwriteData: Prefs<T>, silent = false) {
+    const newPrefs: Prefs<T> = { ...loadPrefs<T>(filename, true), ...overwriteData };
     savePrefs(filename, newPrefs, true);
     if (!silent) console.log(`updated prefs in '${filename}'`);
 }

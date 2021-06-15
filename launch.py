@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import os, sys, shutil
-import time, json
+import time
 from datetime import datetime
 from functools import reduce
 from typing import List

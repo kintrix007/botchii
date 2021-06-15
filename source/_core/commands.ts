@@ -1,50 +1,23 @@
-import * as types from "./types";
-import * as CoreTools from "./core_tools";
+import { CommandCallData, Command, CoreData } from "./types";
+import * as BotUtils from "./bot_utils";
 import fs from "fs";
 import path from "path";
 import { Message, DMChannel } from "discord.js";
 
-const DEAULT_NOT_PERMITTED_ERROR_MESSAGE = "You do not have permission to use this command."
-const cmds = new Set<types.Command>();
+const DEAULT_NOT_PERMITTED_ERROR_MESSAGE = ({ cmdName }: CommandCallData) => `You do not have permission to use the command \`${cmdName}\`.`;
 
-export async function createCmdsListeners(data: types.Data, cmdDirs: string[]) {
-    cmdDirs.forEach(dir => loadCmds(dir));
-    await setUpCmds(data);
+let cmds = new Set<Command>();
 
-    data.client.on("message", (msg: Message) => {
-        if (msg.channel instanceof DMChannel) return;
-        if (msg.author.bot) return;
-        const cont = CoreTools.prefixless(msg);
-        if (!cont) return;
-        const [commandName, ...args] = cont.trim().split(" ").filter(x => x !== "");
-        const combData: types.CombinedData = {
-            data: data,
-            msg: msg,
-            cmdName: commandName,
-            args: args,
-            argsStr: args.join(" "),
-            cont: cont
-        }
+function createCmd(command: Command): void {
+    console.log(`loaded command '${command.name}'`);
 
-        cmds.forEach(cmd => {
-            if (
-                cmd.name === commandName || cmd.aliases?.includes(commandName)
-            ) {
-                const notPermitted = cmd.permissions?.find(({ func }) => !func(msg));
+    const convertedCommand: Command = {
+        ...command,
+        name:        BotUtils.removeAccents(command.name.toLowerCase()),
+        aliases:     command.aliases?.map(alias => BotUtils.removeAccents(alias.toLowerCase())),
+    };
 
-                if (notPermitted) {
-                    const description = notPermitted.errorMessage?.(combData) ?? DEAULT_NOT_PERMITTED_ERROR_MESSAGE;
-                    CoreTools.sendEmbed(msg, "error", description);
-                    return;
-                }
-
-                console.log(`ran cmd '${cmd.name}' in '${msg.guild!.name}' by user '${CoreTools.getUserString(msg.author)} (${msg.author.id})'`);
-                cmd.func(combData);
-            }
-        });
-    });
-
-    console.log("-- all message listeners set up --");
+    cmds.add(convertedCommand);
 }
 
 function loadCmds(cmdDir: string) {
@@ -58,52 +31,75 @@ function loadCmds(cmdDir: string) {
 
     files.forEach(filename => {
         const cmdPath = path.join(cmdDir, filename)
-        const command: types.Command = require(cmdPath);
+        const command: Command = require(cmdPath);
         if (command?.name == undefined) return;
         createCmd(command);
     });
 }
 
-function createCmd(command: types.Command): void {
-    console.log(`loaded command '${command.name}'`);
-
-    const convertedCommand: types.Command = {
-        setupFunc:   command.setupFunc,
-        func:        command.func,
-        name:        CoreTools.removeAccents(command.name.toLowerCase()),
-        aliases:     command.aliases?.map(alias => CoreTools.removeAccents(alias.toLowerCase())),
-        permissions: command.permissions,
-        group:       command.group,
-        usage:       command.usage,
-        description: command.description,
-        examples:    command.examples
-    };
-
-    cmds.add(convertedCommand);
-}
-
-async function setUpCmds(data: types.Data) {
+async function setUpCmds(coreData: CoreData) {
     console.log("-- started setting up commands... --");
 
-    for (const promise of [...cmds].map(cmd => cmd.setupFunc?.(data))) await promise;
+    for (const setupPromise of [...cmds].map(cmd => cmd.setup?.(coreData))) { await setupPromise };
     
     console.log("-- finished setting up commands --");
 }
 
+export async function createCmdsListeners(coreData: CoreData, cmdDirs: string[]) {
+    cmdDirs.forEach(dir => loadCmds(dir));
+    await setUpCmds(coreData);
+
+    coreData.client.on("message", (msg: Message) => {
+        const cmdCall = getCmdCallData(coreData, msg);
+        if (cmdCall === undefined) return;
+        const cmd = getCmd(cmdCall.cmdName, false);
+        if (cmd === undefined) return;
+        const failingPermission = cmd.permissions?.find(({ test }) => !test(cmdCall));
+
+        if (failingPermission !== undefined) {
+            const errorMessage = failingPermission.errorMessage?.(cmdCall) ?? DEAULT_NOT_PERMITTED_ERROR_MESSAGE(cmdCall);
+            BotUtils.sendEmbed(msg, "error", errorMessage);
+            return;
+        }
+
+        console.log(`called command '${cmd.name}' in '${msg.guild!.name}' by user '${BotUtils.getUserString(msg.author)}' <@${msg.author.id}>`);
+        cmd.call(cmdCall);
+    });
+
+    console.log("-- all message listeners set up --");
+}
+
+
+export function getCmd(cmdName: string, onlyCommandsWithUsage: boolean) {
+    return getCmdList(onlyCommandsWithUsage).find(cmd => cmd.name === cmdName || cmd.aliases?.includes(cmdName));
+}
+
+export function getCmdCallData(coreData: CoreData, msg: Message) {
+    if (msg.channel instanceof DMChannel) return undefined;
+    if (msg.author.bot) return undefined;
+    const cont = BotUtils.prefixless(msg);
+    if (cont === undefined) return undefined;
+    const split = cont.trim().split(" ").filter(x => x !== "");
+    if (split.length === 0) return undefined;
+    
+    const [commandName, ...args] = split;
+    const cmdCall: CommandCallData = {
+        coreData: coreData,
+        msg: msg,
+        cmdName: commandName!,
+        args: args,
+        argsStr: args.join(" "),
+        cont: cont
+    };
+
+    return cmdCall;
+}
 
 export function getCmdList(onlyCommandsWithUsage = true) {
-    return [...cmds].filter(x => x.usage || !onlyCommandsWithUsage);
+    return [...cmds].filter(x => !onlyCommandsWithUsage || !!x.usage);
 }
 
-export function getPermittedCmdList(msg: Message, onlyListAvailable: boolean): types.Command[] {
-    const hasPerms = (x: types.Command) => !x.permissions?.some(({ func }) => !func(msg));
-    return [...cmds].filter(x => !!x.usage && (!onlyListAvailable || hasPerms(x)));
-}
-
-export function getCmd(cmdName: string) {
-    return getCmdList().find(cmd => cmd.name === cmdName || cmd.aliases?.includes(cmdName));
-}
-
-export function getHelpCmd() {
-    return Array.from(cmds.values()).find(x => x.group === "help");
+export function getPermittedCmdList(cmdCall: CommandCallData, onlyListAvailable: boolean): Command[] {
+    const hasPerms = (x: Command) => !x.permissions?.some(({ test }) => !test(cmdCall));
+    return getCmdList().filter(x => !onlyListAvailable || hasPerms(x));
 }

@@ -3,13 +3,16 @@
         "target": "ES6",
         "module": "commonjs",
         "lib": [ "ES2019", "ES2019.Object", "ES2019.Array" ],
-        "allowJs": false,
+        "allowJs": true,
+        "checkJs": true,
         "outDir": "build",
-        "strict": true,
-        "noImplicitAny": true,
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
+        "strict": true,
+        "noImplicitAny": true,
         "strictNullChecks": true,
-        "removeComments": true
+        "noUncheckedIndexedAccess": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitThis": true,
     }
 }

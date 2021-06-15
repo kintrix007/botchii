@@ -1,37 +1,40 @@
-import { DEFAULT_COMMANDS_DIR, setDefaultPrefix } from "./core_tools";
-import * as types from "./types";
+import * as BotUtils from "./bot_utils";
+import { CoreData, CustomCoreData } from "./types";
 import { createCmdsListeners } from "./commands";
 import { config } from "dotenv";
 import { Client, ClientOptions } from "discord.js";
 import * as path from "path";
+config();
 
 interface SetupData {
     commandDirs:    string[];
     defaultPrefix?: string;
-    onready?:        (data: types.Data) => void;
-    options?:        ClientOptions;
+    options?:       ClientOptions;
+    onready?:       (coreData: CoreData) => void;
 };
 
 const DEFAULT_PREFIX = "!";
 
 export async function initBot(
-    commandData: types.CustomData,
-    { commandDirs, defaultPrefix = DEFAULT_PREFIX, onready, options }: SetupData
+    customCoreData: CustomCoreData,
+    setupData: SetupData
 ) {
-    config();
-    setDefaultPrefix(defaultPrefix);
+    const { commandDirs, defaultPrefix = DEFAULT_PREFIX, options, onready } = setupData;
+    BotUtils.setDefaultPrefix(defaultPrefix);
     const client = new Client();
+    
 
-    if (options) {
-        Object.entries(options).forEach(([key, value]) => {
-            client.options[key as keyof ClientOptions] = value;
+    if (options !== undefined) {
+        const entries = Object.entries(options) as [keyof ClientOptions, any][]
+        entries.forEach(([key, value]) => {
+            client.options[key] = value;
         });
     }
-
-    const data: types.Data = {
+    
+    const coreData: CoreData = {
         client,
         defaultPrefix,
-        ...commandData
+        ...customCoreData
     };
 
     const normalizedCommandDirs = commandDirs.map(dir => path.normalize(dir));
@@ -39,18 +42,18 @@ export async function initBot(
     client.on("ready", async () => {
         console.log("-- bot online --");
 
-        await createCmdsListeners(data, [ DEFAULT_COMMANDS_DIR, ...normalizedCommandDirs ]);
+        await createCmdsListeners(coreData, [ BotUtils.DEFAULT_COMMANDS_DIR, ...normalizedCommandDirs ]);
         
         console.log("-- bot setup complete --");
         console.log("-- bot ready --");
 
-        const guilds = Array.from(data.client.guilds.cache.values());
+        const guilds = Array.from(coreData.client.guilds.cache.values());
         console.log(
             `Online in ${guilds.length} guild${guilds.length === 1 ? '' : 's'}:`,
             guilds.map(x => x.name)
         );
 
-        onready?.(data);
+        onready?.(coreData);
     });
 
     console.log("-- authenticating bot... --");

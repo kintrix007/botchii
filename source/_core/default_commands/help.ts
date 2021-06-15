@@ -1,9 +1,9 @@
-import * as CoreTools from "../core_tools";
-import * as types from "../types";
+import * as BotUtils from "../bot_utils";
+import { Command, CommandCallData, CommandGroup } from "../types";
 import { getCmd, getPermittedCmdList } from "../commands";
 
-const cmd: types.Command = {
-    func: cmdHelp,
+const cmd: Command = {
+    call: cmdHelp,
     name: "help",
     group: "help",
     usage: "help [command name]",
@@ -13,22 +13,23 @@ const cmd: types.Command = {
 
 const footerNote = "[] means optional arguements, <> means obligatory arguements, | separates options";
 
-function cmdHelp(combData: types.CombinedData) {
-    const targetCommand = combData.args[0];
+function cmdHelp(cmdCall: CommandCallData) {
+    const targetCommand = cmdCall.args[0];
 
     if (targetCommand === undefined) {
-        queryGeneralHelpSheet(combData);
+        queryGeneralHelpSheet(cmdCall);
     } else {
-        querySpecificHelpSheet(combData, targetCommand);
+        querySpecificHelpSheet(cmdCall, targetCommand);
     }
 }
 
-function queryGeneralHelpSheet({ data, msg }: types.CombinedData) {
-    const currentPrefix = CoreTools.getPrefix(msg.guild!.id);
-    const cmdList = getPermittedCmdList(msg, true);
+function queryGeneralHelpSheet(cmdCall: CommandCallData) {
+    const { msg } = cmdCall;
+    const currentPrefix = BotUtils.getPrefix(msg.guild!.id);
+    const cmdList = getPermittedCmdList(cmdCall, true);
 
-    type ExtendedGroup = types.CommandGroup | "uncategorized";
-    let commandsInGroups: { [K in ExtendedGroup]?: types.Command[] } = {};
+    type ExtendedGroup = CommandGroup | "uncategorized";
+    let commandsInGroups: { [K in ExtendedGroup]?: Command[] } = {};
 
     cmdList.forEach(command => {
         const group = command.group ?? "uncategorized";
@@ -39,7 +40,7 @@ function queryGeneralHelpSheet({ data, msg }: types.CombinedData) {
     });
 
     const commandsAssocList = Object.entries(commandsInGroups)
-    .filter((x): x is [ExtendedGroup, types.Command[]] => x[1] !== undefined)
+    .filter((x): x is [ExtendedGroup, Command[]] => x[1] !== undefined)
     .sort((a, b) => {
         const [ [groupA], [groupB] ] = [a, b];
         const [ isHelpA, isHelpB ] = [ groupA === "help", groupB === "help" ];
@@ -55,26 +56,29 @@ function queryGeneralHelpSheet({ data, msg }: types.CombinedData) {
             ? cmd.usage.map(x => currentPrefix + x).join(" OR\n")
             : currentPrefix + cmd.usage!)
         ).join("\n");
-        return (isShownGroup ? `**${CoreTools.capitalize(group)}**:\n` : "") + "```" + commandsUsage + "```";
+        return (isShownGroup ? `**${BotUtils.capitalize(group)}**:\n` : "") + "```" + commandsUsage + "```";
     }).join("\n");
     
-    CoreTools.sendEmbed(msg, "neutral", {
+    BotUtils.sendEmbed(msg, "neutral", {
         title:  "Help:",
         desc:   reply,
         footer: footerNote
     });
 }
 
-function querySpecificHelpSheet({ data, msg }: types.CombinedData, targetCommand: string) {
-    const currentPrefix = CoreTools.getPrefix(msg.guild!.id);
-    const command = getCmd(targetCommand);
+function querySpecificHelpSheet({ msg }: CommandCallData, targetCommand: string) {
+    const currentPrefix = BotUtils.getPrefix(msg.guild!.id);
+    const command = getCmd(targetCommand, true);
         
     if (!command) {
-        CoreTools.sendEmbed(msg, "error", `Help sheet for \`${targetCommand}\` not found, or the command doesn't exist.`);
+        BotUtils.sendEmbed(msg, "error", `Help sheet for \`${targetCommand}\` not found, or the command doesn't exist.`);
         return;
     }
     
-    const usage       = "`" + currentPrefix + command.usage! + "`";
+    const usage       = "`" + (command.usage instanceof Array
+        ? command.usage.map(x => currentPrefix + x).join(" OR\n")
+        : currentPrefix + command.usage!)
+    + "`";
     const commandName = currentPrefix + command.name;
     const aliases     = (command.aliases?.length ? "alias: " + command.aliases.map(x => currentPrefix+x).join(", ") : "");
     const description = command.description || "**[Description not provided]**";
@@ -82,14 +86,14 @@ function querySpecificHelpSheet({ data, msg }: types.CombinedData, targetCommand
         ? "**eg:  " + command.examples.map(ex => "`" + [commandName, ...ex].join(" ") + "`").join(", ") + "**"
         : "");
 
-    const requiredPermission = command.permissions
-        ?.map(perm => perm.description ? "- " + perm.description : undefined)
+    const requiredPermissionStr = command.permissions
+        ?.map(perm => perm.description ? "**-** " + perm.description(command) : undefined)
         ?.filter((x): x is string => x !== undefined)
         ?.join("\n");
 
-    const reply = description + (requiredPermission ? "\n\n**Permissions:**\n" + requiredPermission : "") + "\n\n" + examples;
+    const reply = description + (requiredPermissionStr ? "\n\n**Permissions:**\n" + requiredPermissionStr : "") + "\n\n" + examples;
 
-    CoreTools.sendEmbed(msg, "neutral", {
+    BotUtils.sendEmbed(msg, "neutral", {
         title:  usage,
         desc:   reply,
         footer: aliases

@@ -21,7 +21,10 @@ jspm_packages/
 # Preferences directory
 prefs/
 
-# build directory
+# Build directory
 build/
+
+# Directories containing unnecessary stuff
+examples/
 
 crash_logs/
