@@ -42,6 +42,6 @@ Change it, so it **does not** automatically look for reactions on all messages i
 - [ ] **Re-add profile picture change after announcing**
 - [x] **Change the way `getPrefix` works, so it's called without arguements**
 - [ ] **Add proper logging**
-- [ ] **Correctly indicate all invalid/timed out announce messages**
+- [x] **Correctly indicate all invalid/timed out announce messages**
 - [ ] **Send temporary confirmation message when adding a vote**
 - [ ] **Add option for default command or so...**
