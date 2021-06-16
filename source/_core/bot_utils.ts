@@ -369,12 +369,12 @@ export function getAdminRole(guildID: Snowflake) {
 
 export const getBotOwnerID = () => process.env.OWNER_ID;
 
-export function getBotOwner(data: CoreData) {
+export async function getBotOwner(data: CoreData) {
     const ownerID = process.env.OWNER_ID;
-    return data.client.users.fetch(ownerID ?? "");  // returns a Promise
+    return await data.client.users.fetch(ownerID ?? "");  // returns a Promise
 }
 
-// returns the string following the bot's prefix, without accents and in lowercase
+/** returns the contents of `msg` without the prefix, in lowercase, and with removed accents */
 export function prefixless(msg: Message): string | undefined {
     const guild = msg.guild;
     if (!guild) return undefined;

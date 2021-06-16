@@ -1,0 +1,27 @@
+name: Bot Core test workflow
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        os: [ windows-2016, ubuntu-latest ]
+        node-version: [ 12.x, 14.x, 15.x ]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install and build
+        run: |
+          npm ci
+          npm run build --if-present
+        env:
+          CI: true
