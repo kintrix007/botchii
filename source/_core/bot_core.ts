@@ -1,5 +1,5 @@
 import * as BotUtils from "./bot_utils";
-import { CoreData, CustomCoreData } from "./types";
+import { CoreData, CustomCoreData, LoggedInClient } from "./types";
 import { createCmdsListeners } from "./commands";
 import { config } from "dotenv";
 import { Client, ClientOptions } from "discord.js";
@@ -30,17 +30,17 @@ export async function initBot(
             client.options[key] = value;
         });
     }
-    
-    const coreData: CoreData = {
-        client,
-        defaultPrefix,
-        ...customCoreData
-    };
 
     const normalizedCommandDirs = commandDirs.map(dir => path.normalize(dir));
 
     client.on("ready", async () => {
         console.log("-- bot online --");
+
+        const coreData: CoreData = {
+            client: client as LoggedInClient,
+            defaultPrefix,
+            ...customCoreData
+        };
 
         await createCmdsListeners(coreData, [ BotUtils.DEFAULT_COMMANDS_DIR, ...normalizedCommandDirs ]);
         

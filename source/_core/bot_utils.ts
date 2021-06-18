@@ -289,23 +289,20 @@ export function sendEmbed(
     return ( typeof embed == "string" ? sendTarget.send(embed) : sendTarget.send("", embed) );
 }
 
+/** Capitalizes the first character of a string */
 export function capitalize(str: string): string {
     if (str.length === 0) return "";
     return str[0]!.toUpperCase() + str.slice(1);
 }
 
-export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean): T[] {
+export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean = (a, b) => a === b): T[] {
     return arr.filter((x, idx) => {
-        const foundIdx = arr.findIndex(a => isEqual(a, x));
+        const foundIdx = arr.findIndex(a => isEqual(x, a));
         return foundIdx === idx || foundIdx === -1;
     });
 }
 
 // framework-specific utility
-
-export function setDefaultPrefix(newPrefix: string) {
-    defaultPrefix = newPrefix;
-}
 
 export const adminPermission: CommandPermission = {
     test:         ({ msg }) => isAdmin(msg.member),
@@ -372,6 +369,10 @@ export const getBotOwnerID = () => process.env.OWNER_ID;
 export async function getBotOwner(data: CoreData) {
     const ownerID = process.env.OWNER_ID;
     return await data.client.users.fetch(ownerID ?? "");  // returns a Promise
+}
+
+export function setDefaultPrefix(newPrefix: string) {
+    defaultPrefix = newPrefix;
 }
 
 /** returns the contents of `msg` without the prefix, in lowercase, and with removed accents */

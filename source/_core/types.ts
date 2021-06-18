@@ -4,8 +4,12 @@ import * as ExtensionTypes from "../extension_types";
 
 type BaseCommandGroup = "help" | "admin" | "owner";
 
+export type LoggedInClient = Client & {
+    [K in keyof Client]: NonNullable<Client[K]>
+};
+
 interface BaseCoreData {
-    client:         Client;
+    client:         LoggedInClient;
     defaultPrefix:  string;
 }
 
@@ -48,7 +52,7 @@ export type CommandCallData = Readonly<{
  * For example the help command would have examples `[[], ["prefix"]]`, as it can be called without any arguements, or one arguement.
  */
 export interface Command {
-    setup?:     (coreData: CoreData) => Promise<unknown> | void;
+    setup?:         (coreData: CoreData) => Promise<unknown> | void;
     call:           (cmdCall: CommandCallData) => Promise<unknown> | void;
     name:           string;
     aliases?:       string[];

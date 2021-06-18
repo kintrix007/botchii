@@ -98,10 +98,10 @@ function trackReactions(coreData: CoreData) {
         const reactions = Array.from(message.reactions.cache.values());
         const userReactions = await (async () => {
             let userReactions = await Utilz.convertToUserReactions(reactions);
-            delete userReactions[coreData.client.user!.id];
+            delete userReactions[coreData.client.user.id];
             return userReactions;
         })();
-        // const userReactions = {...await Utilz.convertToUserReactions(reactions), ...{ [coreData.client.user!.id]: undefined }} as UserReactions;
+        // const userReactions = {...await Utilz.convertToUserReactions(reactions), ...{ [coreData.client.user.id]: undefined }} as UserReactions;
         
         const acceptUserIDs = new Set(Object.entries(userReactions).filter(([,emojiStr]) => emojiStr.has(acceptEmoji)).map(([userID]) => userID));
         const rejectUserIDs = Utilz.difference(
