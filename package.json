@@ -8,7 +8,7 @@
     "start": "echo \"-- starting bot... --\" && node .",
     "prebuild": "[ -f .env ] || echo \"missing file: '.env'\"",
     "build": "echo \"-- compiling... --\" && tsc && echo \"-- finished compilation --\"",
-    "test": "mocha --extension spec.ts --require ts-node/register --recursive tests/"
+    "test": "mocha --extension spec.ts --require ts-node/register --recursive .tests/"
   },
   "repository": {
     "type": "git",
