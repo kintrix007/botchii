@@ -289,7 +289,7 @@ export function sendEmbed(
     return ( typeof embed == "string" ? sendTarget.send(embed) : sendTarget.send("", embed) );
 }
 
-/** Capitalizes the forst character of a string */
+/** Capitalizes the first character of a string */
 export function capitalize(str: string): string {
     if (str.length === 0) return "";
     return str[0]!.toUpperCase() + str.slice(1);
