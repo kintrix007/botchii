@@ -66,8 +66,7 @@ async function cmdAnnounce({ msg, args }: types.CommandCallData) {
 
     const announcePrefs = BotUtils.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true);
     const previousAnnounceMsgData = announcePrefs[msg.guild!.id]?.announceMessages[announceMsgLink];
-    console.log({previousAnnounceMsgData});
-    if (!!previousAnnounceMsgData) {
+    if (previousAnnounceMsgData !== undefined) {
         try {
             const trackerMsg = await BotUtils.fetchMessageLink(msg.client, previousAnnounceMsgData.trackerMsgLink);
             if (trackerMsg !== undefined) trackerMsg.edit(EXPIRED_MESSAGE_TEXT);
