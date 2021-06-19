@@ -5,11 +5,10 @@
 To invite this bot to your server use [this link](https://discord.com/api/oauth2/authorize?client_id=802315557981913130&permissions=268520512&scope=bot).
 
 ### Dependencies
+* `typescript`
 * `discord.js`
 * `dotenv`
-* `emoji-regex`
-* `typescript`
-* And optionally python 3.8 to use the crappy, yet working `launch.py`
+* ~~`emoji-regex`~~ not yet
 
 ### Description
 ~~To be written...~~
@@ -29,13 +28,13 @@ Change it, so it **does not** automatically look for reactions on all messages i
 
 - [x] **Introduce the command `.announce`:**\
 `.announce <message link> [target channels...]` -> Creates a poll on the message specified.\
-  If 'target channel' is omitted, announces to all target channels. Channel aliases can be used.
-  Instead of a message link, it can be a message ID, from the same channel.
+  If 'target channel' is omitted, announces to all target channels. Channel aliases can be used.\
+  Instead of a message link, it can be a message ID, from the same channel.\
   Can only point to messages in base announcement channels.
 
 - [x] **Make `.announce` work with replying**
 
-- [ ] **Improve some variable names, and filenames!** - never done!
+- [x] **Fix some stupid variable names, and filenames!**
 
 - [x] **Invalidate announcement trackers after a set amount of time**
 - [x] **Indicate on the message, when it's invalidated**

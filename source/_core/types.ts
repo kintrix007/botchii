@@ -13,9 +13,9 @@ interface BaseCoreData {
     defaultPrefix:  string;
 }
 
-export type PrefsData<T extends {}> = { guildName: string } & T
+export type GuildPrefs<T extends {}> = { guildName: string } & T
 export interface Prefs<T extends {}> {
-    [guildID: string]: PrefsData<T>;
+    [guildID: string]: GuildPrefs<T>;
 }
 
 export type CommandPermission = {

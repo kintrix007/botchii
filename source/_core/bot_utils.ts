@@ -89,7 +89,7 @@ export async function cacheMessages(client: Client, msgLinksOrData: string[] | {
     return messages;
 }
 
-export async function fetchChannels<T extends Channel>(client: Client, channelIDs: Snowflake[]): Promise<Channel[]> {
+export async function fetchChannels(client: Client, channelIDs: Snowflake[] | Set<Snowflake>): Promise<Channel[]> {
     let channels: Channel[] = [];
 
     for (const channelID of channelIDs) {

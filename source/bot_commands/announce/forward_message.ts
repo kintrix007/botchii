@@ -1,9 +1,9 @@
 import * as BotUtils from "../../_core/bot_utils";
-import { CoreData, Prefs } from "../../_core/types";
+import { CoreData, Prefs, GuildPrefs } from "../../_core/types";
 import * as Utilz from "../../utilz";
 import { AnnounceData, ANNOUNCE_PREFS_FILE, ChannelData, CHANNEL_PREFS_FILE, EXPIRED_MESSAGE_TEXT } from "../command_prefs";
 import { Client, DMChannel, Message, MessageReaction, NewsChannel, PartialUser, TextChannel, User } from "discord.js";
-// import { UserReactions } from "../../custom_types";
+import { UserReactions } from "../../custom_types";
 
 export const announcedEmoji  = "👌";
 export const acceptEmoji     = "⬆️"
@@ -26,11 +26,11 @@ export async function setup(coreData: CoreData) {
     cachedMessages.forEach(msg => {
         const firstReaction = msg.reactions.cache.first();
         if (firstReaction === undefined) return;
-        trackReactions(coreData)(firstReaction, undefined);
+        trackReactions(coreData, false)(firstReaction, undefined);
     });
 
-    coreData.client.on("messageReactionAdd",    trackReactions(coreData));
-    coreData.client.on("messageReactionRemove", trackReactions(coreData));
+    coreData.client.on("messageReactionAdd",    trackReactions(coreData, true));
+    coreData.client.on("messageReactionRemove", trackReactions(coreData, false));
 
 }
 
@@ -67,7 +67,7 @@ async function removeExpiredTrackers(client: Client) {
     BotUtils.updatePrefs(ANNOUNCE_PREFS_FILE, announcedPrefs, true);
 }
 
-function trackReactions(coreData: CoreData) {
+function trackReactions(coreData: CoreData, isAdd: boolean) {
     // user is undefined, if it's simulated
     return async (reaction: MessageReaction, user: User | PartialUser | undefined) => {
         if (user?.bot) return;
@@ -77,13 +77,9 @@ function trackReactions(coreData: CoreData) {
         const message = reaction.message;
         const announceData = BotUtils.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true)[message.guild!.id];
         if (announceData === undefined) return;
-
-        const newAnnData = Object.entries(announceData.announceMessages)
-        .map(([announceMsgLink, { trackerMsgLink, targetChannels }]) => { return { announceMsgLink, trackerMsgLink, targetChannels } });
-        
-        const trackedMsgData = newAnnData.find(({ trackerMsgLink }) => BotUtils.getMessageLink(message) === trackerMsgLink);
-        if (trackedMsgData === undefined) return;
-        const { announceMsgLink, trackerMsgLink, targetChannels: customTargetChannels } = trackedMsgData;
+        const newAnnData = getCurrentAnnounceData(announceData, message);
+        if (newAnnData === undefined) return;
+        const { announceMsgLink, trackerMsgLink, targetChannels: customTargetChannels } = newAnnData;
 
         const targetChannelIDs = customTargetChannels ?? BotUtils.loadPrefs<ChannelData>(CHANNEL_PREFS_FILE, true)[message.guild!.id]?.toChannels;
 
@@ -95,47 +91,103 @@ function trackReactions(coreData: CoreData) {
             return;
         }
 
-        const reactions = Array.from(message.reactions.cache.values());
-        const userReactions = await (async () => {
-            let userReactions = await Utilz.convertToUserReactions(reactions);
-            delete userReactions[coreData.client.user.id];
-            return userReactions;
-        })();
-        // const userReactions = {...await Utilz.convertToUserReactions(reactions), ...{ [coreData.client.user.id]: undefined }} as UserReactions;
-        
-        const acceptUserIDs = new Set(Object.entries(userReactions).filter(([,emojiStr]) => emojiStr.has(acceptEmoji)).map(([userID]) => userID));
-        const rejectUserIDs = Utilz.difference(
-            new Set(Object.entries(userReactions).filter(([,emojiStr]) => emojiStr.has(rejectEmoji)).map(([userID]) => userID)),
-            acceptUserIDs
-        );
-
-        const score         = acceptUserIDs.size - rejectUserIDs.size;
-        const scoreToGo     = Math.max(scoreToForward - score, 0);
-        const shouldForward = scoreToGo === 0;
-
+        const userReactions = await getUserReactions(message);
         const trackerMsg  = (await BotUtils.fetchMessageLink(coreData.client, trackerMsgLink))!;
         const announceMsg = (await BotUtils.fetchMessageLink(coreData.client, announceMsgLink))!;
-        const content = announceMsgLink
-        + (announceMsg.content ? "\n" + BotUtils.quoteMessage(announceMsg, 75) : "") + "\n"
-        + (targetChannelIDs.length ? "\n**to:** " + targetChannelIDs.map(x => "<#"+x+">").join(", ") : "")
-        + "\n" + (shouldForward ? `**-- Announced by ${[...acceptUserIDs].map(x => "<@"+x+">").join(", ")} --**` : `**${scoreToGo} to go**`);
-        
-        if (shouldForward) {
-            const targetChannels = (await BotUtils.fetchChannels(coreData.client, targetChannelIDs))
-            .filter((x): x is TextChannel | NewsChannel | DMChannel => Utilz.isTextChannel(x));
-            await forwardMessage(announceMsg, targetChannels);
-            
-            const newAnnounceData = {
-                [message.guild!.id]: {
-                    guildName: message.guild!.name,
-                    announceMessages: { ...announceData.announceMessages, [announceMsgLink]: undefined }
-                }
-            } as Prefs<AnnounceData>;
-            BotUtils.updatePrefs(ANNOUNCE_PREFS_FILE, newAnnounceData);
-        }
+        const { shouldForward, content } = getNewTrackerMsgContent(message, userReactions, announceMsg, targetChannelIDs);
 
+        if (shouldForward) {
+            const targetChannels = await BotUtils.fetchChannels(message.client, targetChannelIDs);
+            const targetTextChannels = targetChannels.filter(Utilz.isTextChannel);
+            await forwardMessage(announceMsg, targetTextChannels);
+            invalidateAnnounceMsg(announceMsg, announceData);
+        }
+    
         await trackerMsg.edit(content);
+
+        if (!isAdd) return;
+
+        if (user === undefined) return;
+        const member = message.guild!.member(user);
+        const username = member?.nickname ?? user.username;
+        message.channel.send(`**${username}** just voted!`).then(sentMsg => {
+            setTimeout(() => sentMsg.delete(), 1000*30);
+        });
     }
+}
+
+function invalidateAnnounceMsg(announceMsg: Message, announceData: AnnounceData) {
+    const guild = announceMsg.guild
+    const announceMsgLink = BotUtils.getMessageLink(announceMsg);
+    delete announceData.announceMessages[announceMsgLink];
+    const newAnnouncePrefs: Prefs<AnnounceData> = {
+        [guild!.id]: { ...announceData, guildName: guild!.name }
+    }
+    BotUtils.updatePrefs(ANNOUNCE_PREFS_FILE, newAnnouncePrefs);
+}
+
+function getCurrentAnnounceData(announceData: AnnounceData, message: Message) {
+    const newAnnData = Object.entries(announceData.announceMessages)
+    .map(([announceMsgLink, { trackerMsgLink, targetChannels }]) => { return { announceMsgLink, trackerMsgLink, targetChannels } });
+    
+    return newAnnData.find(({ trackerMsgLink }) => BotUtils.getMessageLink(message) === trackerMsgLink);
+}
+
+async function getUserReactions(message: Message) {
+    const reactions = Array.from(message.reactions.cache.values());
+    let userReactions = await Utilz.convertToUserReactions(reactions);
+    delete userReactions[message.client.user!.id];
+    return userReactions;
+}
+
+function getUserIDs(userReactions: UserReactions) {
+    const acceptUserIDs = new Set(Object.entries(userReactions).filter(([,emojiStr]) => emojiStr.has(acceptEmoji)).map(([userID]) => userID));
+    const rejectUserIDs = Utilz.difference(
+        new Set(Object.entries(userReactions).filter(([,emojiStr]) => emojiStr.has(rejectEmoji)).map(([userID]) => userID)),
+        acceptUserIDs
+    );
+    return { acceptUserIDs, rejectUserIDs };
+}
+
+function getScoreToGo(acceptUserIDs: Set<string>, rejectUserIDs: Set<string>) {
+    const score     = acceptUserIDs.size - rejectUserIDs.size;
+    const scoreToGo = Math.max(scoreToForward - score, 0);
+    return scoreToGo
+}
+
+function getContentParts(announceMsg: Message, targetChannelIDs: Set<string> | string[], scoreToGo: number) {
+    const announceMsgLink = BotUtils.getMessageLink(announceMsg);
+    const announceMsgQuote   = (announceMsg.content ? BotUtils.quoteMessage(announceMsg, 75) : "");
+    const targetChArray        = [...targetChannelIDs];
+    const targetChannelStrings = "**to:** " + targetChArray.map(x => "<#"+x+">").join(", ");
+    const scoreToGoString      = `**${scoreToGo} to go**`;
+    return { announceMsgQuote, announceMsgLink, targetChannelStrings, scoreToGoString };
+}
+
+function getAnnouncedContentParts(announceMsg: Message, targetChannelIDs: Set<string> | string[], acceptUserIDs: Set<string>) {
+    const announceUserStrings  = `**-- Announced by ${[...acceptUserIDs].map(x => "<@"+x+">").join(", ")} --**`;
+    return { announceUserStrings, ...getContentParts(announceMsg, targetChannelIDs, 0) };
+}
+
+function getContent(parts: ReturnType<typeof getContentParts> | ReturnType<typeof getAnnouncedContentParts>): string {
+    if ("announceUserStrings" in parts) {
+        const { announceMsgQuote, announceMsgLink, targetChannelStrings, announceUserStrings } = parts;
+        return [ announceMsgQuote, announceMsgLink, targetChannelStrings, announceUserStrings ].join("\n");
+    } else {
+        const { announceMsgQuote, announceMsgLink, targetChannelStrings, scoreToGoString } = parts;
+        return [ announceMsgQuote, announceMsgLink, targetChannelStrings, scoreToGoString ].join("\n");
+    }
+}
+
+function getNewTrackerMsgContent(message: Message, userReactions: UserReactions, announceMsg: Message, targetChannelIDs: Set<string> | string[]) {
+    const { acceptUserIDs, rejectUserIDs } = getUserIDs(userReactions);
+    const scoreToGo = getScoreToGo(acceptUserIDs, rejectUserIDs);
+    const shouldForward = scoreToGo <= 0;
+    const content = (shouldForward
+        ? getContent(getAnnouncedContentParts(announceMsg, targetChannelIDs, acceptUserIDs))
+        : getContent(getContentParts(announceMsg, targetChannelIDs, scoreToGo))
+    );
+    return { shouldForward, content };
 }
 
 async function forwardMessage(announceMsg: Message, targetChannels: Array<TextChannel | NewsChannel | DMChannel>) {
