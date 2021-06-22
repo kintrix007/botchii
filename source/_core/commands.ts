@@ -13,8 +13,8 @@ function createCmd(command: Command): void {
 
     const convertedCommand: Command = {
         ...command,
-        name:        BotUtils.removeAccents(command.name.toLowerCase()),
-        aliases:     command.aliases?.map(alias => BotUtils.removeAccents(alias.toLowerCase())),
+        name:        BotUtils.impl.applyCommandContentModifiers(command.name.toLowerCase()),
+        aliases:     command.aliases?.map(alias => BotUtils.impl.applyCommandContentModifiers(alias.toLowerCase())),
     };
 
     cmds.add(convertedCommand);
@@ -37,17 +37,18 @@ function loadCmds(cmdDir: string) {
     });
 }
 
-async function setUpCmds(coreData: CoreData) {
+async function setupCmds(coreData: CoreData) {
     console.log("-- started setting up commands... --");
 
-    for (const setupPromise of [...cmds].map(cmd => cmd.setup?.(coreData))) { await setupPromise };
+    const setupPromises = [...cmds].map(({ setup }) => setup?.(coreData));
+    await Promise.allSettled(setupPromises);
     
     console.log("-- finished setting up commands --");
 }
 
 export async function createCmdsListeners(coreData: CoreData, cmdDirs: string[]) {
     cmdDirs.forEach(dir => loadCmds(dir));
-    await setUpCmds(coreData);
+    await setupCmds(coreData);
 
     coreData.client.on("message", (msg: Message) => {
         const cmdCall = getCmdCallData(coreData, msg);
@@ -62,7 +63,7 @@ export async function createCmdsListeners(coreData: CoreData, cmdDirs: string[])
             return;
         }
 
-        console.log(`called command '${cmd.name}' in '${msg.guild!.name}' by user '${BotUtils.getUserString(msg.author)}' <@${msg.author.id}>`);
+        console.log(`'${cmd.name}' called in '${msg.guild!.name}' by user '${BotUtils.getUserString(msg.author)}' <@${msg.author.id}>`);
         cmd.call(cmdCall);
     });
 
@@ -77,19 +78,21 @@ export function getCmd(cmdName: string, onlyCommandsWithUsage: boolean) {
 export function getCmdCallData(coreData: CoreData, msg: Message) {
     if (msg.channel instanceof DMChannel) return undefined;
     if (msg.author.bot) return undefined;
-    const cont = BotUtils.prefixless(msg);
-    if (cont === undefined) return undefined;
-    const split = cont.trim().split(" ").filter(x => x !== "");
-    if (split.length === 0) return undefined;
     
-    const [commandName, ...args] = split;
+    const contTemp = BotUtils.prefixless(msg);
+    if (contTemp === undefined) return undefined;
+    const cont = BotUtils.impl.applyCommandContentModifiers(contTemp.toLowerCase());
+
+    const splits = cont.trim().split(/\s+/);
+    if (splits.length === 0) return undefined;
+    
+    const [commandName, ...args] = splits;
     const cmdCall: CommandCallData = {
         coreData: coreData,
         msg: msg,
         cmdName: commandName!,
         args: args,
-        argsStr: args.join(" "),
-        cont: cont
+        argsStr: args.join(" ")
     };
 
     return cmdCall;

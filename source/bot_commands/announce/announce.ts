@@ -60,7 +60,7 @@ async function cmdAnnounce({ msg, args }: types.CommandCallData) {
     }
 
     const content = BotUtils.getMessageLink(announceMsg)
-    + (announceMsg.content ? "\n" + BotUtils.quoteMessage(announceMsg, 75) : "") + "\n"
+    + (announceMsg.content ? "\n" + BotUtils.quoteMessage(announceMsg.content, 75) : "") + "\n"
     + (targetChannelIDs.length ? "\n**to:** " + targetChannelIDs.map(x => "<#"+x+">").join(", ") : "")
     + `\n**${scoreToForward} to go**`;
 
@@ -70,8 +70,7 @@ async function cmdAnnounce({ msg, args }: types.CommandCallData) {
         try {
             const trackerMsg = await BotUtils.fetchMessageLink(msg.client, previousAnnounceMsgData.trackerMsgLink);
             if (trackerMsg !== undefined) trackerMsg.edit(EXPIRED_MESSAGE_TEXT);
-        }
-        catch (err) {
+        } catch (err) {
             console.error(err);
         }
     }
@@ -107,8 +106,7 @@ async function getMessage(channel: TextChannel | NewsChannel | DMChannel, msgLin
             if (!Utilz.isTextChannel(ch)) return undefined;
             return await ch.messages.fetch(messageID);
         }
-    }
-    catch (err) {
+    } catch (err) {
         return undefined;
     }
 }

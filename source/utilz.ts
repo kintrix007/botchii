@@ -74,27 +74,33 @@ export function fromChannelAlias(guild: Guild, alias: string) {
 
 
 export async function fetchTextChannels(client: Client, channelIDs: string[] | Set<string>) {
-    let channels: Array<TextChannel | NewsChannel | DMChannel> = [];
-    
-    for (const channelID of channelIDs) {
-        try {
-            const channel = await client.channels.fetch(channelID);
-            if (!(isTextChannel(channel) || channel instanceof CategoryChannel)) continue;
+    const channelPromises = [...channelIDs].map(x => client.channels.fetch(x));
+    const channels = await BotUtils.keepFulfilledResults(channelPromises);
+    return channels.map(x => x instanceof CategoryChannel ? Array.from(x.children.values()) : x)
+    .flat()
+    .filter(isTextChannel);
 
-            if (channel instanceof CategoryChannel) {
-                channel.children.forEach(ch => {
-                    if (isTextChannel(ch)) channels.push(ch);
-                });
-            } else {
-                channels.push(channel);
-            }
-        }
-        catch (err) {
-            continue;
-        }
-    }
+    // let channels: Array<TextChannel | NewsChannel | DMChannel> = [];
 
-    return channels;
+    // for (const channelID of channelIDs) {
+    //     try {
+    //         const channel = await client.channels.fetch(channelID);
+    //         if (!(isTextChannel(channel) || channel instanceof CategoryChannel)) continue;
+
+    //         if (channel instanceof CategoryChannel) {
+    //             channel.children.forEach(ch => {
+    //                 if (isTextChannel(ch)) channels.push(ch);
+    //             });
+    //         } else {
+    //             channels.push(channel);
+    //         }
+    //     }
+    //     catch (err) {
+    //         continue;
+    //     }
+    // }
+
+    // return channels;
 }
 
 export function isTextChannel(channel: Channel): channel is TextChannel | NewsChannel | DMChannel {
@@ -103,7 +109,7 @@ export function isTextChannel(channel: Channel): channel is TextChannel | NewsCh
 
 
 export async function convertToUserReactions(reactions: MessageReaction[], fromCache = false) {
-    if (!fromCache) for (const reaction of reactions) await reaction.users.fetch();
+    if (!fromCache) await Promise.all(reactions.map(x => x.users.fetch()));
 
     let userReactions: UserReactions = {};
 

@@ -42,6 +42,8 @@ async function removeExpiredTrackers(client: Client) {
     let announcedPrefs = BotUtils.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true);
     let msgEditPromises: Promise<Message | void>[] = [];
 
+    // ! FIX IT
+
     for (const [guildID, announceData] of Object.entries(announcedPrefs)) {
         for (const [announceMsgLink, { createdTimestamp, trackerMsgLink }] of Object.entries(announceData.announceMessages)) {
             const shouldDelete = createdTimestamp <= invalidateBefore;
@@ -53,8 +55,7 @@ async function removeExpiredTrackers(client: Client) {
                 console.log(`deleted an announcement tracker in '${announcedPrefs[guildID]!.guildName}'`);
                 const editPromise = trackerMsg?.edit(EXPIRED_MESSAGE_TEXT)?.catch(err => console.warn(err));
                 if (editPromise !== undefined) msgEditPromises.push(editPromise);
-            }
-            catch (err) {
+            } catch (err) {
                 continue;
             }
         }
@@ -147,7 +148,7 @@ function getScoreToGo(acceptUserIDs: Set<string>, rejectUserIDs: Set<string>) {
 
 function getPendingContentParts(announceMsg: Message, targetChannelIDs: Set<string> | string[], scoreToGo: number) {
     const announceMsgLink = BotUtils.getMessageLink(announceMsg);
-    const announceMsgQuote   = (announceMsg.content ? BotUtils.quoteMessage(announceMsg, 75) : "");
+    const announceMsgQuote   = (announceMsg.content ? BotUtils.quoteMessage(announceMsg.content, 75) : "");
     const targetChArray        = [...targetChannelIDs];
     const targetChannelStrings = "**to:** " + targetChArray.map(x => "<#"+x+">").join(", ");
     const scoreToGoString      = `**${scoreToGo} to go**`;
@@ -202,8 +203,5 @@ async function forwardMessage(announceMsg: Message, targetChannels: Array<TextCh
 
     const msgPromises = targetChannels.map(ch => ch.send(title + "\n" + content, [...attachments, ...embeds]));
 
-    for (const msgPromise of msgPromises) {
-        const msg = await msgPromise;
-        // msg.suppressEmbeds(false);
-    };
+    await Promise.allSettled(msgPromises);
 }

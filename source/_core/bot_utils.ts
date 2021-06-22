@@ -1,8 +1,8 @@
 import fs from "fs";
 import path from "path";
-import { CommandPermission, CoreData, Prefs } from "./types";
+import { CommandContentModifier, CommandPermission, CoreData, Prefs } from "./types";
 import { config } from "dotenv";
-import { Channel, Client, DMChannel, GuildChannel, GuildMember, Message, MessageEmbed, MessageReaction, NewsChannel, PermissionString, Snowflake, TextChannel, User } from "discord.js";
+import { CategoryChannel, Channel, Client, DMChannel, GuildChannel, GuildMember, Message, MessageEmbed, MessageReaction, NewsChannel, PermissionString, Snowflake, Structures, TextChannel, User } from "discord.js";
 import { PrefixData, PREFIX_PREFS_FILE, AdminData, ADMIN_PREFS_FILE } from "./default_commands/command_prefs";
 config();
 
@@ -27,36 +27,56 @@ interface BasicEmbedData {
     timestamp?: number | Date;
 }
 
-let defaultPrefix: string;
+/** This is implementation detail. */
+export const impl = new class{
+    private _defaultPrefix: string | undefined = undefined;
+    private _commandContentModifiers: CommandContentModifier[] | undefined = undefined;
+    
+    get defaultPrefix() {
+        return this._defaultPrefix!;
+    }
+
+    public setDefaultPrefix(newPrefix: string) {
+        if (this._defaultPrefix === undefined) this._defaultPrefix = newPrefix;
+    }
+    
+    public setCommandContentModifiers(arr: CommandContentModifier[]) {
+        if (this._commandContentModifiers === undefined) this._commandContentModifiers = [...arr];
+    }
+    
+    public applyCommandContentModifiers(cont: string) {
+        return this._commandContentModifiers!.reduce((cont, modifier) => modifier(cont), cont);
+    }
+}();
 
 
 // general utility
 
-export async function cacheChannelMessages(client: Client, channelIDs: string[]) {
-    let successCount = 0;
-    
-    for (const ID of channelIDs) {
-        try {
-            const channel = await client.channels.fetch(ID);
-            if (!((channel instanceof TextChannel) || (channel instanceof NewsChannel) || (channel instanceof DMChannel))) continue;
-            const messages = await channel.messages.fetch();
-            successCount += messages.size;
-        }
-        catch (err) {
-            console.error(err);
-        }
-    }
+export async function keepFulfilledResults<T>(arr: Promise<T>[]): Promise<T[]> {
+    return (await Promise.allSettled(arr))
+    .filter(<T>(x: PromiseSettledResult<T>): x is PromiseFulfilledResult<T> => x.status === "fulfilled")
+    .map(({ value }) => value);
+}
 
-    return successCount;
+export function filterOut<T, U extends T>(arr: Array<T>, value: U) {
+    return arr.filter((x): x is Exclude<T, U> => x !== value)
+}
+
+export function isMessageChannel(channel: Channel): channel is TextChannel | NewsChannel | DMChannel {
+    return channel instanceof TextChannel || channel instanceof NewsChannel || channel instanceof DMChannel;
+}
+
+export async function fetchChannelMessages(client: Client, channelIDs: string[]) {
+    const channelPromises = channelIDs.map(x => client.channels.fetch(x));
+    const channels = await keepFulfilledResults(channelPromises);
+    const messagePromises = channels.map(x => x instanceof CategoryChannel ? Array.from(x.children.values()) : x)
+        .flat().filter(isMessageChannel).map(x => x.messages.fetch());
+    const messages = (await keepFulfilledResults(messagePromises)).map(x => Array.from(x.values()))
+    return messages;
 }
 
 export async function fetchMessages(client: Client, msgLinksOrData: string[] | { channelID: Snowflake, messageID: Snowflake }[]) {
-    function isStringArray(arr: any): arr is Array<string> {
-        if (!(arr instanceof Array)) return false;
-        return arr.every(x => typeof x === "string")
-    }
-
-    const msgData = (() => {
+    const targetMessages: { channelID: Snowflake, messageID: Snowflake }[] = (() => {
         if (isStringArray(msgLinksOrData)) {
             const msgLinks = msgLinksOrData;
             return msgLinks.map(link => {
@@ -66,80 +86,35 @@ export async function fetchMessages(client: Client, msgLinksOrData: string[] | {
         } else return msgLinksOrData;
     })();
 
-    let messages: Message[] = [];
-    for (const { channelID, messageID } of msgData) {
-        try {
-            const channel = await client.channels.fetch(channelID);
-            if (!(channel instanceof TextChannel || channel instanceof NewsChannel || channel instanceof DMChannel)) continue;
-            const message = await channel.messages.fetch(messageID);
-            messages.push(message);
-        }
-        catch (err) {
-            continue;
-        }
-    }
-    return messages;
+    const messagePromises = targetMessages.map(x => getMessage(client, x));
+    const messages = await keepFulfilledResults(messagePromises);
+    return filterOut(messages, undefined);
 }
 
 export async function cacheMessages(client: Client, msgLinksOrData: string[] | { channelID: Snowflake, messageID: Snowflake }[]) {
     const messages = await fetchMessages(client, msgLinksOrData);
-    for (const msg of messages) {
-        await msg.fetch();
-    }
+    const promises = messages.map(x => x.fetch());
+    await Promise.allSettled(promises);
     return messages;
 }
 
 export async function fetchChannels(client: Client, channelIDs: Snowflake[] | Set<Snowflake>): Promise<Channel[]> {
-    let channels: Channel[] = [];
-
-    for (const channelID of channelIDs) {
-        try {
-            const channel = await client.channels.fetch(channelID);
-            channels.push(channel);
-        }
-        catch (err) {
-            continue;
-        }
-    }
-    
+    const channelPromises = [...channelIDs].map(x => client.channels.fetch(x));
+    const channels = await keepFulfilledResults(channelPromises)
     return channels;
 }
 
-// NEEDS WORK!
-export const removeAccents = (() => {
-    const nonAccents: {[nonAccent: string]: string[]} = {
-        "a": ["á", "å", "ǎ", "ä", "ȧ"],
-        "c": ["ç", "č", "ċ"],
-        "d": ["đ", "ḋ"],
-        "e": ["é", "ë", "ě", "ĕ", "ę", "ė"],
-        "i": ["í", "ï", "ĭ", "ǐ", "į", "ı"],
-        "j": ["ǰ", "ȷ"],
-        "l": ["ł"],
-        "o": ["ó", "ö", "ő", "ǒ", "ǫ", "ȯ", "ø", "ǿ", "ò", "ô", "õ"],
-        "s": ["š", "ş", "ṡ"],
-        "u": ["ú", "ü", "ű", "ǔ", "ų", "û", "ů"],
-        "y": ["ÿ", "ẏ", "ẙ"]
-    };
-
-    return (str: string) => (
-        Object.entries(nonAccents).reduce((acc, [nonAccent, accents]) => (
-            accents.reduce((a, accent) => {
-                const lowerAccent = accent;
-                const upperAccent = accent.toUpperCase();
-                return a.replace(new RegExp(lowerAccent, "g"), nonAccent)
-                        .replace(new RegExp(upperAccent, "g"), nonAccent.toUpperCase());
-            }, acc)
-        ), str)
-    );
-})();
-
+/**
+ * @param msg Message to add the reactions to
+ * @param reactions If it's an array, then adds the reactions while keeping the order,
+ * if it's a set, then adds the reactions in random order (takes less time)
+ */
 export async function addReactions(msg: Message, reactions: string[] | Set<string>) {
     const channel = msg.channel;
     const perms = (channel instanceof DMChannel ? undefined : channel.permissionsFor(msg.client.user!));
     const canReact = perms?.has("ADD_REACTIONS") ?? false;
-
     if (!canReact) return undefined;
-    
+
     if (reactions instanceof Array) {
         let reactionsResolved: MessageReaction[] = [];
         for (const reaction of reactions) {
@@ -148,19 +123,15 @@ export async function addReactions(msg: Message, reactions: string[] | Set<strin
         return reactionsResolved;
     } else {
         const reactionPromises = [...reactions].map(r => msg.react(r));
-        let reactionsResolved: MessageReaction[] = [];
-        
-        for (const rp of reactionPromises) {
-            reactionsResolved.push(await rp);
-        }
+        const reactionsResolved = await keepFulfilledResults(reactionPromises);
         
         return reactionsResolved;
     }
 
 }
 
-export function quoteMessage(msg: Message, maxLength = 50) {
-    return "> " + (msg.content.length > maxLength ? msg.content.slice(0, maxLength-3) + "..." : msg.content).replace(/\s+/g, " ");
+export function quoteMessage(content: string, maxLength = 50) {
+    return "> " + (content.length > maxLength+3 ? content.slice(0, maxLength) + "..." : content).replace(/\s+/g, " ");
 }
 
 export function getUserString(user: User) {
@@ -199,10 +170,9 @@ export async function fetchMessageLink(client: Client, msgLink: string) {
         if (!msgData) return undefined;
         const { channelID, messageID } = msgData;
         const channel = await client.channels.fetch(channelID);
-        if (!(channel instanceof TextChannel || channel instanceof NewsChannel || channel instanceof DMChannel)) return undefined;
+        if (!isMessageChannel(channel)) return undefined;
         return await channel.messages.fetch(messageID);
-    }
-    catch {
+    } catch {
         return undefined;
     }
 }
@@ -217,8 +187,7 @@ export async function getReplyMessage(message: Message) {
     try {
         const replyMessage = await message.channel.messages.fetch(messageID);
         return replyMessage;
-    }
-    catch (err) {
+    } catch (err) {
         return undefined;
     }
 }
@@ -295,7 +264,7 @@ export function capitalize(str: string): string {
     return str[0]!.toUpperCase() + str.slice(1);
 }
 
-export function nubBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean = (a, b) => a === b): T[] {
+export function removeDuplicatesBy<T>(arr: T[], isEqual: (a: T, b: T) => boolean = (a, b) => a === b): T[] {
     return arr.filter((x, idx) => {
         const foundIdx = arr.findIndex(a => isEqual(x, a));
         return foundIdx === idx || foundIdx === -1;
@@ -315,11 +284,6 @@ export const ownerPermission: CommandPermission = {
     description:  cmd => "Only the bot's **owner** can use this command."
 };
 
-
-function humanReadable(perm: PermissionString) {
-    const words = perm.toLowerCase().split("_");
-    return words.map(capitalize).join(" ");
-}
 
 export function createCommandPermission(permission: PermissionString) {
     const humanReadablePermission = humanReadable(permission);
@@ -371,18 +335,15 @@ export async function getBotOwner(data: CoreData) {
     return await data.client.users.fetch(ownerID ?? "");  // returns a Promise
 }
 
-export function setDefaultPrefix(newPrefix: string) {
-    defaultPrefix = newPrefix;
-}
 
-/** returns the contents of `msg` without the prefix, in lowercase, and with removed accents */
+/** returns the contents of `msg` after removing the prefix from the beginning of it */
 export function prefixless(msg: Message): string | undefined {
     const guild = msg.guild;
     if (!guild) return undefined;
-    const cont = removeAccents(msg.content);
-    const prefix = removeAccents(getPrefix(guild.id));
+    const cont = msg.content;
+    const prefix = impl.applyCommandContentModifiers(getPrefix(guild.id));
     
-    if (cont.startsWith(prefix)) {
+    if (impl.applyCommandContentModifiers(cont).startsWith(prefix)) {
         return cont.slice(prefix.length);
     }
 
@@ -390,12 +351,12 @@ export function prefixless(msg: Message): string | undefined {
     const match = cont.match(regex);
     if (!match) return undefined;
 
-    return match[1]?.toLowerCase();
+    return match[1];
 }
 
 export function getPrefix(guildID: Snowflake) {
     const prefixes = loadPrefs<PrefixData>(PREFIX_PREFS_FILE, true);
-    const prefixData = prefixes[guildID] ?? { prefix: defaultPrefix };
+    const prefixData = prefixes[guildID] ?? { prefix: impl.defaultPrefix };
     return prefixData.prefix;
 }
 
@@ -439,4 +400,27 @@ export function updatePrefs<T>(filename: string, overwriteData: Prefs<T>, silent
     const newPrefs: Prefs<T> = { ...loadPrefs<T>(filename, true), ...overwriteData };
     savePrefs(filename, newPrefs, true);
     if (!silent) console.log(`updated prefs in '${filename}'`);
+}
+
+
+// local utility
+
+function humanReadable(perm: PermissionString) {
+    const words = perm.toLowerCase().split("_");
+    return words.map(capitalize).join(" ");
+}
+
+function isStringArray(arr: any): arr is Array<string> {
+    if (!(arr instanceof Array)) return false;
+    return arr.every(x => typeof x === "string")
+}
+
+async function getMessage(client : Client, { channelID, messageID }: { channelID: Snowflake, messageID: Snowflake }) {
+    try {
+        const channel = await client.channels.fetch(channelID);
+        if (!isMessageChannel(channel)) return undefined;
+        return await channel.messages.fetch(messageID);
+    } catch {
+        return undefined
+    }
 }

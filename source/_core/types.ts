@@ -4,14 +4,16 @@ import * as ExtensionTypes from "../extension_types";
 
 type BaseCommandGroup = "help" | "admin" | "owner";
 
-export type LoggedInClient = Client & {
-    [K in keyof Client]: NonNullable<Client[K]>
-};
-
 interface BaseCoreData {
     client:         LoggedInClient;
     defaultPrefix:  string;
 }
+
+export type LoggedInClient = Client & {
+    [K in keyof Client]: NonNullable<Client[K]>
+};
+
+export type CommandContentModifier = (cont: string) => string;
 
 export type GuildPrefs<T extends {}> = { guildName: string } & T
 export interface Prefs<T extends {}> {
@@ -36,7 +38,6 @@ export type CommandCallData = Readonly<{
     cmdName:    string;
     args:       string[];
     argsStr:    string;
-    cont:       string;
 }>;
 
 /**
