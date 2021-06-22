@@ -25,8 +25,8 @@ export async function initBot(customCoreData: CustomCoreData, setupData: SetupDa
         onready
     } = setupData;
 
-    BotUtils.setDefaultPrefix(defaultPrefix);
-    BotUtils.setCommandContentModifiers(commandContentModifiers);
+    BotUtils.impl.setDefaultPrefix(defaultPrefix);
+    BotUtils.impl.setCommandContentModifiers(commandContentModifiers);
 
     const client = new Client();
     if (options !== undefined) {
