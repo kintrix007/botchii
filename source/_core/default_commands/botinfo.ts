@@ -6,6 +6,7 @@ export default {
     call: cmdInfo,
     name: "botinfo",
     usage: "botinfo",
+    group: "help",
     description: "Shows some basic information about the bot.",
     examples: [ [] ]
 } as Command;

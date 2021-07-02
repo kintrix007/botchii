@@ -1,7 +1,7 @@
 {
   "name": "botchii",
   "version": "1.0.0",
-  "description": "A bot to forward discord announcements and for reaction-roles.",
+  "description": "A bot to forward discord messages to other channels after voting.",
   "main": "build/index.js",
   "scripts": {
     "start": "npm run build && echo \"-- starting bot... --\" && node .",
