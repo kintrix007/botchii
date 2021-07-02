@@ -1,10 +1,9 @@
-import * as BotUtils from "../../_core/bot_utils";
-import { Command, CommandCallData } from "../../_core/types";
+import { adminPermission, Command, CommandCallData, sendEmbed } from "../../_core/bot_core";
 import cmdAlias from "./alias";
 import cmdSetChannel from "./set_channel";
 import cmdGetChannel from "./get_channel"
 
-const description = `Lets you create aliases to channels, set the default announce target, and the channels, where they will be sent from.
+const description = `Lets you create aliases to channels, set the default announce target, and the channels where they will be sent from.
 An alias can refer to one or more channels. e.g. \`fun\` could refer to \`#general\` and \`#memes\`.
 The base channels are where the bot is allowed to announce messages from.
 The target channels are what botchii defaults to when using the \`announce\` command.`;
@@ -12,7 +11,7 @@ The target channels are what botchii defaults to when using the \`announce\` com
 const cmd: Command = {
     call:        cmdChannel,
     name:        "channel",
-    permissions: [ BotUtils.adminPermission ],
+    permissions: [ adminPermission ],
     group:       "announcement",
     aliases:     [ "channels" ],
     usage: [
@@ -49,7 +48,7 @@ async function cmdChannel(cmdCall : CommandCallData) {
     if ([ "to", "target" ].includes(mode)) {
         await cmdSetChannel(subCmdCall, "target");
     } else {
-        BotUtils.sendEmbed(msg, "error", `\`${mode}\` is not a valid arguement for \`channel\`!`);
+        sendEmbed(msg, "error", `\`${mode}\` is not a valid arguement for \`channel\`!`);
     }
 }
 

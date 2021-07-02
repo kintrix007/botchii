@@ -1,14 +1,14 @@
 {
   "name": "botchii",
   "version": "1.0.0",
-  "description": "A bot to forward discord announcements and for reaction-roles.",
+  "description": "A bot to forward discord messages to other channels after voting.",
   "main": "build/index.js",
   "scripts": {
-    "prestart": "npm run build",
-    "start": "echo \"-- starting bot... --\" && node .",
-    "prebuild": "[ -f .env ] || echo \"missing file: '.env'\"",
+    "start": "npm run build && echo \"-- starting bot... --\" && node .",
+    "start:full": "npm run setup -- -y && npm ci && npm start",
     "build": "echo \"-- compiling... --\" && tsc && echo \"-- finished compilation --\"",
-    "test": "mocha --extension spec.ts --require ts-node/register --recursive .tests/"
+    "test": "mocha --extension spec.ts --require ts-node/register --recursive .tests/",
+    "setup": "node setup.js"
   },
   "repository": {
     "type": "git",
@@ -22,7 +22,6 @@
   "homepage": "https://github.com/kintrix007/botchii#readme",
   "dependencies": {
     "discord.js": "^12.5.2",
-    "dotenv": "^8.2.0",
     "emoji-regex": "^9.2.2"
   },
   "devDependencies": {

@@ -1,29 +1,40 @@
-import * as BotUtils from "./bot_utils";
-import { CoreData, CustomCoreData, LoggedInClient } from "./types";
+import { DEFAULT_COMMANDS_DIR } from "./general_utils";
+import { impl } from "./bot_utils"
+import { CommandContentModifier, CoreData, CustomCoreData, LoggedInClient } from "./types";
 import { createCmdsListeners } from "./commands";
-import { config } from "dotenv";
 import { Client, ClientOptions } from "discord.js";
 import * as path from "path";
-config();
+
+export * from "./types";
+export * from "./bot_utils";
+export * from "./general_utils";
+export * from "./dc_utils";
+export { getCmd, getCmdCallData, getCmdList, getPermittedCmdList } from "./commands";
+export { addListener } from "./listeners"
 
 interface SetupData {
-    commandDirs:    string[];
-    defaultPrefix?: string;
-    options?:       ClientOptions;
-    onready?:       (coreData: CoreData) => void;
+    commandDirs:              string[];
+    defaultPrefix?:           string;
+    options?:                 ClientOptions;
+    commandContentModifiers?: CommandContentModifier[];
+    onready?:                 (coreData: CoreData) => void;
 };
 
 const DEFAULT_PREFIX = "!";
 
-export async function initBot(
-    customCoreData: CustomCoreData,
-    setupData: SetupData
-) {
-    const { commandDirs, defaultPrefix = DEFAULT_PREFIX, options, onready } = setupData;
-    BotUtils.setDefaultPrefix(defaultPrefix);
-    const client = new Client();
-    
+export async function initBot(customCoreData: CustomCoreData, setupData: SetupData) {
+    const {
+        commandDirs,
+        defaultPrefix = DEFAULT_PREFIX,
+        options,
+        commandContentModifiers = [],
+        onready
+    } = setupData;
 
+    impl.setDefaultPrefix(defaultPrefix);
+    impl.setCommandContentModifiers(commandContentModifiers);
+
+    const client = new Client();
     if (options !== undefined) {
         const entries = Object.entries(options) as [keyof ClientOptions, any][]
         entries.forEach(([key, value]) => {
@@ -42,7 +53,7 @@ export async function initBot(
             ...customCoreData
         };
 
-        await createCmdsListeners(coreData, [ BotUtils.DEFAULT_COMMANDS_DIR, ...normalizedCommandDirs ]);
+        await createCmdsListeners(coreData, [ DEFAULT_COMMANDS_DIR, ...normalizedCommandDirs ]);
         
         console.log("-- bot setup complete --");
         console.log("-- bot ready --");
@@ -61,6 +72,6 @@ export async function initBot(
 }
 
 function loginBot(client: Client) {
-    const token = process.env.TOKEN;
+    const token = impl.botToken;
     return client.login(token);
 }

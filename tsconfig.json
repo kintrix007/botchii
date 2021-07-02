@@ -1,16 +1,24 @@
 {
     "compilerOptions": {
         "target": "ES6",
-        "module": "commonjs",
-        "lib": [ "ES2019", "ES2019.Object", "ES2019.Array" ],
+        "module": "CommonJS",
+        "lib": [ "ESNext", "ES2019.Object", "ES2019.Array" ],
         "outDir": "build",
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
+        "resolveJsonModule": true,
         "strict": true,
         "noImplicitAny": true,
         "strictNullChecks": true,
         "noUncheckedIndexedAccess": true,
+        "noImplicitReturns": true,
+        "noImplicitOverride": true,
         "noFallthroughCasesInSwitch": true,
         "noImplicitThis": true,
-    }
+        "alwaysStrict": true,
+        "strictFunctionTypes": true,
+        "strictPropertyInitialization": true,
+        "baseUrl": ".",
+    },
+    "include": [ "source/**/*" ]
 }

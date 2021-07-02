@@ -1,15 +1,14 @@
-import * as BotUtils from "../bot_utils";
-import { Command, CommandCallData, CommandGroup } from "../types";
+import { getPrefix, capitalize, sendEmbed, Command, CommandCallData, CommandGroup } from "../bot_core";
 import { getCmd, getPermittedCmdList } from "../commands";
 
-const cmd: Command = {
+export default {
     call: cmdHelp,
     name: "help",
     group: "help",
     usage: "help [command name]",
     description: "Gives you a list of commands, or it can give further information about a specific command.",
     examples: [ [], ["prefix"] ]
-};
+} as Command;
 
 const footerNote = "[] means optional arguements, <> means obligatory arguements, | separates options";
 
@@ -25,7 +24,7 @@ function cmdHelp(cmdCall: CommandCallData) {
 
 function queryGeneralHelpSheet(cmdCall: CommandCallData) {
     const { msg } = cmdCall;
-    const currentPrefix = BotUtils.getPrefix(msg.guild!.id);
+    const currentPrefix = getPrefix(msg.guild!.id);
     const cmdList = getPermittedCmdList(cmdCall, true);
 
     type ExtendedGroup = CommandGroup | "uncategorized";
@@ -40,26 +39,26 @@ function queryGeneralHelpSheet(cmdCall: CommandCallData) {
     });
 
     const commandsAssocList = Object.entries(commandsInGroups)
-    .filter((x): x is [ExtendedGroup, Command[]] => x[1] !== undefined)
     .sort((a, b) => {
         const [ [groupA], [groupB] ] = [a, b];
         const [ isHelpA, isHelpB ] = [ groupA === "help", groupB === "help" ];
         const [ isNoneA, isNoneB ] = [ groupA === "uncategorized", groupB === "uncategorized" ];
-        const boost = (+isHelpB - +isHelpA) * 2 + (+isNoneA - +isNoneB) * 2;
-        return a.toString().localeCompare(b.toString()) + boost;
+        const boost = (-+isHelpA + +isHelpB) * 2 + (+isNoneA - +isNoneB) * 2;
+        return groupA.localeCompare(groupB) + boost;
     });
-    
+
     const reply = commandsAssocList.map(([group, commands]) => {
         const isShownGroup = group !== "help";
         const commandsUsage = commands.map(
-            cmd => (cmd.usage instanceof Array
-            ? cmd.usage.map(x => currentPrefix + x).join(" OR\n")
-            : currentPrefix + cmd.usage!)
+            ({ usage }) => (usage instanceof Array
+            ? usage.map(x => currentPrefix + x).join(" OR\n")
+            : currentPrefix + usage!)
         ).join("\n");
-        return (isShownGroup ? `**${BotUtils.capitalize(group)}**:\n` : "") + "```" + commandsUsage + "```";
+        console.log({group, commandsUsage});
+        return (isShownGroup ? `**${capitalize(group)}**:\n` : "") + "```\n" + commandsUsage + "\n```";
     }).join("\n");
     
-    BotUtils.sendEmbed(msg, "neutral", {
+    sendEmbed(msg, "neutral", {
         title:  "Help:",
         desc:   reply,
         footer: footerNote
@@ -67,11 +66,11 @@ function queryGeneralHelpSheet(cmdCall: CommandCallData) {
 }
 
 function querySpecificHelpSheet({ msg }: CommandCallData, targetCommand: string) {
-    const currentPrefix = BotUtils.getPrefix(msg.guild!.id);
+    const currentPrefix = getPrefix(msg.guild!.id);
     const command = getCmd(targetCommand, true);
         
     if (!command) {
-        BotUtils.sendEmbed(msg, "error", `Help sheet for \`${targetCommand}\` not found, or the command doesn't exist.`);
+        sendEmbed(msg, "error", `Help sheet for \`${targetCommand}\` not found, or the command doesn't exist.`);
         return;
     }
     
@@ -93,11 +92,9 @@ function querySpecificHelpSheet({ msg }: CommandCallData, targetCommand: string)
 
     const reply = description + (requiredPermissionStr ? "\n\n**Permissions:**\n" + requiredPermissionStr : "") + "\n\n" + examples;
 
-    BotUtils.sendEmbed(msg, "neutral", {
+    sendEmbed(msg, "neutral", {
         title:  usage,
         desc:   reply,
         footer: aliases
     });
 }
-
-module.exports = cmd;
