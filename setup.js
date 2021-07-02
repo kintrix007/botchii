@@ -33,8 +33,6 @@ function promptDeleteConfig(callback = undefined) {
         if (![ "y", "yes" ].includes(answer.toLowerCase())) {
             process.exit(0);
         }
-        fs.unlinkSync(CONFIG_FILE);
-        console.log(`-- removed file '${CONFIG_FILE}' --`);
         callback && callback();
     });
 }

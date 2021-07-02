@@ -7,27 +7,28 @@ To invite this bot to your server use [this link](https://discord.com/api/oauth2
 ### Dependencies
 * `typescript`
 * `discord.js`
-* `dotenv`
 * ~~`emoji-regex`~~ not yet
-
-### Description
-~~To be written...~~
 
 ---
 
-# Todo
+# Setup
+
+You can run `npm run setup` to have a simple CLI help you make the needed file(s).
+
+---
+
+### Todo
 
 - [x] **Change the way `.channel` behaves:**\
-`.channel` -> Lists tracked base and target channels.\
-`.channel <from|base> <channels...>` -> Sets base channels.\
-`.channel <to|target> <channels...>` -> Sets target channels.\
-`.channel alias <channel alias> <channels...>` -> Sets a channel alias.\
+  `.channel` -> Lists tracked base and target channels.\
+  `.channel <from|base> <channels...>` -> Sets base channels.\
+  `.channel <to|target> <channels...>` -> Sets target channels.\
+  `.channel alias <channel alias> <channels...>` -> Sets a channel alias.\
   aliases can be used instead of channel ID's. One alias can correspond to multiple.\
-\
-Change it, so it **does not** automatically look for reactions on all messages in base channels!
+  Change it, so it **does not** automatically look for reactions on all messages in base channels!
 
 - [x] **Introduce the command `.announce`:**\
-`.announce <message link> [target channels...]` -> Creates a poll on the message specified.\
+  `.announce <message link> [target channels...]` -> Creates a poll on the message specified.\
   If 'target channel' is omitted, announces to all target channels. Channel aliases can be used.\
   Instead of a message link, it can be a message ID, from the same channel.\
   Can only point to messages in base announcement channels.
@@ -46,5 +47,5 @@ Change it, so it **does not** automatically look for reactions on all messages i
 - [ ] **Add option for default command or so...**
 - [x] **Remove `removeAccents` from core, and add a way to give content modifier functions**
 - [x] **Add `impl` field to `BotUtils` with the functions that should not be acessed by the user**
-- [ ] **Make `extension_types.ts` optional, later replace it with something nicer**
-- [ ] **Add a listeners module, which creates discord.js listeners and has an API add listeners and modify their callbacks**
+- [ ] **Make `bot_types.d.ts` optional or replace it with something nicer**
+- [x] **Add a listeners module, which creates discord.js listeners and has an API add listeners and modify their callbacks**
