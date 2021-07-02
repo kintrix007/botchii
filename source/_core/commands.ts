@@ -1,14 +1,15 @@
 import { CommandCallData, Command, CoreData } from "./types";
-import * as BotUtils from "./bot_utils";
+import * as BotUtils from "./bot_core";
 import fs from "fs";
 import path from "path";
-import { Message, DMChannel } from "discord.js";
+import { Message, DMChannel, DiscordAPIError, MessageEmbed } from "discord.js";
+import { addListener } from "./listeners";
 
 const DEAULT_NOT_PERMITTED_ERROR_MESSAGE = ({ cmdName }: CommandCallData) => `You do not have permission to use the command \`${cmdName}\`.`;
 
 let cmds = new Set<Command>();
 
-function createCmd(command: Command): void {
+function createCmd(command: Command) {
     console.log(`loaded command '${command.name}'`);
 
     const convertedCommand: Command = {
@@ -20,21 +21,25 @@ function createCmd(command: Command): void {
     cmds.add(convertedCommand);
 }
 
-function loadCmds(cmdDir: string) {
+async function loadCmds(cmdDir: string) {
     console.log(`-- loading commands from '${path.basename(cmdDir)}'... --`);
 
     const withoutExt = (filename: string) => filename.slice(0, filename.length - path.extname(filename).length);
 
     const files = fs.readdirSync(cmdDir)
-        .filter(filename => !fs.lstatSync(path.join(cmdDir, filename)).isDirectory())
-        .map(withoutExt);
+    .filter(filename => !fs.lstatSync(path.join(cmdDir, filename)).isDirectory())
+    .map(withoutExt);
 
-    files.forEach(filename => {
-        const cmdPath = path.join(cmdDir, filename)
-        const command: Command = require(cmdPath);
-        if (command?.name == undefined) return;
-        createCmd(command);
+    const importPromieses = files.map(filename => {
+        const cmdPath = path.join(cmdDir, filename);
+        return import(cmdPath) as Promise<unknown>;
     });
+
+    const hasDefault = (obj: unknown): obj is { default: any } => typeof obj === "object" && obj != null && "default" in obj;
+
+    const imported = await BotUtils.keepFulfilledResults(importPromieses);
+    const commands = imported.map(x => hasDefault(x) ? x.default : undefined).filter(BotUtils.isCommand);
+    commands.forEach(createCmd);
 }
 
 async function setupCmds(coreData: CoreData) {
@@ -47,10 +52,10 @@ async function setupCmds(coreData: CoreData) {
 }
 
 export async function createCmdsListeners(coreData: CoreData, cmdDirs: string[]) {
-    cmdDirs.forEach(dir => loadCmds(dir));
+    await Promise.allSettled(cmdDirs.map(loadCmds));
     await setupCmds(coreData);
 
-    coreData.client.on("message", (msg: Message) => {
+    addListener(coreData.client, "message", async (msg: Message) => {
         const cmdCall = getCmdCallData(coreData, msg);
         if (cmdCall === undefined) return;
         const cmd = getCmd(cmdCall.cmdName, false);
@@ -63,8 +68,15 @@ export async function createCmdsListeners(coreData: CoreData, cmdDirs: string[])
             return;
         }
 
+        const cmdRes = await cmd.call(cmdCall);
         console.log(`'${cmd.name}' called in '${msg.guild!.name}' by user '${BotUtils.getUserString(msg.author)}' <@${msg.author.id}>`);
-        cmd.call(cmdCall);
+        if (cmdRes == null) return;
+        await msg.channel.send(cmdRes)
+        .catch(err => {
+            if (err instanceof DiscordAPIError && cmdRes instanceof MessageEmbed) {
+                msg.channel.send(BotUtils.embedToString(cmdRes)).catch(console.error);
+            }
+        });
     });
 
     console.log("-- all message listeners set up --");

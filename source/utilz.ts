@@ -1,12 +1,11 @@
-import * as types from "./_core/types";
-import * as BotUtils from "./_core/bot_utils";
+import { ROOT_DIR, loadPrefs, updatePrefs, keepFulfilledResults, Prefs } from "./_core/bot_core";
 import { CountedEmoji, UserReactions } from "./custom_types";
 import { CategoryChannel, Channel, Client, DMChannel, Guild, GuildEmoji, MessageReaction, NewsChannel, Snowflake, TextChannel } from "discord.js";
 import path from "path";
 import { AliasData, ALIAS_PREFS_FILE } from "./bot_commands/command_prefs";
 
 
-export const PICS_DIR = path.join(BotUtils.ROOT_DIR, "images");
+export const PICS_DIR = path.join(ROOT_DIR, "images");
 
 export function convertToCountedEmoji(reaction: MessageReaction) {
     const {emoji, count} = reaction;
@@ -46,61 +45,39 @@ export function createChannelAlias(
 
     if (!channels.every(isTextChannel)) return;     // Just a runtime check as well...
 
-    const aliasPrefs = BotUtils.loadPrefs<AliasData>(ALIAS_PREFS_FILE, true);
+    const aliasPrefs = loadPrefs<AliasData>(ALIAS_PREFS_FILE, true);
     const aliasData = {
         [guild.id]: {
             guildName: guild.name,
             aliases:   { ...(aliasPrefs[guild.id]?.aliases ?? {}), [alias]: channels.map(x => x.id) }
         }
-    } as types.Prefs<AliasData>;
-    BotUtils.updatePrefs(ALIAS_PREFS_FILE, aliasData);
+    } as Prefs<AliasData>;
+    updatePrefs(ALIAS_PREFS_FILE, aliasData);
 }
 
 export function removeChannelAlias(guild: Guild, alias: string) {
-    const aliasPrefs = BotUtils.loadPrefs<AliasData>(ALIAS_PREFS_FILE, true);
+    const aliasPrefs = loadPrefs<AliasData>(ALIAS_PREFS_FILE, true);
     const aliasData = {
         [guild.id]: {
             guildName: guild.name,
             aliases:   { ...(aliasPrefs[guild.id]?.aliases ?? {}), [alias]: undefined }
         }
-    } as types.Prefs<AliasData>;
-    BotUtils.updatePrefs(ALIAS_PREFS_FILE, aliasData);
+    } as Prefs<AliasData>;
+    updatePrefs(ALIAS_PREFS_FILE, aliasData);
 }
 
 export function fromChannelAlias(guild: Guild, alias: string) {
-    const aliasData = BotUtils.loadPrefs<AliasData>(ALIAS_PREFS_FILE);
+    const aliasData = loadPrefs<AliasData>(ALIAS_PREFS_FILE);
     return aliasData[guild.id]?.aliases?.[alias];
 }
 
 
 export async function fetchTextChannels(client: Client, channelIDs: string[] | Set<string>) {
     const channelPromises = [...channelIDs].map(x => client.channels.fetch(x));
-    const channels = await BotUtils.keepFulfilledResults(channelPromises);
+    const channels = await keepFulfilledResults(channelPromises);
     return channels.map(x => x instanceof CategoryChannel ? Array.from(x.children.values()) : x)
     .flat()
     .filter(isTextChannel);
-
-    // let channels: Array<TextChannel | NewsChannel | DMChannel> = [];
-
-    // for (const channelID of channelIDs) {
-    //     try {
-    //         const channel = await client.channels.fetch(channelID);
-    //         if (!(isTextChannel(channel) || channel instanceof CategoryChannel)) continue;
-
-    //         if (channel instanceof CategoryChannel) {
-    //             channel.children.forEach(ch => {
-    //                 if (isTextChannel(ch)) channels.push(ch);
-    //             });
-    //         } else {
-    //             channels.push(channel);
-    //         }
-    //     }
-    //     catch (err) {
-    //         continue;
-    //     }
-    // }
-
-    // return channels;
 }
 
 export function isTextChannel(channel: Channel): channel is TextChannel | NewsChannel | DMChannel {

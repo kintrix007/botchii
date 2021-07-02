@@ -42,7 +42,9 @@ Change it, so it **does not** automatically look for reactions on all messages i
 - [x] **Change the way `getPrefix` works, so it's called without arguements**
 - [ ] **Add proper logging**
 - [x] **Correctly indicate all invalid/timed out announce messages**
-- [ ] **Send temporary confirmation message when adding a vote**
+- [x] **Send temporary confirmation message when adding a vote**
 - [ ] **Add option for default command or so...**
 - [x] **Remove `removeAccents` from core, and add a way to give content modifier functions**
-- [ ] **Add `private` field to `BotUtils` with the functions that should not be acessed by the user**
+- [x] **Add `impl` field to `BotUtils` with the functions that should not be acessed by the user**
+- [ ] **Make `extension_types.ts` optional, later replace it with something nicer**
+- [ ] **Add a listeners module, which creates discord.js listeners and has an API add listeners and modify their callbacks**

@@ -1,5 +1,4 @@
-import * as types from "../../_core/types";
-import * as BotUtils from "../../_core/bot_utils";
+import { getReplyMessage, getMessageLink, sendEmbed, loadPrefs, getPrefix, quoteMessage, fetchMessageLink, addReactions, updatePrefs, parseMessageLink, Command, CommandCallData, Prefs } from "../../_core/bot_core";
 import { DMChannel, NewsChannel, TextChannel } from "discord.js";
 import { AnnounceData, ANNOUNCE_PREFS_FILE, ChannelData, CHANNEL_PREFS_FILE, EXPIRED_MESSAGE_TEXT } from "../command_prefs";
 import * as Utilz from "../../utilz";
@@ -10,7 +9,7 @@ You can specify where to announce the message, which can be a channel alias.
 When omitted announces to the currently set target channels.
 Every announcement message is only valid for 3 days. After this time, it counts as rejected.`;
 
-const cmd: types.Command = {
+const cmd: Command = {
     setup:       setup,
     call:        cmdAnnounce,
     name:        "announce",
@@ -21,54 +20,54 @@ const cmd: types.Command = {
     examples:    [ ["https://discord.com/channels/123456789012345678/012345678901234567/234567890123456789"], ["234567890123456789", "#announcements"] ]
 };
 
-async function cmdAnnounce({ msg, args }: types.CommandCallData) {
-    const replyMessage = await BotUtils.getReplyMessage(msg);
-    const announceMsgLinkOrID = (!!replyMessage ? BotUtils.getMessageLink(replyMessage) : args[0]);
+async function cmdAnnounce({ msg, args }: CommandCallData) {
+    const replyMessage = await getReplyMessage(msg);
+    const announceMsgLinkOrID = (!!replyMessage ? getMessageLink(replyMessage) : args[0]);
     const targetChannelAliases = (!!replyMessage ? args.slice(0) : args.slice(1));
     if (!announceMsgLinkOrID) {
-        BotUtils.sendEmbed(msg, "error", "Gib Msseage link .-.");
+        sendEmbed(msg, "error", "Gib Msseage link .-.");
         return;
     }
     
-    const channelData = BotUtils.loadPrefs<ChannelData>(CHANNEL_PREFS_FILE)[msg.guild!.id];
+    const channelData = loadPrefs<ChannelData>(CHANNEL_PREFS_FILE)[msg.guild!.id];
     const announceMsg = await getMessage(msg.channel, announceMsgLinkOrID);
     if (announceMsg === undefined) {
-        BotUtils.sendEmbed(msg, "error", "The message link is either invalid, or points to a message the bot cannot see.");
+        sendEmbed(msg, "error", "The message link is either invalid, or points to a message the bot cannot see.");
         return;
     }
     
-    const announceMsgLink = BotUtils.getMessageLink(announceMsg);
+    const announceMsgLink = getMessageLink(announceMsg);
     if (!channelData?.fromChannels?.includes(announceMsg.channel.id)) {
-        BotUtils.sendEmbed(msg, "error", {
+        sendEmbed(msg, "error", {
             title: "Can only announce messages from the base channels!",
-            desc:  `Use the command \`${BotUtils.getPrefix(msg.guild!.id)}channel\` to see the currently set base channels.`
+            desc:  `Use the command \`${getPrefix(msg.guild!.id)}channel\` to see the currently set base channels.`
         });
         return;
     }
 
     const customTargetChannels = Utilz.parseChannels(msg.guild!, targetChannelAliases);
     const targetChannelIDs = (customTargetChannels.length === 0
-        ? BotUtils.loadPrefs<ChannelData>(CHANNEL_PREFS_FILE, true)[msg.guild!.id]?.toChannels
+        ? loadPrefs<ChannelData>(CHANNEL_PREFS_FILE, true)[msg.guild!.id]?.toChannels
         : customTargetChannels);
     
     if (targetChannelIDs === undefined) {
-        BotUtils.sendEmbed(msg, "error", {
+        sendEmbed(msg, "error", {
             title: "No target channels are given!",
-            desc:  `Use the command \`${BotUtils.getPrefix(msg.guild!.id)}channel\` to see the default target channels.`
+            desc:  `Use the command \`${getPrefix(msg.guild!.id)}channel\` to see the default target channels.`
         });
         return;
     }
 
-    const content = BotUtils.getMessageLink(announceMsg)
-    + (announceMsg.content ? "\n" + BotUtils.quoteMessage(announceMsg.content, 75) : "") + "\n"
+    const content = getMessageLink(announceMsg)
+    + (announceMsg.content ? "\n" + quoteMessage(announceMsg.content, 75) : "") + "\n"
     + (targetChannelIDs.length ? "\n**to:** " + targetChannelIDs.map(x => "<#"+x+">").join(", ") : "")
     + `\n**${scoreToForward} to go**`;
 
-    const announcePrefs = BotUtils.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true);
+    const announcePrefs = loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true);
     const previousAnnounceMsgData = announcePrefs[msg.guild!.id]?.announceMessages[announceMsgLink];
     if (previousAnnounceMsgData !== undefined) {
         try {
-            const trackerMsg = await BotUtils.fetchMessageLink(msg.client, previousAnnounceMsgData.trackerMsgLink);
+            const trackerMsg = await fetchMessageLink(msg.client, previousAnnounceMsgData.trackerMsgLink);
             if (trackerMsg !== undefined) trackerMsg.edit(EXPIRED_MESSAGE_TEXT);
         } catch (err) {
             console.error(err);
@@ -76,27 +75,27 @@ async function cmdAnnounce({ msg, args }: types.CommandCallData) {
     }
     
     const trackerMsg = await msg.channel.send(content);
-    BotUtils.addReactions(trackerMsg, [ acceptEmoji, rejectEmoji ]);
+    addReactions(trackerMsg, [ acceptEmoji, rejectEmoji ]);
 
     
-    const announceData: types.Prefs<AnnounceData> = {
+    const announceData: Prefs<AnnounceData> = {
         [msg.guild!.id]: {
             guildName:        msg.guild!.name,
             announceMessages: {
                 ...(announcePrefs[msg.guild!.id]?.announceMessages ?? {}),
-                ...{[BotUtils.getMessageLink(announceMsg)]: {
-                    trackerMsgLink:  BotUtils.getMessageLink(trackerMsg),
+                ...{[getMessageLink(announceMsg)]: {
+                    trackerMsgLink:  getMessageLink(trackerMsg),
                     createdTimestamp: msg.createdTimestamp,
                     targetChannels:  targetChannelIDs.length ? targetChannelIDs : undefined
                 }}
             }
         }
     };
-    BotUtils.updatePrefs(ANNOUNCE_PREFS_FILE, announceData);
+    updatePrefs(ANNOUNCE_PREFS_FILE, announceData);
 }
 
 async function getMessage(channel: TextChannel | NewsChannel | DMChannel, msgLinkOrMessageID: string) {
-    const { channelID, messageID } = BotUtils.parseMessageLink(msgLinkOrMessageID) ?? { channelID: undefined, messageID: msgLinkOrMessageID };
+    const { channelID, messageID } = parseMessageLink(msgLinkOrMessageID) ?? { channelID: undefined, messageID: msgLinkOrMessageID };
 
     try {
         if (channelID === undefined) {

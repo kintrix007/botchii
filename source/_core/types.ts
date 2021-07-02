@@ -1,5 +1,5 @@
-import { Client, Message } from "discord.js";
-import * as ExtensionTypes from "../extension_types";
+import { Client, Message, MessageEmbed } from "discord.js";
+import * as ExtensionTypes from "../bot_types";
 
 
 type BaseCommandGroup = "help" | "admin" | "owner";
@@ -40,6 +40,8 @@ export type CommandCallData = Readonly<{
     argsStr:    string;
 }>;
 
+type AsyncOrSync<T> = T | Promise<T>;
+
 /**
  * @param setup is called once the bot starts. Ideal to set up reaction listeners, or similar.
  * @param call is called when a user uses the given command.
@@ -53,8 +55,8 @@ export type CommandCallData = Readonly<{
  * For example the help command would have examples `[[], ["prefix"]]`, as it can be called without any arguements, or one arguement.
  */
 export interface Command {
-    setup?:         (coreData: CoreData) => Promise<unknown> | void;
-    call:           (cmdCall: CommandCallData) => Promise<unknown> | void;
+    setup?:         (coreData: CoreData) => AsyncOrSync<unknown>;
+    call:           (cmdCall: CommandCallData) => AsyncOrSync<void | string | MessageEmbed>;
     name:           string;
     aliases?:       string[];
     

@@ -1,5 +1,4 @@
-import * as BotUtils from "../../_core/bot_utils";
-import { CoreData, Prefs, GuildPrefs } from "../../_core/types";
+import { loadPrefs, cacheMessages, fetchMessageLink, updatePrefs, sendEmbed, getPrefix, fetchChannels, getMessageLink, quoteMessage, CoreData, Prefs } from "../../_core/bot_core";
 import * as Utilz from "../../utilz";
 import { AnnounceData, ANNOUNCE_PREFS_FILE, ChannelData, CHANNEL_PREFS_FILE, EXPIRED_MESSAGE_TEXT } from "../command_prefs";
 import { Client, DMChannel, Message, MessageReaction, NewsChannel, PartialUser, TextChannel, User } from "discord.js";
@@ -16,10 +15,10 @@ export async function setup(coreData: CoreData) {
     setInterval(() => removeExpiredTrackers(coreData.client), 1000*60*60);     // every hour
     // setInterval(() => removeExpiredTrackers(coreData.client), 1000);     // every second
     
-    const announcedPrefs = BotUtils.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE);
+    const announcedPrefs = loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE);
     const trackerMsgLinks = Object.values(announcedPrefs).map(x => Object.values(x.announceMessages).map(x => x.trackerMsgLink)).flat(1);
 
-    const cachedMessages = await BotUtils.cacheMessages(coreData.client, trackerMsgLinks);
+    const cachedMessages = await cacheMessages(coreData.client, trackerMsgLinks);
     console.log(`cached '${cachedMessages.length}' announcement tracker messages`);
 
     // check tracker messages, in case they changed while the bot was offline
@@ -39,7 +38,7 @@ async function removeExpiredTrackers(client: Client) {
     const invalidateForMsPassed = invalidateFor*60*60*1000;
     const invalidateBefore = currentTimestamp - invalidateForMsPassed;
 
-    let announcedPrefs = BotUtils.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true);
+    let announcedPrefs = loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true);
     let msgEditPromises: Promise<Message | void>[] = [];
 
     // ! FIX IT
@@ -50,7 +49,7 @@ async function removeExpiredTrackers(client: Client) {
             if (!shouldDelete) continue;
 
             try {
-                const trackerMsg = await BotUtils.fetchMessageLink(client, trackerMsgLink);
+                const trackerMsg = await fetchMessageLink(client, trackerMsgLink);
                 delete announcedPrefs[guildID]!.announceMessages[announceMsgLink];
                 console.log(`deleted an announcement tracker in '${announcedPrefs[guildID]!.guildName}'`);
                 const editPromise = trackerMsg?.edit(EXPIRED_MESSAGE_TEXT)?.catch(err => console.warn(err));
@@ -65,7 +64,7 @@ async function removeExpiredTrackers(client: Client) {
         await promise;
     }
     
-    BotUtils.updatePrefs(ANNOUNCE_PREFS_FILE, announcedPrefs, true);
+    updatePrefs(ANNOUNCE_PREFS_FILE, announcedPrefs, true);
 }
 
 function trackReactions(coreData: CoreData, isAdd: boolean) {
@@ -76,29 +75,29 @@ function trackReactions(coreData: CoreData, isAdd: boolean) {
         if (!(user instanceof User || user === undefined)) return;
         
         const message = reaction.message;
-        const announceData = BotUtils.loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true)[message.guild!.id];
+        const announceData = loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true)[message.guild!.id];
         if (announceData === undefined) return;
         const newAnnData = getCurrentAnnounceData(announceData, message);
         if (newAnnData === undefined) return;
         const { announceMsgLink, trackerMsgLink, targetChannels: customTargetChannels } = newAnnData;
 
-        const targetChannelIDs = customTargetChannels ?? BotUtils.loadPrefs<ChannelData>(CHANNEL_PREFS_FILE, true)[message.guild!.id]?.toChannels;
+        const targetChannelIDs = customTargetChannels ?? loadPrefs<ChannelData>(CHANNEL_PREFS_FILE, true)[message.guild!.id]?.toChannels;
 
         if (targetChannelIDs === undefined) {
-            BotUtils.sendEmbed(message, "error", {
+            sendEmbed(message, "error", {
                 title: "No target channels are given!",
-                desc:  `Type \`${BotUtils.getPrefix(message.guild!.id)}channel\` to see the default target channels.`
+                desc:  `Type \`${getPrefix(message.guild!.id)}channel\` to see the default target channels.`
             });
             return;
         }
 
         const userReactions = await getUserReactions(message);
-        const trackerMsg  = (await BotUtils.fetchMessageLink(coreData.client, trackerMsgLink))!;
-        const announceMsg = (await BotUtils.fetchMessageLink(coreData.client, announceMsgLink))!;
+        const trackerMsg  = (await fetchMessageLink(coreData.client, trackerMsgLink))!;
+        const announceMsg = (await fetchMessageLink(coreData.client, announceMsgLink))!;
         const { shouldForward, content } = getContentAndShouldForward(userReactions, announceMsg, targetChannelIDs);
 
         if (shouldForward) {
-            const targetChannels = await BotUtils.fetchChannels(message.client, targetChannelIDs);
+            const targetChannels = await fetchChannels(message.client, targetChannelIDs);
             const targetTextChannels = targetChannels.filter(Utilz.isTextChannel);
             await forwardMessage(announceMsg, targetTextChannels);
             invalidateAnnounceMsg(announceMsg, announceData);
@@ -121,7 +120,7 @@ function getCurrentAnnounceData(announceData: AnnounceData, message: Message) {
     const newAnnData = Object.entries(announceData.announceMessages)
     .map(([announceMsgLink, { trackerMsgLink, targetChannels }]) => { return { announceMsgLink, trackerMsgLink, targetChannels } });
     
-    return newAnnData.find(({ trackerMsgLink }) => BotUtils.getMessageLink(message) === trackerMsgLink);
+    return newAnnData.find(({ trackerMsgLink }) => getMessageLink(message) === trackerMsgLink);
 }
 
 async function getUserReactions(message: Message) {
@@ -147,8 +146,8 @@ function getScoreToGo(acceptUserIDs: Set<string>, rejectUserIDs: Set<string>) {
 }
 
 function getPendingContentParts(announceMsg: Message, targetChannelIDs: Set<string> | string[], scoreToGo: number) {
-    const announceMsgLink = BotUtils.getMessageLink(announceMsg);
-    const announceMsgQuote   = (announceMsg.content ? BotUtils.quoteMessage(announceMsg.content, 75) : "");
+    const announceMsgLink = getMessageLink(announceMsg);
+    const announceMsgQuote   = (announceMsg.content ? quoteMessage(announceMsg.content, 75) : "");
     const targetChArray        = [...targetChannelIDs];
     const targetChannelStrings = "**to:** " + targetChArray.map(x => "<#"+x+">").join(", ");
     const scoreToGoString      = `**${scoreToGo} to go**`;
@@ -183,12 +182,12 @@ function getContentAndShouldForward(userReactions: UserReactions, announceMsg: M
 
 function invalidateAnnounceMsg(announceMsg: Message, announceData: AnnounceData) {
     const guild = announceMsg.guild
-    const announceMsgLink = BotUtils.getMessageLink(announceMsg);
+    const announceMsgLink = getMessageLink(announceMsg);
     delete announceData.announceMessages[announceMsgLink];
     const newAnnouncePrefs: Prefs<AnnounceData> = {
         [guild!.id]: { ...announceData, guildName: guild!.name }
     }
-    BotUtils.updatePrefs(ANNOUNCE_PREFS_FILE, newAnnouncePrefs);
+    updatePrefs(ANNOUNCE_PREFS_FILE, newAnnouncePrefs);
 }
 
 async function forwardMessage(announceMsg: Message, targetChannels: Array<TextChannel | NewsChannel | DMChannel>) {

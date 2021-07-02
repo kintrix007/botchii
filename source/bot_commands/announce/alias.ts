@@ -1,5 +1,4 @@
-import * as BotUtils from "../../_core/bot_utils";
-import { CommandCallData } from "../../_core/types";
+import { sendEmbed, loadPrefs, CommandCallData } from "../../_core/bot_core";
 import * as Utilz from "../../utilz";
 import { AliasData, ALIAS_PREFS_FILE } from "../command_prefs";
 import { Message } from "discord.js";
@@ -22,28 +21,28 @@ export default async function cmdAlias({ msg, args }: CommandCallData) {
     const channels = await Utilz.fetchTextChannels(msg.client, channelIDs);
 
     if (channels.length === 0) {
-        BotUtils.sendEmbed(msg, "error", "No valid channels given.");
+        sendEmbed(msg, "error", "No valid channels given.");
         return;
     }
 
     Utilz.createChannelAlias(msg.guild!, alias, channels);
-    BotUtils.sendEmbed(msg, "ok", `Successfully added channel alias \`${alias}\` for ${channels.join(", ")}`);
+    sendEmbed(msg, "ok", `Successfully added channel alias \`${alias}\` for ${channels.join(", ")}`);
 }
 
 function removeAlias(msg: Message, alias: string) {
     Utilz.removeChannelAlias(msg.guild!, alias);
-    BotUtils.sendEmbed(msg, "ok", `Successfully removed channel alias \`${alias}\`.`);
+    sendEmbed(msg, "ok", `Successfully removed channel alias \`${alias}\`.`);
 }
 
 function sendAliases(msg: Message) {
-    const aliasData = BotUtils.loadPrefs<AliasData>(ALIAS_PREFS_FILE)[msg.guild!.id];
+    const aliasData = loadPrefs<AliasData>(ALIAS_PREFS_FILE)[msg.guild!.id];
 
     if (aliasData === undefined || Object.values(aliasData.aliases).length === 0) {
-        BotUtils.sendEmbed(msg, "neutral", "No aliases set...");
+        sendEmbed(msg, "neutral", "No aliases set...");
         return;
     }
 
-    BotUtils.sendEmbed(msg, "neutral", {
+    sendEmbed(msg, "neutral", {
         title: `${aliasData.guildName} aliases:`,
         desc: Object.entries(aliasData.aliases)
             .map(([alias, channelIDs]) =>

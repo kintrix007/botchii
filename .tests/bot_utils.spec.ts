@@ -1,4 +1,4 @@
-import * as BotUtils from "../source/_core/bot_utils";
+import * as BotUtils from "../source/_core/bot_core";
 import { expect } from "chai"
 
 describe("'BotUtils' works", () => {

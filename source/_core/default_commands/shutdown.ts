@@ -1,22 +1,19 @@
-import * as BotUtils from "../bot_utils";
-import { Command, CommandCallData } from "../types";
+import { Command, CommandCallData, ownerPermission, sendEmbed } from "../bot_core";
 
-const cmd: Command = {
+export default {
     call: cmdKill,
     name: "shutdown",
-    permissions: [ BotUtils.ownerPermission ],
+    permissions: [ ownerPermission ],
     aliases: [ "kill" ],
     group: "owner",
     examples: [ [] ],
-};
+} as Command;
 
 function cmdKill({ msg }: CommandCallData) {
-    BotUtils.sendEmbed(msg, "ok", {
+    sendEmbed(msg, "ok", {
         title: "Shutting down..."
     }).then(sentMsg => {
         console.log("stopping bot...");
         process.exit(0);
     }).catch(console.error);
 }
-
-module.exports = cmd;

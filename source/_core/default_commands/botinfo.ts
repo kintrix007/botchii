@@ -1,27 +1,24 @@
-import * as BotUtils from "../bot_utils";
-import { Command, CommandCallData } from "../types";
+import { ROOT_DIR, capitalize, sendEmbed, Command, CommandCallData } from "../bot_core";
 import * as fs from "fs";
 import * as path from "path";
 
-const cmd: Command = {
+export default {
     call: cmdInfo,
     name: "botinfo",
     usage: "botinfo",
     description: "Shows some basic information about the bot.",
     examples: [ [] ]
-}
+} as Command;
 
 function cmdInfo({ msg }: CommandCallData) {
-    const packagePath = path.join(BotUtils.ROOT_DIR, "package.json");
+    const packagePath = path.join(ROOT_DIR, "package.json");
     const packageObj = JSON.parse(fs.readFileSync(packagePath).toString());
-    const name: string = BotUtils.capitalize(packageObj.name);
+    const name: string = capitalize(packageObj.name);
     const description: string = packageObj.description;
     const homepage: string    = packageObj.homepage;
     
-    BotUtils.sendEmbed(msg, "neutral", {
+    sendEmbed(msg, "neutral", {
         title: name,
         desc:  description + (homepage ? "\n**GitHub: **" + homepage : "")
     });
 }
-
-module.exports = cmd;
