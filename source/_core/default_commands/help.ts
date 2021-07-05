@@ -7,7 +7,7 @@ export default {
     group: "help",
     usage: "help [command name]",
     description: "Gives you a list of commands, or it can give further information about a specific command.",
-    examples: [ [], ["prefix"] ]
+    examples: [ [], ["prefix"] ],
 } as Command;
 
 const footerNote = "[] means optional arguements, <> means obligatory arguements, | separates options";

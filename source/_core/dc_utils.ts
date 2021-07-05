@@ -1,5 +1,5 @@
 import { Channel, TextChannel, NewsChannel, DMChannel, Client, CategoryChannel, Snowflake, Message, MessageReaction, User, GuildChannel, MessageEmbed } from "discord.js";
-import { keepFulfilledResults, filterOut } from "./general_utils";
+import { keepFulfilledResults, notOf } from "./general_utils";
 
 const messageColors = {
     ok:      0x00bb00,
@@ -43,7 +43,7 @@ export async function fetchMessages(client: Client, msgLinksOrData: string[] | {
 
     const messagePromises = targetMessages.map(x => getMessage(client, x));
     const messages = await keepFulfilledResults(messagePromises);
-    return filterOut(messages, undefined);
+    return messages.filter(notOf(undefined));
 }
 
 export async function cacheMessages(client: Client, msgLinksOrData: string[] | { channelID: Snowflake, messageID: Snowflake }[]) {

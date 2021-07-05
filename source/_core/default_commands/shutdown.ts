@@ -4,7 +4,6 @@ export default {
     call: cmdKill,
     name: "shutdown",
     permissions: [ ownerPermission ],
-    aliases: [ "kill" ],
     group: "owner",
     examples: [ [] ],
 } as Command;

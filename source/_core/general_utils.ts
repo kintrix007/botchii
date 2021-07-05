@@ -1,22 +1,18 @@
-import path from "path";
-
-export const BOT_CORE_DIR         = path.join(__dirname);
-export const DEFAULT_COMMANDS_DIR = path.join(BOT_CORE_DIR, "default_commands");
-export const ROOT_DIR             = path.join(BOT_CORE_DIR, "..", "..");
-export const SOURCE_DIR = path.join(ROOT_DIR, "source");
-export const PREFS_DIR  = path.join(ROOT_DIR, "prefs");
-
-
-// general utility
-
 export async function keepFulfilledResults<T>(arr: Promise<T>[]): Promise<T[]> {
     return (await Promise.allSettled(arr))
     .filter(<T>(x: PromiseSettledResult<T>): x is PromiseFulfilledResult<T> => x.status === "fulfilled")
     .map(({ value }) => value);
 }
 
-export function filterOut<T, U extends T>(arr: Array<T>, value: U) {
-    return arr.filter((x): x is Exclude<T, U> => x !== value)
+export function notOf<T>(excluded: T | T[] | Set<T>) {
+    type CheckFunc = <U>(x: T | U) => x is Exclude<U, T>;
+    if (excluded instanceof Set) {
+        return <CheckFunc>(x => !excluded.has(x as T));
+    } else if (excluded instanceof Array) {
+        return <CheckFunc>(x => !excluded.includes(x as T));
+    } else {
+        return <CheckFunc>(x => excluded !== x);
+    }
 }
 
 /** Capitalizes the first character of a string */

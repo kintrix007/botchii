@@ -1,9 +1,15 @@
 import fs from "fs";
 import path from "path";
 import { Command, CommandContentModifier, CommandPermission, CoreData, Prefs } from "./types";
-import { capitalize, PREFS_DIR, ROOT_DIR } from "./general_utils";
+import { capitalize } from "./general_utils";
 import { AdminData, ADMIN_PREFS_FILE, PrefixData, PREFIX_PREFS_FILE } from "./default_commands/command_prefs";
 import { PermissionString, DMChannel, GuildMember, User, Snowflake, Message } from "discord.js";
+
+export const BOT_CORE_DIR         = path.join(__dirname);
+export const DEFAULT_COMMANDS_DIR = path.join(BOT_CORE_DIR, "default_commands");
+export const ROOT_DIR             = path.join(BOT_CORE_DIR, "..", "..");
+export const SOURCE_DIR = path.join(ROOT_DIR, "source");
+export const PREFS_DIR  = path.join(ROOT_DIR, "prefs");
 
 
 export const impl = new class{
@@ -29,12 +35,14 @@ export const impl = new class{
         return this._defaultPrefix!;
     }
 
-    public setDefaultPrefix(newPrefix: string) {
-        if (this._defaultPrefix === undefined) this._defaultPrefix = newPrefix;
+    set defaultPrefix(newPrefix: string) {
+        if (this._defaultPrefix !== undefined) throw new Error("field 'defaultPrefix' already set!");
+        this._defaultPrefix = newPrefix;
     }
     
-    public setCommandContentModifiers(arr: CommandContentModifier[]) {
-        if (this._commandContentModifiers === undefined) this._commandContentModifiers = [...arr]; // set it to a copy, not a reference
+    set commandContentModifiers(arr: CommandContentModifier[]) {
+        if (this._commandContentModifiers !== undefined) throw new Error("field 'commandContentModifiers' already set!");
+        this._commandContentModifiers = [...arr]; // set it to a copy, not a reference
     }
     
     public applyCommandContentModifiers(cont: string) {
