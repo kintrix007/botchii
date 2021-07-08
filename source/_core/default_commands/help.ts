@@ -1,6 +1,6 @@
 import { createEmbed } from "_core/dc_utils";
 import { notOf } from "_core/general_utils";
-import { getPrefix, capitalize, sendEmbed, Command, CommandCallData, CommandGroup } from "../bot_core";
+import { getPrefix, capitalize, Command, CommandCallData } from "../bot_core";
 import { getCmd, getPermittedCmdList } from "../commands";
 
 export default {

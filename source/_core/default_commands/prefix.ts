@@ -1,4 +1,4 @@
-import { adminPermission, sendEmbed, updatePrefs, getPrefix, Command, CommandCallData, CoreData, Prefs } from "../bot_core";
+import { adminPermission, sendEmbed, updatePrefs, getPrefix, Command, CommandCallData, Prefs } from "../bot_core";
 import { PREFIX_PREFS_FILE, PrefixData } from "./command_prefs"
 import { Message } from "discord.js";
 import { createEmbed } from "_core/dc_utils";
@@ -19,7 +19,7 @@ export default {
 
 const MAX_PREFIX_LENGTH = 4;
 
-function cmdPrefix({ coreData, msg, args }: CommandCallData) {
+function cmdPrefix({ msg, args }: CommandCallData) {
     const newPrefix = args[0];
 
     if (newPrefix === undefined) return prefixGetter(msg);
