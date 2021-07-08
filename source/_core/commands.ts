@@ -1,5 +1,4 @@
-import { CommandCallData, Command, CoreData } from "./types";
-import * as BotUtils from "./bot_core";
+import { impl, keepFulfilledResults, isCommand, sendEmbed, getUserString, embedToString, prefixless, Command, CommandCallData, CoreData } from "./bot_core";
 import fs from "fs";
 import path from "path";
 import { Message, DMChannel, DiscordAPIError, MessageEmbed } from "discord.js";
@@ -14,8 +13,8 @@ function createCmd(command: Command) {
 
     const convertedCommand: Command = {
         ...command,
-        name:        BotUtils.impl.applyCommandContentModifiers(command.name.toLowerCase()),
-        aliases:     command.aliases?.map(alias => BotUtils.impl.applyCommandContentModifiers(alias.toLowerCase())),
+        name:        impl.applyCommandContentModifiers(command.name),
+        aliases:     command.aliases?.map(alias => impl.applyCommandContentModifiers(alias)),
     };
 
     cmds.add(convertedCommand);
@@ -37,8 +36,8 @@ async function loadCmds(cmdDir: string) {
 
     const hasDefault = (obj: unknown): obj is { default: any } => typeof obj === "object" && obj != null && "default" in obj;
 
-    const imported = await BotUtils.keepFulfilledResults(importPromieses);
-    const commands = imported.map(x => hasDefault(x) ? x.default : undefined).filter(BotUtils.isCommand);
+    const imported = await keepFulfilledResults(importPromieses);
+    const commands = imported.map(x => hasDefault(x) ? x.default : undefined).filter(isCommand);
     commands.forEach(createCmd);
 }
 
@@ -64,17 +63,17 @@ export async function createCmdsListeners(coreData: CoreData, cmdDirs: string[])
 
         if (failingPermission !== undefined) {
             const errorMessage = failingPermission.errorMessage?.(cmdCall) ?? DEAULT_NOT_PERMITTED_ERROR_MESSAGE(cmdCall);
-            BotUtils.sendEmbed(msg, "error", errorMessage);
+            sendEmbed(msg, "error", errorMessage);
             return;
         }
 
         const cmdRes = await cmd.call(cmdCall);
-        console.log(`'${cmd.name}' called in '${msg.guild!.name}' by user '${BotUtils.getUserString(msg.author)}' <@${msg.author.id}>`);
+        console.log(`'${cmd.name}' called in '${msg.guild!.name}' by user '${getUserString(msg.author)}' <@${msg.author.id}>`);
         if (cmdRes == null) return;
         await msg.channel.send(cmdRes)
         .catch(err => {
             if (err instanceof DiscordAPIError && cmdRes instanceof MessageEmbed) {
-                msg.channel.send(BotUtils.embedToString(cmdRes)).catch(console.error);
+                msg.channel.send(embedToString(cmdRes)).catch(console.error);
             }
         });
     });
@@ -91,9 +90,9 @@ export function getCmdCallData(coreData: CoreData, msg: Message) {
     if (msg.channel instanceof DMChannel) return undefined;
     if (msg.author.bot) return undefined;
     
-    const contTemp = BotUtils.prefixless(msg);
+    const contTemp = prefixless(msg);
     if (contTemp === undefined) return undefined;
-    const cont = BotUtils.impl.applyCommandContentModifiers(contTemp.toLowerCase());
+    const cont = impl.applyCommandContentModifiers(contTemp);
 
     const splits = cont.trim().split(/\s+/);
     if (splits.length === 0) return undefined;

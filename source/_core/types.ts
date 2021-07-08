@@ -1,6 +1,6 @@
 import { Client, Message, MessageEmbed } from "discord.js";
-import * as ExtensionTypes from "../bot_types";
-
+import { CustomCoreData, CustomCommandGroup } from "../bot_types";
+export { CustomCoreData, CustomCommandGroup } from "../bot_types";
 
 type BaseCommandGroup = "help" | "admin" | "owner";
 
@@ -9,6 +9,7 @@ interface BaseCoreData {
     defaultPrefix:  string;
 }
 
+// Not sure if needed
 export type LoggedInClient = Client & {
     [K in keyof Client]: NonNullable<Client[K]>
 };
@@ -25,9 +26,6 @@ export type CommandPermission = {
     errorMessage?: (cmdCall: CommandCallData) => string;
     description?:  (cmd: Command) => string
 };
-
-export type CustomCoreData     = ExtensionTypes.CustomCoreData;
-export type CustomCommandGroup = ExtensionTypes.CustomCommandGroup;
 
 export type CoreData     = Readonly<BaseCoreData & CustomCoreData>;
 export type CommandGroup = BaseCommandGroup | CustomCommandGroup;

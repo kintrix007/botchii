@@ -15,7 +15,7 @@ interface SetupData {
     commandDirs:              string[];
     defaultPrefix?:           string;
     options?:                 ClientOptions;
-    commandContentModifiers?: CommandContentModifier[];
+    messageContentModifiers?: CommandContentModifier[];
     onready?:                 (coreData: CoreData) => void;
 };
 
@@ -25,13 +25,13 @@ export async function initBot(customCoreData: CustomCoreData, setupData: SetupDa
     const {
         commandDirs,
         defaultPrefix = DEFAULT_PREFIX,
+        messageContentModifiers = [],
         options,
-        commandContentModifiers = [],
-        onready
+        onready,
     } = setupData;
 
     impl.defaultPrefix = defaultPrefix;
-    impl.commandContentModifiers = commandContentModifiers;
+    impl.messageContentModifiers = messageContentModifiers;
 
     const client = new Client();
     if (options !== undefined) {

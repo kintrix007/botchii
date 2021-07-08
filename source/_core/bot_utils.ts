@@ -15,7 +15,7 @@ export const PREFS_DIR  = path.join(ROOT_DIR, "prefs");
 export const impl = new class{
     private _CONFIG_FILE = path.join(ROOT_DIR, "config.json");
     private _defaultPrefix: string | undefined = undefined;
-    private _commandContentModifiers: CommandContentModifier[] | undefined = undefined;
+    private _messageContentModifiers: CommandContentModifier[] | undefined = undefined;
     
     get botToken() {
         const obj = JSON.parse(fs.readFileSync(this._CONFIG_FILE).toString());
@@ -27,7 +27,7 @@ export const impl = new class{
     get ownerID() {
         const obj = JSON.parse(fs.readFileSync(this._CONFIG_FILE).toString());
         const ownerID = obj.botOwnerID as string | undefined;
-        if (ownerID == null) throw new Error("Bot token not defined!");
+        if (ownerID == null) throw new Error("Owner ID not defined!");
         return ownerID;
     }
 
@@ -40,15 +40,16 @@ export const impl = new class{
         this._defaultPrefix = newPrefix;
     }
     
-    set commandContentModifiers(arr: CommandContentModifier[]) {
-        if (this._commandContentModifiers !== undefined) throw new Error("field 'commandContentModifiers' already set!");
-        this._commandContentModifiers = [...arr]; // set it to a copy, not a reference
+    set messageContentModifiers(arr: CommandContentModifier[]) {
+        if (this._messageContentModifiers !== undefined) throw new Error("field 'messageContentModifiers' already set!");
+        this._messageContentModifiers = [...arr]; // set it to a copy, not a reference
     }
     
-    public applyCommandContentModifiers(cont: string) {
-        return this._commandContentModifiers!.reduce((cont, modifier) => modifier(cont), cont);
+    public applyMessageContentModifiers(cont: string) {
+        return this._messageContentModifiers!.reduce((cont, modifier) => modifier(cont), cont);
     }
 }();
+
 
 export function isCommand(obj: unknown): obj is Command {
     if (typeof obj !== "object") return false;
@@ -66,12 +67,12 @@ export function isCommand(obj: unknown): obj is Command {
 export const adminPermission: CommandPermission = {
     test:         ({ msg }) => isAdmin(msg.member),
     errorMessage: ({ cmdName }) =>`The command \`${cmdName}\` can only be used by admins.`,
-    description:  cmd => "Only people with the **admin role**, or with the **Administrator** permission can use this command."
+    description:  cmd => "Only people with the **admin role**, or with the **Administrator** permission can use this command.",
 };
 export const ownerPermission: CommandPermission = {
     test:         ({ msg }) => isBotOwner(msg.author),
     errorMessage: ({ cmdName }) => `The command \`${cmdName}\` can only be used by the bot's owner.`,
-    description:  cmd => "Only the bot's **owner** can use this command."
+    description:  cmd => "Only the bot's **owner** can use this command.",
 };
 
 
@@ -80,7 +81,7 @@ export function createCommandPermission(permission: PermissionString) {
     const cmdPerm: CommandPermission = {
         test:         ({ msg }) => msg.member?.hasPermission(permission) ?? false,
         errorMessage: ({ cmdName }) => `The command \`${cmdName}\` can only be used by people with **${humanReadablePermission}** permission.`,
-        description:  cmd => `Only people with **${humanReadablePermission}** permission can use this command.`
+        description:  cmd => `Only people with **${humanReadablePermission}** permission can use this command.`,
     };
     return cmdPerm;
 }
@@ -91,11 +92,12 @@ export function createChannelSpecificCmdPermission(permission: PermissionString)
         test: ({ msg }) => {
             const channel = msg.channel;
             if (channel instanceof DMChannel) return true;
-            const perms = channel.permissionsFor(msg.member!);
+            if (msg.member === null) return false;
+            const perms = channel.permissionsFor(msg.member);
             return perms?.has(permission) ?? false;
         },
+        errorMessage: ({ cmdName }) => `You can only use \`${cmdName}\` if you have **${humanReadablePermission}** in this channel!`,
         description: cmd => `Only people, who have **${humanReadablePermission}** permission in a given channel, can use this command.`,
-        errorMessage: ({ cmdName }) => `You can only use \`${cmdName}\` if you have **${humanReadablePermission}** in this channel!`
     };
     return cmdPerm;
 }
@@ -131,9 +133,9 @@ export function prefixless(msg: Message): string | undefined {
     const guild = msg.guild;
     if (!guild) return undefined;
     const cont = msg.content;
-    const prefix = impl.applyCommandContentModifiers(getPrefix(guild.id));
+    const prefix = impl.applyMessageContentModifiers(getPrefix(guild.id));
     
-    if (impl.applyCommandContentModifiers(cont).startsWith(prefix)) {
+    if (impl.applyMessageContentModifiers(cont).startsWith(prefix)) {
         return cont.slice(prefix.length);
     }
 
