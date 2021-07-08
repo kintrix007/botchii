@@ -51,16 +51,35 @@ export const impl = new class{
 }();
 
 
-export function isCommand(obj: unknown): obj is Command {
+export function isCommand(obj: any): obj is Command {
     if (typeof obj !== "object") return false;
-    // null or undefined
     if (obj == null) return false;
-    const hasCallAndName = (((x: object): x is { call: unknown, name: unknown } => "call" in x && "name" in x));
-    if (!hasCallAndName(obj)) return false;
-    const isCallAndNameProper = ((x: { call: unknown, name: unknown }): x is { name: string, call: Function } =>
-        typeof x.name === "string" && typeof x.call === "function");
-    if (!isCallAndNameProper(obj)) return false;
-    return true;
+    
+    type BasicTypes = "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function";
+    function test(field: unknown, types: BasicTypes[]): boolean {
+        return types.some(x => typeof field === x);
+    }
+    function testArray(field: unknown, arrayTypes: BasicTypes[]): boolean {
+        if (!(field instanceof Array)) return false;
+        return field.every(x => test(x, arrayTypes));
+    }
+    function test2DArray(field: unknown, arrayTypes: BasicTypes[]): boolean {
+        if (!(field instanceof Array)) return false;
+        return field.every(x => testArray(x, arrayTypes));
+    }
+    
+    const { setup, call, name, aliases, permissions, group, usage, description, examples } = obj as Command;
+    return [
+        test(setup, [ "undefined", "function" ]),
+        test(call, [ "function" ]),
+        test(name, [ "string" ]),
+        test(aliases, [ "undefined" ]) || testArray(aliases, [ "string" ]),
+        test(permissions, [ "undefined", "object" ]),
+        test(group, [ "undefined", "string" ]),
+        test(usage, [ "undefined", "string" ]),
+        test(description, [ "undefined", "string" ]),
+        test(examples, [ "undefined" ]) || test2DArray(examples, [ "string" ]),
+    ].every(x => x);
 }
 
 

@@ -1,8 +1,9 @@
 import { impl, keepFulfilledResults, isCommand, sendEmbed, getUserString, embedToString, prefixless, Command, CommandCallData, CoreData } from "./bot_core";
 import fs from "fs";
 import path from "path";
-import { Message, DMChannel, DiscordAPIError, MessageEmbed } from "discord.js";
+import { Message, DMChannel, DiscordAPIError, MessageEmbed, ClientVoiceManager } from "discord.js";
 import { addListener } from "./listeners";
+import { isMessageChannel } from "./dc_utils";
 
 const DEAULT_NOT_PERMITTED_ERROR_MESSAGE = ({ cmdName }: CommandCallData) => `You do not have permission to use the command \`${cmdName}\`.`;
 
@@ -29,9 +30,9 @@ async function loadCmds(cmdDir: string) {
     .filter(filename => !fs.lstatSync(path.join(cmdDir, filename)).isDirectory())
     .map(withoutExt);
 
-    const importPromieses = files.map(filename => {
+    const importPromieses = files.map((filename): Promise<unknown> => {
         const cmdPath = path.join(cmdDir, filename);
-        return import(cmdPath) as Promise<unknown>;
+        return import(cmdPath);
     });
 
     const hasDefault = (obj: unknown): obj is { default: any } => typeof obj === "object" && obj != null && "default" in obj;
@@ -55,6 +56,7 @@ export async function createCmdsListeners(coreData: CoreData, cmdDirs: string[])
     await setupCmds(coreData);
 
     addListener(coreData.client, "message", async (msg: Message) => {
+        if (!isMessageChannel(msg.channel)) return;
         const cmdCall = getCmdCallData(coreData, msg);
         if (cmdCall === undefined) return;
         const cmd = getCmd(cmdCall.cmdName, false);
@@ -68,26 +70,27 @@ export async function createCmdsListeners(coreData: CoreData, cmdDirs: string[])
         }
 
         const cmdRes = await cmd.call(cmdCall);
-        console.log(`'${cmd.name}' called in '${msg.guild!.name}' by user '${getUserString(msg.author)}' <@${msg.author.id}>`);
         if (cmdRes == null) return;
-        await msg.channel.send(cmdRes)
-        .catch(err => {
-            if (err instanceof DiscordAPIError && cmdRes instanceof MessageEmbed) {
-                msg.channel.send(embedToString(cmdRes)).catch(console.error);
-            }
-        });
+        console.log(`'${cmd.name}' called in '${msg.guild!.name}' by user '${getUserString(msg.author)}' <@${msg.author.id}>`);
+
+        const embedOrString = (cmdRes instanceof Function ? cmdRes(msg) : cmdRes);
+        const botMember = msg.guild!.member(msg.client.user!);
+        const target = botMember?.hasPermission("SEND_MESSAGES") ? msg.channel : msg.author;
+        target.send(embedOrString);
     });
 
     console.log("-- all message listeners set up --");
 }
 
 
+// "public API"
+
 export function getCmd(cmdName: string, onlyCommandsWithUsage: boolean) {
     return getCmdList(onlyCommandsWithUsage).find(cmd => cmd.name === cmdName || cmd.aliases?.includes(cmdName));
 }
 
 export function getCmdCallData(coreData: CoreData, msg: Message) {
-    if (msg.channel instanceof DMChannel) return undefined;
+    if (!isMessageChannel(msg.channel)) return undefined;
     if (msg.author.bot) return undefined;
     
     const contTemp = prefixless(msg);

@@ -1,3 +1,4 @@
+import { notOf } from "_core/general_utils";
 import { getPrefix, capitalize, sendEmbed, Command, CommandCallData, CommandGroup } from "../bot_core";
 import { getCmd, getPermittedCmdList } from "../commands";
 
@@ -28,10 +29,11 @@ function queryGeneralHelpSheet(cmdCall: CommandCallData) {
     const cmdList = getPermittedCmdList(cmdCall, true);
 
     type ExtendedGroup = CommandGroup | "uncategorized";
-    let commandsInGroups: { [K in ExtendedGroup]?: Command[] } = {};
+    // let commandsInGroups: { [K in ExtendedGroup]?: Command[] } = {}; // Fuck TypeScript
+    let commandsInGroups: { [group: string]: Command[] | undefined } = {};
 
     cmdList.forEach(command => {
-        const group = command.group ?? "uncategorized";
+        const group = command.group ?? "uncategorized" as keyof typeof commandsInGroups;
         if (commandsInGroups[group] === undefined) {
             commandsInGroups[group] = [];
         }
@@ -49,7 +51,7 @@ function queryGeneralHelpSheet(cmdCall: CommandCallData) {
 
     const reply = commandsAssocList.map(([group, commands]) => {
         const isShownGroup = group !== "help";
-        const commandsUsage = commands.map(
+        const commandsUsage = commands!.map(
             ({ usage }) => (usage instanceof Array
             ? usage.map(x => currentPrefix + x).join(" OR\n")
             : currentPrefix + usage!)
@@ -85,12 +87,12 @@ function querySpecificHelpSheet({ msg }: CommandCallData, targetCommand: string)
         ? "**eg:  " + command.examples.map(ex => "`" + [commandName, ...ex].join(" ") + "`").join(", ") + "**"
         : "");
 
-    const requiredPermissionStr = command.permissions
-        ?.map(perm => perm.description ? "**-** " + perm.description(command) : undefined)
-        ?.filter((x): x is string => x !== undefined)
-        ?.join("\n");
+        const permDescriptions = command.permissions?.map(x => x.description).filter(notOf(undefined));
+        const hasPermissionWihtoutDescription = permDescriptions?.some(x => x === undefined) ?? false;
+        const permDescStr = permDescriptions?.map(x => `- ${x}`).join("\n")
+            + (hasPermissionWihtoutDescription ? "\n- *And more...*" : "");
 
-    const reply = description + (requiredPermissionStr ? "\n\n**Permissions:**\n" + requiredPermissionStr : "") + "\n\n" + examples;
+    const reply = description + (permDescStr ? "\n\n**Permissions:**\n" + permDescStr : "") + "\n\n" + examples;
 
     sendEmbed(msg, "neutral", {
         title:  usage,
