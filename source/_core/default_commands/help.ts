@@ -1,3 +1,4 @@
+import { createEmbed } from "_core/dc_utils";
 import { notOf } from "_core/general_utils";
 import { getPrefix, capitalize, sendEmbed, Command, CommandCallData, CommandGroup } from "../bot_core";
 import { getCmd, getPermittedCmdList } from "../commands";
@@ -17,9 +18,9 @@ function cmdHelp(cmdCall: CommandCallData) {
     const targetCommand = cmdCall.args[0];
 
     if (targetCommand === undefined) {
-        queryGeneralHelpSheet(cmdCall);
+        return queryGeneralHelpSheet(cmdCall);
     } else {
-        querySpecificHelpSheet(cmdCall, targetCommand);
+        return querySpecificHelpSheet(cmdCall, targetCommand);
     }
 }
 
@@ -28,8 +29,10 @@ function queryGeneralHelpSheet(cmdCall: CommandCallData) {
     const currentPrefix = getPrefix(msg.guild!.id);
     const cmdList = getPermittedCmdList(cmdCall, true);
 
-    type ExtendedGroup = CommandGroup | "uncategorized";
-    // let commandsInGroups: { [K in ExtendedGroup]?: Command[] } = {}; // Fuck TypeScript
+    // vv Fuck TypeScript, why this no work??? vv
+    // type ExtendedGroup = CommandGroup | "uncategorized";
+    // let commandsInGroups: { [K in ExtendedGroup]?: Command[] } = {};
+    
     let commandsInGroups: { [group: string]: Command[] | undefined } = {};
 
     cmdList.forEach(command => {
@@ -60,7 +63,7 @@ function queryGeneralHelpSheet(cmdCall: CommandCallData) {
         return (isShownGroup ? `**${capitalize(group)}**:\n` : "") + "```\n" + commandsUsage + "\n```";
     }).join("\n");
     
-    sendEmbed(msg, "neutral", {
+    return createEmbed("neutral", {
         title:  "Help:",
         desc:   reply,
         footer: footerNote
@@ -71,10 +74,7 @@ function querySpecificHelpSheet({ msg }: CommandCallData, targetCommand: string)
     const currentPrefix = getPrefix(msg.guild!.id);
     const command = getCmd(targetCommand, true);
         
-    if (!command) {
-        sendEmbed(msg, "error", `Help sheet for \`${targetCommand}\` not found, or the command doesn't exist.`);
-        return;
-    }
+    if (!command) return createEmbed("error", `Help sheet for \`${targetCommand}\` not found, or the command doesn't exist.`);
     
     const usage       = "`" + (command.usage instanceof Array
         ? command.usage.map(x => currentPrefix + x).join(" OR\n")
@@ -94,7 +94,7 @@ function querySpecificHelpSheet({ msg }: CommandCallData, targetCommand: string)
 
     const reply = description + (permDescStr ? "\n\n**Permissions:**\n" + permDescStr : "") + "\n\n" + examples;
 
-    sendEmbed(msg, "neutral", {
+    return createEmbed("neutral", {
         title:  usage,
         desc:   reply,
         footer: aliases

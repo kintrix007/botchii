@@ -67,8 +67,8 @@ export interface Command {
     aliases?:       string[];
     
     permissions?:   CommandPermission[];
-    group?:         CommandGroup;
     
+    group?:         CommandGroup;
     usage?:         string | string[];
     description?:   string;
     examples?:      string[][];

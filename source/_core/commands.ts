@@ -1,7 +1,7 @@
 import { impl, keepFulfilledResults, isCommand, sendEmbed, getUserString, embedToString, prefixless, Command, CommandCallData, CoreData } from "./bot_core";
 import fs from "fs";
 import path from "path";
-import { Message, DMChannel, DiscordAPIError, MessageEmbed, ClientVoiceManager } from "discord.js";
+import { Message, DMChannel, DiscordAPIError, MessageEmbed, ClientVoiceManager, User } from "discord.js";
 import { addListener } from "./listeners";
 import { isMessageChannel } from "./dc_utils";
 
@@ -76,7 +76,11 @@ export async function createCmdsListeners(coreData: CoreData, cmdDirs: string[])
         const embedOrString = (cmdRes instanceof Function ? cmdRes(msg) : cmdRes);
         const botMember = msg.guild!.member(msg.client.user!);
         const target = botMember?.hasPermission("SEND_MESSAGES") ? msg.channel : msg.author;
-        target.send(embedOrString);
+        target.send(embedOrString).catch(err => {
+            if (embedOrString instanceof MessageEmbed && err instanceof DiscordAPIError && !(target instanceof User)) {
+                target.send(embedToString(embedOrString));
+            }
+        });
     });
 
     console.log("-- all message listeners set up --");

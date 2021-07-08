@@ -1,4 +1,5 @@
-import { Command, CommandCallData, createCommandPermission, getAdminRole, Prefs, sendEmbed, updatePrefs } from "../bot_core";
+import { createEmbed } from "_core/dc_utils";
+import { Command, CommandCallData, createCommandPermission, getAdminRole, Prefs, updatePrefs } from "../bot_core";
 import { ADMIN_PREFS_FILE, AdminData } from "./command_prefs";
 
 const description = "Sets the role the bot looks for to decide whether someone is an admin.\n"
@@ -25,25 +26,20 @@ async function cmdAdmin({ msg, args }: CommandCallData) {
         const reply = "People count as admins if they have the "
             + (adminRoleID ? `role <@&${adminRoleID}>` : "**Administrator** permission") + ".";
             
-        sendEmbed(msg, "ok", reply);
-        return;
+        return createEmbed("ok", reply);
     }
 
     const regex = /^(?:<@&(\d+)>|(\d+))$/i;
     const match = newModRole.match(regex);
 
-    if (!match) {
-        sendEmbed(msg, "error", "The given role is invalid!");
-        return;
-    }
+    if (!match) return createEmbed("error", "The given role is invalid!");
     
     const newAdminRoleID = (match[1] ?? match[2])!;
 
     try {
         await msg.guild!.roles.fetch(newAdminRoleID);
     } catch (err) {
-        sendEmbed(msg, "error", "The given role is invalid!");
-        return;
+        return createEmbed("error", "The given role is invalid!");
     }
 
     const adminData: Prefs<AdminData> = {
@@ -54,7 +50,7 @@ async function cmdAdmin({ msg, args }: CommandCallData) {
     }
     updatePrefs(ADMIN_PREFS_FILE, adminData);
 
-    sendEmbed(msg, "ok", {
+    return createEmbed("ok", {
         title: "Successfully changed the tracked admin role!",
         desc:  `From now on, people with the <@&${newAdminRoleID!}> role count as admins.`
     });
