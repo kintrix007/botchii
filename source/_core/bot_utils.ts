@@ -13,20 +13,24 @@ export const PREFS_DIR  = path.join(ROOT_DIR, "prefs");
 
 
 export const impl = new class{
-    private _CONFIG_FILE = path.join(ROOT_DIR, "config.json");
+    private CONFIG_FILE = path.join(ROOT_DIR, "config.json");
+    private configObj = JSON.parse(fs.readFileSync(this.CONFIG_FILE).toString());
     private _defaultPrefix: string | undefined = undefined;
     private _messageContentModifiers: CommandContentModifier[] | undefined = undefined;
     
+    constructor() {
+        if (typeof this.configObj.botToken === "undefined") throw new Error("field 'botToken' is undefined in 'config.json'");
+        if (typeof this.configObj.botOwnerID === "undefined") throw new Error("field 'botOwnerID' is undefined in 'config.json'");
+    }
+
     get botToken() {
-        const obj = JSON.parse(fs.readFileSync(this._CONFIG_FILE).toString());
-        const token = obj.botToken as string | undefined;
+        const token = this.configObj.botToken as string | undefined;
         if (token == null) throw new Error("Bot token not defined!");
         return token;
     }
 
     get ownerID() {
-        const obj = JSON.parse(fs.readFileSync(this._CONFIG_FILE).toString());
-        const ownerID = obj.botOwnerID as string | undefined;
+        const ownerID = this.configObj.botOwnerID as string | undefined;
         if (ownerID == null) throw new Error("Owner ID not defined!");
         return ownerID;
     }
@@ -51,7 +55,7 @@ export const impl = new class{
 }();
 
 
-export function isCommand(obj: any): obj is Command {
+export function isCommand(obj: unknown): obj is Command {
     if (typeof obj !== "object") return false;
     if (obj == null) return false;
     
