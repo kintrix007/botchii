@@ -13,8 +13,8 @@ function createCmd(command: Command) {
 
     const convertedCommand: Command = {
         ...command,
-        name:        impl.applyCommandContentModifiers(command.name),
-        aliases:     command.aliases?.map(alias => impl.applyCommandContentModifiers(alias)),
+        name:        impl.applyMessageContentModifiers(command.name),
+        aliases:     command.aliases?.map(alias => impl.applyMessageContentModifiers(alias)),
     };
 
     cmds.add(convertedCommand);
@@ -92,7 +92,7 @@ export function getCmdCallData(coreData: CoreData, msg: Message) {
     
     const contTemp = prefixless(msg);
     if (contTemp === undefined) return undefined;
-    const cont = impl.applyCommandContentModifiers(contTemp);
+    const cont = impl.applyMessageContentModifiers(contTemp);
 
     const splits = cont.trim().split(/\s+/);
     if (splits.length === 0) return undefined;
