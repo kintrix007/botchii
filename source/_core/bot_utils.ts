@@ -19,23 +19,29 @@ export const impl = new class{
     private _messageContentModifiers: CommandContentModifier[] | undefined = undefined;
     
     constructor() {
-        if (typeof this.configObj.botToken === "undefined") throw new Error("field 'botToken' is undefined in 'config.json'");
-        if (typeof this.configObj.botOwnerID === "undefined") throw new Error("field 'botOwnerID' is undefined in 'config.json'");
-        if (typeof this.configObj.botToken !== "string") throw new Error("field 'botToken' is not a string in 'config.json'");
-        if (typeof this.configObj.botOwnerID !== "string") throw new Error("field 'botOwnerID' is not a string in 'config.json'");
+        if (typeof this.configObj.botToken !== "string") {
+            console.error("field 'botToken' is not present or is not a string in 'config.json'");
+            return;
+        }
+        if (typeof this.configObj.botOwnerID !== "string") {
+            console.error("field 'botOwnerID' is not present or is not a string in 'config.json'");
+            return;
+        }
     }
-
-    get botToken() {
-        const token = <string>this.configObj.botToken;
+    
+    get botToken(): string {
+        const token = this.configObj.botToken;
+        if (typeof token !== "string") throw new Error("field 'botToken' is not a string in 'config.json'");
         return token;
     }
-
-    get ownerID() {
-        const ownerID = <string>this.configObj.botOwnerID;
+    
+    get ownerID(): Snowflake {
+        const ownerID = this.configObj.botOwnerID;
+        if (typeof ownerID !== "string") throw new Error("field 'botOwnerID' is not a string in 'config.json'");
         return ownerID;
     }
     
-    get defaultPrefix() {
+    get defaultPrefix(): string {
         if (this._defaultPrefix === undefined) throw new Error("default prefix is undefined!");
         return this._defaultPrefix!;
     }
