@@ -21,31 +21,32 @@ export const impl = new class{
     constructor() {
         if (typeof this.configObj.botToken === "undefined") throw new Error("field 'botToken' is undefined in 'config.json'");
         if (typeof this.configObj.botOwnerID === "undefined") throw new Error("field 'botOwnerID' is undefined in 'config.json'");
+        if (typeof this.configObj.botToken !== "string") throw new Error("field 'botToken' is not a string in 'config.json'");
+        if (typeof this.configObj.botOwnerID !== "string") throw new Error("field 'botOwnerID' is not a string in 'config.json'");
     }
 
     get botToken() {
-        const token = this.configObj.botToken as string | undefined;
-        if (token == null) throw new Error("Bot token not defined!");
+        const token = <string>this.configObj.botToken;
         return token;
     }
 
     get ownerID() {
-        const ownerID = this.configObj.botOwnerID as string | undefined;
-        if (ownerID == null) throw new Error("Owner ID not defined!");
+        const ownerID = <string>this.configObj.botOwnerID;
         return ownerID;
     }
-
+    
     get defaultPrefix() {
+        if (this._defaultPrefix === undefined) throw new Error("default prefix is undefined!");
         return this._defaultPrefix!;
     }
 
     set defaultPrefix(newPrefix: string) {
-        if (this._defaultPrefix !== undefined) throw new Error("field 'defaultPrefix' already set!");
+        if (this._defaultPrefix !== undefined) throw new Error("'defaultPrefix' is already set!");
         this._defaultPrefix = newPrefix;
     }
     
     set messageContentModifiers(arr: CommandContentModifier[]) {
-        if (this._messageContentModifiers !== undefined) throw new Error("field 'messageContentModifiers' already set!");
+        if (this._messageContentModifiers !== undefined) throw new Error("'messageContentModifiers' is already set!");
         this._messageContentModifiers = [...arr]; // set it to a copy, not a reference
     }
     
