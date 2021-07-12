@@ -1,20 +1,5 @@
 import { Channel, TextChannel, NewsChannel, DMChannel, Client, CategoryChannel, Snowflake, Message, MessageReaction, User, GuildChannel, MessageEmbed } from "discord.js";
-import { keepFulfilledResults, filterOut } from "./general_utils";
-
-const messageColors = {
-    ok:      0x00bb00,
-    error:   0xbb0000,
-    neutral: 0x008888
-} as const;
-type MessageType = keyof typeof messageColors;
-
-interface BasicEmbedData {
-    title?:     string;
-    desc?:      string;
-    footer?:    string;
-    image?:     string;
-    timestamp?: number | Date;
-}
+import { keepFulfilledResults, notOf } from "./general_utils";
 
 
 export function isMessageChannel(channel: Channel): channel is TextChannel | NewsChannel | DMChannel {
@@ -43,7 +28,7 @@ export async function fetchMessages(client: Client, msgLinksOrData: string[] | {
 
     const messagePromises = targetMessages.map(x => getMessage(client, x));
     const messages = await keepFulfilledResults(messagePromises);
-    return filterOut(messages, undefined);
+    return messages.filter(notOf(undefined));
 }
 
 export async function cacheMessages(client: Client, msgLinksOrData: string[] | { channelID: Snowflake, messageID: Snowflake }[]) {
@@ -147,6 +132,24 @@ export async function getReplyMessage(message: Message) {
     }
 }
 
+
+// Embeds
+
+const messageColors = {
+    ok:      0x00bb00,
+    error:   0xbb0000,
+    neutral: 0x008888
+} as const;
+type MessageType = keyof typeof messageColors;
+
+interface BasicEmbedData {
+    title?:     string;
+    desc?:      string;
+    footer?:    string;
+    image?:     string;
+    timestamp?: number | Date;
+}
+
 export function embedToString(embed: MessageEmbed) {
     let content = "";
 
@@ -162,46 +165,45 @@ export function embedToString(embed: MessageEmbed) {
     return content;
 }
 
-export function createEmbed(target: Message | User | TextChannel | NewsChannel | DMChannel, type: MessageType, message: BasicEmbedData | string) {
-    let hasPerms: boolean;
-    
+function hasEmbedPerms(target: Message | User | TextChannel | NewsChannel | DMChannel) {
     if (target instanceof Message) {
         const msg = target;
         const channel = msg.channel;
         const perms = (channel instanceof DMChannel ? undefined : channel.permissionsFor(target.client.user!));
-        hasPerms = perms?.has("EMBED_LINKS") ?? false;
+        return perms?.has("EMBED_LINKS") ?? false;
     } else 
     if (target instanceof User) {
-        hasPerms = true;
+        return true;
     } else {
         const channel = target;
         const perms = (channel instanceof DMChannel ? undefined : channel.permissionsFor(target.client.user!));
-        hasPerms = perms?.has("EMBED_LINKS") ?? false;
-    }
-
-
-    let embed = new MessageEmbed().setColor(messageColors[type]);
-    
-    if (typeof message === "string") {
-        embed.setDescription(message);
-    } else {
-        if (message.title)     embed.setTitle(message.title);
-        if (message.desc)      embed.setDescription(message.desc);
-        if (message.footer)    embed.setFooter(message.footer);
-        if (message.image)     embed.setImage(message.image);
-        if (message.timestamp) embed.setTimestamp(message.timestamp);
-    }
-    
-    if (hasPerms) {
-        return embed;
-    } else {
-        return embedToString(embed);
+        return perms?.has("EMBED_LINKS") ?? false;
     }
 }
 
-export function sendEmbed(
-    target: Message | User | TextChannel | NewsChannel | DMChannel, type: MessageType, message: BasicEmbedData | string
-) {
+export function createEmbed(type: MessageType, message: BasicEmbedData | string) {
+    let messageEmbed = new MessageEmbed().setColor(messageColors[type]);
+
+    if (typeof message === "string") {
+        messageEmbed.setDescription(message);
+    } else {
+        if (message.title)     messageEmbed.setTitle(message.title);
+        if (message.desc)      messageEmbed.setDescription(message.desc);
+        if (message.footer)    messageEmbed.setFooter(message.footer);
+        if (message.image)     messageEmbed.setImage(message.image);
+        if (message.timestamp) messageEmbed.setTimestamp(message.timestamp);
+    }
+
+    const messageText = embedToString(messageEmbed);
+
+    return (target: Message | User | TextChannel | NewsChannel | DMChannel) => {
+        const hasPerms = hasEmbedPerms(target);
+        
+        return hasPerms ? messageEmbed : messageText;
+    };
+}
+
+export function sendEmbed(target: Message | User | TextChannel | NewsChannel | DMChannel, type: MessageType, message: BasicEmbedData | string) {
     let sendTarget: User | TextChannel | NewsChannel | DMChannel;
     
     if (target instanceof Message) {
@@ -214,8 +216,8 @@ export function sendEmbed(
         sendTarget = target;
     }
     
-    const embed = createEmbed(sendTarget, type, message);
-    return ( typeof embed == "string" ? sendTarget.send(embed) : sendTarget.send("", embed) );
+    const embedOrString = createEmbed(type, message)(sendTarget);
+    return typeof embedOrString == "string" ? sendTarget.send(embedOrString) : sendTarget.send(undefined, embedOrString);
 }
 
 

@@ -1,6 +1,10 @@
-import { Client, Message, MessageEmbed } from "discord.js";
-import * as ExtensionTypes from "../bot_types";
+import { Client, DMChannel, Message, MessageEmbed, NewsChannel, TextChannel, User } from "discord.js";
+import * as CustomBotTypes from "../bot_types";
 
+type CCD = CustomBotTypes.CustomCoreData;
+type CCG = CustomBotTypes.CustomCommandGroup;
+export type CustomCoreData = CCD extends {} ? CCD : never;
+export type CustomCommandGroup = CCG extends string ? CCG : never;
 
 type BaseCommandGroup = "help" | "admin" | "owner";
 
@@ -9,6 +13,7 @@ interface BaseCoreData {
     defaultPrefix:  string;
 }
 
+// Not sure if needed
 export type LoggedInClient = Client & {
     [K in keyof Client]: NonNullable<Client[K]>
 };
@@ -26,9 +31,6 @@ export type CommandPermission = {
     description?:  (cmd: Command) => string
 };
 
-export type CustomCoreData     = ExtensionTypes.CustomCoreData;
-export type CustomCommandGroup = ExtensionTypes.CustomCommandGroup;
-
 export type CoreData     = Readonly<BaseCoreData & CustomCoreData>;
 export type CommandGroup = BaseCommandGroup | CustomCommandGroup;
 
@@ -40,6 +42,7 @@ export type CommandCallData = Readonly<{
     argsStr:    string;
 }>;
 
+type Target = User | Message | TextChannel | NewsChannel | DMChannel;
 type AsyncOrSync<T> = T | Promise<T>;
 
 /**
@@ -56,13 +59,16 @@ type AsyncOrSync<T> = T | Promise<T>;
  */
 export interface Command {
     setup?:         (coreData: CoreData) => AsyncOrSync<unknown>;
-    call:           (cmdCall: CommandCallData) => AsyncOrSync<void | string | MessageEmbed>;
+    call:           (cmdCall: CommandCallData) => AsyncOrSync<
+        void | string | MessageEmbed
+        | ( (target: Target) => string | MessageEmbed )
+    >;
     name:           string;
     aliases?:       string[];
     
     permissions?:   CommandPermission[];
-    group?:         CommandGroup;
     
+    group?:         CommandGroup;
     usage?:         string | string[];
     description?:   string;
     examples?:      string[][];

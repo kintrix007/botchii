@@ -5,14 +5,17 @@ initBot(
     {},
     {
         defaultPrefix: ".",
-        options: {
-            disableMentions: "everyone"
-        },
-        commandDirs: [
-            path.join(__dirname, "bot_commands", "announce")
+        messageContentModifiers: [
+            x => x.toLowerCase(),
         ],
+        commandDirs: [
+            path.join(__dirname, "bot_commands", "announce"),
+        ],
+        options: {
+            disableMentions: "everyone",
+        },
         onready: data => {
             console.log(`Current time: ${Date()}`);
-        }
-    }
+        },
+    },
 );

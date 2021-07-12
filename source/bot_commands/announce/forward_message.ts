@@ -1,4 +1,4 @@
-import { loadPrefs, cacheMessages, fetchMessageLink, updatePrefs, sendEmbed, getPrefix, fetchChannels, getMessageLink, quoteMessage, CoreData, Prefs } from "../../_core/bot_core";
+import { loadPrefs, cacheMessages, fetchMessageLink, updatePrefs, sendEmbed, getPrefix, fetchChannels, getMessageLink, quoteMessage, CoreData, Prefs, notOf } from "../../_core/bot_core";
 import * as Utilz from "../../utilz";
 import { AnnounceData, ANNOUNCE_PREFS_FILE, ChannelData, CHANNEL_PREFS_FILE, EXPIRED_MESSAGE_TEXT } from "../command_prefs";
 import { Client, DMChannel, Message, MessageReaction, NewsChannel, PartialUser, TextChannel, User } from "discord.js";
@@ -10,26 +10,26 @@ export const rejectEmoji     = "⬇️"
 export const scoreToForward  = 3;
 export const invalidateFor = 72;  // hours passed
 
-export async function setup(coreData: CoreData) {
-    await removeExpiredTrackers(coreData.client);
-    setInterval(() => removeExpiredTrackers(coreData.client), 1000*60*60);     // every hour
-    // setInterval(() => removeExpiredTrackers(coreData.client), 1000);     // every second
+export async function setup({ client }: CoreData) {
+    await removeExpiredTrackers(client);
+    setInterval(() => removeExpiredTrackers(client), 1000*60*60);     // every hour
+    // setInterval(() => removeExpiredTrackers(client), 1000);     // every second
     
     const announcedPrefs = loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE);
     const trackerMsgLinks = Object.values(announcedPrefs).map(x => Object.values(x.announceMessages).map(x => x.trackerMsgLink)).flat(1);
 
-    const cachedMessages = await cacheMessages(coreData.client, trackerMsgLinks);
+    const cachedMessages = await cacheMessages(client, trackerMsgLinks);
     console.log(`cached '${cachedMessages.length}' announcement tracker messages`);
 
     // check tracker messages, in case they changed while the bot was offline
     cachedMessages.forEach(msg => {
         const firstReaction = msg.reactions.cache.first();
         if (firstReaction === undefined) return;
-        trackReactions(coreData, false)(firstReaction, undefined);
+        trackReactions(client, false)(firstReaction, undefined);
     });
 
-    coreData.client.on("messageReactionAdd",    trackReactions(coreData, true));
-    coreData.client.on("messageReactionRemove", trackReactions(coreData, false));
+    client.on("messageReactionAdd",    trackReactions(client, true));
+    client.on("messageReactionRemove", trackReactions(client, false));
 
 }
 
@@ -38,36 +38,33 @@ async function removeExpiredTrackers(client: Client) {
     const invalidateForMsPassed = invalidateFor*60*60*1000;
     const invalidateBefore = currentTimestamp - invalidateForMsPassed;
 
+    // ! UNTESTED
+    // but should work :P
+
     let announcedPrefs = loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true);
-    let msgEditPromises: Promise<Message | void>[] = [];
-
-    // ! FIX IT
-
-    for (const [guildID, announceData] of Object.entries(announcedPrefs)) {
-        for (const [announceMsgLink, { createdTimestamp, trackerMsgLink }] of Object.entries(announceData.announceMessages)) {
+    
+    const editPromises = Object.entries(announcedPrefs).map(([guildID, announceData]) => {
+        return Object.entries(announceData.announceMessages).map(([announceMsgLink, { createdTimestamp, trackerMsgLink }]) => {
             const shouldDelete = createdTimestamp <= invalidateBefore;
-            if (!shouldDelete) continue;
-
-            try {
+            if (!shouldDelete) return undefined;
+            delete announcedPrefs[guildID]!.announceMessages[announceMsgLink];
+            console.log(`deleted an announcement tracker in '${announcedPrefs[guildID]!.guildName}'`);
+            
+            return (async() => {
                 const trackerMsg = await fetchMessageLink(client, trackerMsgLink);
-                delete announcedPrefs[guildID]!.announceMessages[announceMsgLink];
-                console.log(`deleted an announcement tracker in '${announcedPrefs[guildID]!.guildName}'`);
-                const editPromise = trackerMsg?.edit(EXPIRED_MESSAGE_TEXT)?.catch(err => console.warn(err));
-                if (editPromise !== undefined) msgEditPromises.push(editPromise);
-            } catch (err) {
-                continue;
-            }
-        }
-    }
-
-    for (const promise of msgEditPromises) {
-        await promise;
-    }
+                const editPromise = trackerMsg?.edit(EXPIRED_MESSAGE_TEXT);
+                editPromise?.catch(console.error);
+                return await editPromise;
+            })();
+        });
+    }).flat().filter(notOf(undefined));
+    
+    await Promise.allSettled(editPromises);
     
     updatePrefs(ANNOUNCE_PREFS_FILE, announcedPrefs, true);
 }
 
-function trackReactions(coreData: CoreData, isAdd: boolean) {
+function trackReactions(client: Client, isAdd: boolean) {
     // user is undefined, if it's simulated
     return async (reaction: MessageReaction, user: User | PartialUser | undefined) => {
         if (user?.bot) return;
@@ -92,8 +89,8 @@ function trackReactions(coreData: CoreData, isAdd: boolean) {
         }
 
         const userReactions = await getUserReactions(message);
-        const trackerMsg  = (await fetchMessageLink(coreData.client, trackerMsgLink))!;
-        const announceMsg = (await fetchMessageLink(coreData.client, announceMsgLink))!;
+        const trackerMsg  = (await fetchMessageLink(client, trackerMsgLink))!;
+        const announceMsg = (await fetchMessageLink(client, announceMsgLink))!;
         const { shouldForward, content } = getContentAndShouldForward(userReactions, announceMsg, targetChannelIDs);
 
         if (shouldForward) {

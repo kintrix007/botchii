@@ -1,69 +1,122 @@
 import fs from "fs";
 import path from "path";
 import { Command, CommandContentModifier, CommandPermission, CoreData, Prefs } from "./types";
-import { capitalize, PREFS_DIR, ROOT_DIR } from "./general_utils";
+import { capitalize } from "./general_utils";
 import { AdminData, ADMIN_PREFS_FILE, PrefixData, PREFIX_PREFS_FILE } from "./default_commands/command_prefs";
 import { PermissionString, DMChannel, GuildMember, User, Snowflake, Message } from "discord.js";
 
+export const BOT_CORE_DIR         = path.join(__dirname);
+export const DEFAULT_COMMANDS_DIR = path.join(BOT_CORE_DIR, "default_commands");
+export const ROOT_DIR             = path.join(BOT_CORE_DIR, "..", "..");
+export const SOURCE_DIR = path.join(ROOT_DIR, "source");
+export const PREFS_DIR  = path.join(ROOT_DIR, "prefs");
+
 
 export const impl = new class{
-    private _CONFIG_FILE = path.join(ROOT_DIR, "config.json");
+    private CONFIG_FILE = path.join(ROOT_DIR, "config.json");
     private _defaultPrefix: string | undefined = undefined;
-    private _commandContentModifiers: CommandContentModifier[] | undefined = undefined;
+    private _messageContentModifiers: CommandContentModifier[] | undefined = undefined;
+    private _configObj: ReturnType<typeof JSON.parse> = undefined;
     
-    get botToken() {
-        const obj = JSON.parse(fs.readFileSync(this._CONFIG_FILE).toString());
-        const token = obj.botToken as string | undefined;
-        if (token == null) throw new Error("Bot token not defined!");
+    
+    public loadConfigFile() {
+        if (!fs.existsSync(this.CONFIG_FILE)) throw new Error(`file '${this.CONFIG_FILE}' does not exist!`);
+        this._configObj = JSON.parse(fs.readFileSync(this.CONFIG_FILE).toString());
+    }
+
+    public checkConfigErorrs() {
+        let errors: Error[] = [];
+        try {
+            if (this._configObj === undefined) {
+                this.loadConfigFile();
+            }
+            if (typeof this._configObj !== "object" || this._configObj == null) {
+                errors.push(new Error(`'${this.CONFIG_FILE}' does not contain a JSON object!`));
+            } else {
+                if (typeof this._configObj.botToken !== "string") errors.push(new Error(`field 'botToken' is not a string in '${this.CONFIG_FILE}'`));
+                if (typeof this._configObj.botOwnerID !== "string") errors.push(new Error(`field 'botOwnerID' is not a string in '${this.CONFIG_FILE}'`));
+            }
+        } catch (err) {
+            errors.push(err);
+        }
+
+        errors.forEach(error => { throw error });
+    }
+
+    get botToken(): string {
+        const token = this._configObj.botToken;
+        if (typeof token !== "string") throw new Error(`field 'botToken' is not a string in '${this.CONFIG_FILE}'`);
         return token;
     }
-
-    get ownerID() {
-        const obj = JSON.parse(fs.readFileSync(this._CONFIG_FILE).toString());
-        const ownerID = obj.botOwnerID as string | undefined;
-        if (ownerID == null) throw new Error("Bot token not defined!");
+    
+    get ownerID(): Snowflake {
+        const ownerID = this._configObj.botOwnerID;
+        if (typeof ownerID !== "string") throw new Error(`field 'botOwnerID' is not a string in '${this.CONFIG_FILE}'`);
         return ownerID;
     }
-
-    get defaultPrefix() {
+    
+    get defaultPrefix(): string {
+        if (this._defaultPrefix === undefined) throw new Error("default prefix is undefined!");
         return this._defaultPrefix!;
     }
 
-    public setDefaultPrefix(newPrefix: string) {
-        if (this._defaultPrefix === undefined) this._defaultPrefix = newPrefix;
+    set defaultPrefix(newPrefix: string) {
+        if (this._defaultPrefix !== undefined) throw new Error("'defaultPrefix' is already set!");
+        this._defaultPrefix = newPrefix;
     }
     
-    public setCommandContentModifiers(arr: CommandContentModifier[]) {
-        if (this._commandContentModifiers === undefined) this._commandContentModifiers = [...arr]; // set it to a copy, not a reference
+    set messageContentModifiers(arr: CommandContentModifier[]) {
+        if (this._messageContentModifiers !== undefined) throw new Error("'messageContentModifiers' is already set!");
+        this._messageContentModifiers = [...arr]; // set it to a copy, not a reference
     }
     
-    public applyCommandContentModifiers(cont: string) {
-        return this._commandContentModifiers!.reduce((cont, modifier) => modifier(cont), cont);
+    public applyMessageContentModifiers(cont: string) {
+        return this._messageContentModifiers!.reduce((cont, modifier) => modifier(cont), cont);
     }
 }();
 
+
 export function isCommand(obj: unknown): obj is Command {
     if (typeof obj !== "object") return false;
-    // null or undefined
     if (obj == null) return false;
-    const hasCallAndName = (((x: object): x is { call: unknown, name: unknown } => "call" in x && "name" in x));
-    if (!hasCallAndName(obj)) return false;
-    const isCallAndNameProper = ((x: { call: unknown, name: unknown }): x is { name: string, call: Function } =>
-        typeof x.name === "string" && typeof x.call === "function");
-    if (!isCallAndNameProper(obj)) return false;
-    return true;
+    
+    type BasicTypes = "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function";
+    function test(field: unknown, types: BasicTypes[]): boolean {
+        return types.some(x => typeof field === x);
+    }
+    function testArray(field: unknown, arrayTypes: BasicTypes[]): boolean {
+        if (!(field instanceof Array)) return false;
+        return field.every(x => test(x, arrayTypes));
+    }
+    function test2DArray(field: unknown, arrayTypes: BasicTypes[]): boolean {
+        if (!(field instanceof Array)) return false;
+        return field.every(x => testArray(x, arrayTypes));
+    }
+    
+    const { setup, call, name, aliases, permissions, group, usage, description, examples } = obj as Command;
+    return [
+        test(setup, [ "undefined", "function" ]),
+        test(call, [ "function" ]),
+        test(name, [ "string" ]),
+        test(aliases, [ "undefined" ]) || testArray(aliases, [ "string" ]),
+        test(permissions, [ "undefined", "object" ]),
+        test(group, [ "undefined", "string" ]),
+        test(usage, [ "undefined", "string" ]),
+        test(description, [ "undefined", "string" ]),
+        test(examples, [ "undefined" ]) || test2DArray(examples, [ "string" ]),
+    ].every(x => x);
 }
 
 
 export const adminPermission: CommandPermission = {
     test:         ({ msg }) => isAdmin(msg.member),
     errorMessage: ({ cmdName }) =>`The command \`${cmdName}\` can only be used by admins.`,
-    description:  cmd => "Only people with the **admin role**, or with the **Administrator** permission can use this command."
+    description:  cmd => "Only people with the **admin role**, or with the **Administrator** permission can use this command.",
 };
 export const ownerPermission: CommandPermission = {
     test:         ({ msg }) => isBotOwner(msg.author),
     errorMessage: ({ cmdName }) => `The command \`${cmdName}\` can only be used by the bot's owner.`,
-    description:  cmd => "Only the bot's **owner** can use this command."
+    description:  cmd => "Only the bot's **owner** can use this command.",
 };
 
 
@@ -72,7 +125,7 @@ export function createCommandPermission(permission: PermissionString) {
     const cmdPerm: CommandPermission = {
         test:         ({ msg }) => msg.member?.hasPermission(permission) ?? false,
         errorMessage: ({ cmdName }) => `The command \`${cmdName}\` can only be used by people with **${humanReadablePermission}** permission.`,
-        description:  cmd => `Only people with **${humanReadablePermission}** permission can use this command.`
+        description:  cmd => `Only people with **${humanReadablePermission}** permission can use this command.`,
     };
     return cmdPerm;
 }
@@ -83,11 +136,12 @@ export function createChannelSpecificCmdPermission(permission: PermissionString)
         test: ({ msg }) => {
             const channel = msg.channel;
             if (channel instanceof DMChannel) return true;
-            const perms = channel.permissionsFor(msg.member!);
+            if (msg.member === null) return false;
+            const perms = channel.permissionsFor(msg.member);
             return perms?.has(permission) ?? false;
         },
+        errorMessage: ({ cmdName }) => `You can only use \`${cmdName}\` if you have **${humanReadablePermission}** in this channel!`,
         description: cmd => `Only people, who have **${humanReadablePermission}** permission in a given channel, can use this command.`,
-        errorMessage: ({ cmdName }) => `You can only use \`${cmdName}\` if you have **${humanReadablePermission}** in this channel!`
     };
     return cmdPerm;
 }
@@ -123,9 +177,9 @@ export function prefixless(msg: Message): string | undefined {
     const guild = msg.guild;
     if (!guild) return undefined;
     const cont = msg.content;
-    const prefix = impl.applyCommandContentModifiers(getPrefix(guild.id));
+    const prefix = impl.applyMessageContentModifiers(getPrefix(guild.id));
     
-    if (impl.applyCommandContentModifiers(cont).startsWith(prefix)) {
+    if (impl.applyMessageContentModifiers(cont).startsWith(prefix)) {
         return cont.slice(prefix.length);
     }
 

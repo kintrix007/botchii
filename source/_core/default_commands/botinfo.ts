@@ -1,6 +1,7 @@
-import { ROOT_DIR, capitalize, sendEmbed, Command, CommandCallData } from "../bot_core";
+import { ROOT_DIR, capitalize, Command, CommandCallData } from "../bot_core";
 import * as fs from "fs";
 import * as path from "path";
+import { createEmbed } from "_core/dc_utils";
 
 export default {
     call: cmdInfo,
@@ -18,7 +19,7 @@ function cmdInfo({ msg }: CommandCallData) {
     const description: string = packageObj.description;
     const homepage: string    = packageObj.homepage;
     
-    sendEmbed(msg, "neutral", {
+    return createEmbed("neutral", {
         title: name,
         desc:  description + (homepage ? "\n**GitHub: **" + homepage : "")
     });
