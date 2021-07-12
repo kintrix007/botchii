@@ -14,29 +14,29 @@ export const PREFS_DIR  = path.join(ROOT_DIR, "prefs");
 
 export const impl = new class{
     private CONFIG_FILE = path.join(ROOT_DIR, "config.json");
-    private configObj = JSON.parse(fs.readFileSync(this.CONFIG_FILE).toString());
     private _defaultPrefix: string | undefined = undefined;
     private _messageContentModifiers: CommandContentModifier[] | undefined = undefined;
+    private _configObj: ReturnType<typeof JSON.parse>;
+    private _constructErrors: Error[] = [];
     
     constructor() {
-        if (typeof this.configObj.botToken !== "string") {
-            console.error("field 'botToken' is not present or is not a string in 'config.json'");
-            return;
-        }
-        if (typeof this.configObj.botOwnerID !== "string") {
-            console.error("field 'botOwnerID' is not present or is not a string in 'config.json'");
-            return;
-        }
+        this._configObj = JSON.parse(fs.readFileSync(this.CONFIG_FILE).toString());
+        if (typeof this._configObj.botToken !== "string") this._constructErrors.push(new Error("field 'botToken' is not a string in 'config.json'"));
+        if (typeof this._configObj.botOwnerID !== "string") this._constructErrors.push(new Error("field 'botOwnerID' is not a string in 'config.json'"));
     }
     
+    public throwConstructionErrors() {
+        this._constructErrors.forEach(error => { throw error });
+    }
+
     get botToken(): string {
-        const token = this.configObj.botToken;
+        const token = this._configObj.botToken;
         if (typeof token !== "string") throw new Error("field 'botToken' is not a string in 'config.json'");
         return token;
     }
     
     get ownerID(): Snowflake {
-        const ownerID = this.configObj.botOwnerID;
+        const ownerID = this._configObj.botOwnerID;
         if (typeof ownerID !== "string") throw new Error("field 'botOwnerID' is not a string in 'config.json'");
         return ownerID;
     }
