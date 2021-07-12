@@ -16,32 +16,42 @@ export const impl = new class{
     private CONFIG_FILE = path.join(ROOT_DIR, "config.json");
     private _defaultPrefix: string | undefined = undefined;
     private _messageContentModifiers: CommandContentModifier[] | undefined = undefined;
-    private _configObj: ReturnType<typeof JSON.parse>;
-    private _constructErrors: Error[] = [];
+    private _configObj: ReturnType<typeof JSON.parse> = undefined;
     
-    constructor() {
-        if (fs.existsSync(this.CONFIG_FILE)) {
-            this._configObj = JSON.parse(fs.readFileSync(this.CONFIG_FILE).toString());
-        } else {
-            this._constructErrors.push(new Error("file 'config.json' does not exist!"));
-        }
-        if (typeof this._configObj.botToken !== "string") this._constructErrors.push(new Error("field 'botToken' is not a string in 'config.json'"));
-        if (typeof this._configObj.botOwnerID !== "string") this._constructErrors.push(new Error("field 'botOwnerID' is not a string in 'config.json'"));
+    
+    public loadConfigFile() {
+        if (!fs.existsSync(this.CONFIG_FILE)) throw new Error(`file '${this.CONFIG_FILE}' does not exist!`);
+        this._configObj = JSON.parse(fs.readFileSync(this.CONFIG_FILE).toString());
     }
-    
-    public throwConstructionErrors() {
-        this._constructErrors.forEach(error => { throw error });
+
+    public checkConfigErorrs() {
+        let errors: Error[] = [];
+        try {
+            if (this._configObj === undefined) {
+                this.loadConfigFile();
+            }
+            if (typeof this._configObj !== "object" || this._configObj == null) {
+                errors.push(new Error(`'${this.CONFIG_FILE}' does not contain a JSON object!`));
+            } else {
+                if (typeof this._configObj.botToken !== "string") errors.push(new Error(`field 'botToken' is not a string in '${this.CONFIG_FILE}'`));
+                if (typeof this._configObj.botOwnerID !== "string") errors.push(new Error(`field 'botOwnerID' is not a string in '${this.CONFIG_FILE}'`));
+            }
+        } catch (err) {
+            errors.push(err);
+        }
+
+        errors.forEach(error => { throw error });
     }
 
     get botToken(): string {
         const token = this._configObj.botToken;
-        if (typeof token !== "string") throw new Error("field 'botToken' is not a string in 'config.json'");
+        if (typeof token !== "string") throw new Error(`field 'botToken' is not a string in '${this.CONFIG_FILE}'`);
         return token;
     }
     
     get ownerID(): Snowflake {
         const ownerID = this._configObj.botOwnerID;
-        if (typeof ownerID !== "string") throw new Error("field 'botOwnerID' is not a string in 'config.json'");
+        if (typeof ownerID !== "string") throw new Error(`field 'botOwnerID' is not a string in '${this.CONFIG_FILE}'`);
         return ownerID;
     }
     

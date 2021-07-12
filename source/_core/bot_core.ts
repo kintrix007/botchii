@@ -30,7 +30,7 @@ export async function initBot(customCoreData: CustomCoreData, setupData: SetupDa
         onready,
     } = setupData;
 
-    impl.throwConstructionErrors();
+    impl.checkConfigErorrs();
     impl.defaultPrefix = defaultPrefix;
     impl.messageContentModifiers = messageContentModifiers;
 
