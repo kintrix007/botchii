@@ -20,7 +20,11 @@ export const impl = new class{
     private _constructErrors: Error[] = [];
     
     constructor() {
-        this._configObj = JSON.parse(fs.readFileSync(this.CONFIG_FILE).toString());
+        if (fs.existsSync(this.CONFIG_FILE)) {
+            this._configObj = JSON.parse(fs.readFileSync(this.CONFIG_FILE).toString());
+        } else {
+            this._constructErrors.push(new Error("file 'config.json' does not exist!"));
+        }
         if (typeof this._configObj.botToken !== "string") this._constructErrors.push(new Error("field 'botToken' is not a string in 'config.json'"));
         if (typeof this._configObj.botOwnerID !== "string") this._constructErrors.push(new Error("field 'botOwnerID' is not a string in 'config.json'"));
     }
