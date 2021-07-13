@@ -48,5 +48,5 @@ You can run `npm run setup` to have a simple CLI help you make the needed file(s
 - [x] **Add `impl` field to `BotUtils` with the functions that should not be acessed by the user**
 - [ ] **Make `bot_types.d.ts` optional or replace it with something nicer**
 - [x] **Add a listeners module, which creates discord.js listeners and has an API add listeners and modify their callbacks**
-- [ ] **Add configurable default command when pinging the bot, with an option to disable it**
+- [ ] **Add configureable default command when pinging the bot, with an option to disable it**
 - [ ] **Add aliases `from` and `to`, which will be reserved alias names**
