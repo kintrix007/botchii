@@ -1,16 +1,17 @@
-import { impl, keepFulfilledResults, isCommand, sendEmbed, getUserString, embedToString, prefixless, Command, CommandCallData, CoreData } from "./bot_core";
+import { impl, isCommand, sendEmbed, getUserString, embedToString, prefixless, Command, CommandCallData, CoreData } from "./bot_core";
 import fs from "fs";
 import path from "path";
-import { Message, DMChannel, DiscordAPIError, MessageEmbed, ClientVoiceManager, User } from "discord.js";
+import { Message, DiscordAPIError, MessageEmbed, User } from "discord.js";
 import { addListener } from "./listeners";
 import { isMessageChannel } from "./dc_utils";
+import { notOf } from "./general_utils";
 
 const DEAULT_NOT_PERMITTED_ERROR_MESSAGE = ({ cmdName }: CommandCallData) => `You do not have permission to use the command \`${cmdName}\`.`;
 
 let cmds = new Set<Command>();
 
 function createCmd(command: Command) {
-    console.log(`loaded command '${command.name}'`);
+    console.log(`command created: '${command.name}'`);
 
     const convertedCommand: Command = {
         ...command,
@@ -26,19 +27,24 @@ async function loadCmds(cmdDir: string) {
 
     const withoutExt = (filename: string) => filename.slice(0, filename.length - path.extname(filename).length);
 
-    const files = fs.readdirSync(cmdDir)
+    const filenames = fs.readdirSync(cmdDir)
     .filter(filename => !fs.lstatSync(path.join(cmdDir, filename)).isDirectory())
     .map(withoutExt);
 
-    const importPromieses = files.map((filename): Promise<unknown> => {
+    const importPromieses = filenames.map((filename): Promise<unknown> => {
         const cmdPath = path.join(cmdDir, filename);
         return import(cmdPath);
     });
 
-    const hasDefault = (obj: unknown): obj is { default: any } => typeof obj === "object" && obj != null && "default" in obj;
+    function hasDefault(obj: any): obj is { default: {} } {
+        return typeof obj === "object" && obj != null && typeof obj.default === "object" && obj.default != null;
+    }
 
-    const imported = await keepFulfilledResults(importPromieses);
-    const commands = imported.map(x => hasDefault(x) ? x.default : undefined).filter(isCommand);
+    const _imports = await Promise.allSettled(importPromieses);
+    const imported = _imports.map(x => x.status === "fulfilled" ? x.value : undefined).filter(notOf(undefined));
+    const falied = _imports.map(x => x.status === "rejected" ? x.reason : undefined).filter(notOf(undefined));
+    if (falied.length !== 0) console.error(falied);
+    const commands = imported.map(x => hasDefault(x) ? x.default : x).filter(isCommand);
     commands.forEach(createCmd);
 }
 

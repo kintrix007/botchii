@@ -6,15 +6,6 @@ export function isMessageChannel(channel: Channel): channel is TextChannel | New
     return channel instanceof TextChannel || channel instanceof NewsChannel || channel instanceof DMChannel;
 }
 
-export async function fetchChannelMessages(client: Client, channelIDs: string[]) {
-    const channelPromises = channelIDs.map(x => client.channels.fetch(x));
-    const channels = await keepFulfilledResults(channelPromises);
-    const messagePromises = channels.map(x => x instanceof CategoryChannel ? Array.from(x.children.values()) : x)
-        .flat().filter(isMessageChannel).map(x => x.messages.fetch());
-    const messages = (await keepFulfilledResults(messagePromises)).map(x => Array.from(x.values()))
-    return messages;
-}
-
 export async function fetchMessages(client: Client, msgLinksOrData: string[] | { channelID: Snowflake, messageID: Snowflake }[]) {
     const targetMessages: { channelID: Snowflake, messageID: Snowflake }[] = (() => {
         if (isStringArray(msgLinksOrData)) {
@@ -22,12 +13,12 @@ export async function fetchMessages(client: Client, msgLinksOrData: string[] | {
             return msgLinks.map(link => {
                 const { channelID, messageID } = parseMessageLink(link)!;
                 return { channelID, messageID };
-            })
+            });
         } else return msgLinksOrData;
     })();
 
     const messagePromises = targetMessages.map(x => getMessage(client, x));
-    const messages = await keepFulfilledResults(messagePromises);
+    const [messages] = await keepFulfilledResults(messagePromises);
     return messages.filter(notOf(undefined));
 }
 
@@ -40,7 +31,7 @@ export async function cacheMessages(client: Client, msgLinksOrData: string[] | {
 
 export async function fetchChannels(client: Client, channelIDs: Snowflake[] | Set<Snowflake>): Promise<Channel[]> {
     const channelPromises = [...channelIDs].map(x => client.channels.fetch(x));
-    const channels = await keepFulfilledResults(channelPromises)
+    const [channels] = await keepFulfilledResults(channelPromises)
     return channels;
 }
 
@@ -63,7 +54,7 @@ export async function addReactions(msg: Message, reactions: string[] | Set<strin
         return reactionsResolved;
     } else {
         const reactionPromises = [...reactions].map(r => msg.react(r));
-        const reactionsResolved = await keepFulfilledResults(reactionPromises);
+        const [reactionsResolved] = await keepFulfilledResults(reactionPromises);
         
         return reactionsResolved;
     }

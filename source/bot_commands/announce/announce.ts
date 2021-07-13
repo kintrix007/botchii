@@ -9,7 +9,7 @@ You can specify where to announce the message, which can be a channel alias.
 When omitted announces to the currently set target channels.
 Every announcement message is only valid for 3 days. After this time, it counts as rejected.`;
 
-const cmd: Command = {
+export default <Command>{
     setup:       setup,
     call:        cmdAnnounce,
     name:        "announce",
@@ -109,5 +109,3 @@ async function getMessage(channel: TextChannel | NewsChannel | DMChannel, msgLin
         return undefined;
     }
 }
-
-module.exports = cmd;

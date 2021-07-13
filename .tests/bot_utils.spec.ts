@@ -1,7 +1,7 @@
-import { capitalize, quoteMessage, removeDuplicatesBy, parseMessageLink } from "../source/_core/bot_core";
+import { capitalize, quoteMessage, removeDuplicatesBy, parseMessageLink, isCommand, adminPermission } from "../source/_core/bot_core";
 import { expect } from "chai"
 
-describe("'BotUtils' works", () => {
+describe("Bot core works", () => {
     describe("'capitalize' works", () => {
         it("Works on an empty string", () => {
             expect(capitalize("")).to.be.length(0);
@@ -73,6 +73,40 @@ describe("'BotUtils' works", () => {
                 channelID: "123456789012345678",
                 messageID: "246801357900011122"
             });
+        });
+    });
+
+    describe("'isCommand' works", () => {
+        it("works", () => {
+            expect(isCommand(0)).to.be.false;
+            expect(isCommand(true)).to.be.false;
+            expect(isCommand([1, 2, 3])).to.be.false;
+            expect(isCommand(undefined)).to.be.false;
+            expect(isCommand({})).to.be.false;
+            expect(isCommand({ name: "asd", call: () => true })).to.be.true;
+            expect(isCommand({ setup: "random", name: "asd", call: () => true })).to.be.false;
+            expect(isCommand({ setup: undefined, name: "asd", call: () => true })).to.be.true;
+            expect(isCommand({ name: "asd", call: 0 })).to.be.false;
+            expect(isCommand({
+                setup: async() => 0,
+                call: () => 0,
+                name: "foo",
+                group: "admin",
+                permissions: [ adminPermission ],
+                usage: "foo [bar]",
+                description: "",
+                examples: [ [], ["bar"], ["baz"] ],
+            })).to.be.true;
+            expect(isCommand({
+                setup: async() => 0,
+                call: () => 0,
+                name: "foo",
+                group: 20,
+                permissions: [ adminPermission ],
+                usage: "foo [bar]",
+                description: "",
+                examples: [ [], ["bar"], ["baz"] ],
+            })).to.be.false;
         });
     });
 });

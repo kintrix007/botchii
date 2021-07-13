@@ -6,7 +6,6 @@ import { AdminData, ADMIN_PREFS_FILE, PrefixData, PREFIX_PREFS_FILE } from "./de
 import { PermissionString, DMChannel, GuildMember, User, Snowflake, Message } from "discord.js";
 
 export const BOT_CORE_DIR         = path.join(__dirname);
-export const DEFAULT_COMMANDS_DIR = path.join(BOT_CORE_DIR, "default_commands");
 export const ROOT_DIR             = path.join(BOT_CORE_DIR, "..", "..");
 export const SOURCE_DIR = path.join(ROOT_DIR, "source");
 export const PREFS_DIR  = path.join(ROOT_DIR, "prefs");
@@ -27,9 +26,7 @@ export const impl = new class{
     public checkConfigErorrs() {
         let errors: Error[] = [];
         try {
-            if (this._configObj === undefined) {
-                this.loadConfigFile();
-            }
+            if (this._configObj === undefined) this.loadConfigFile();
             if (typeof this._configObj !== "object" || this._configObj == null) {
                 errors.push(new Error(`'${this.CONFIG_FILE}' does not contain a JSON object!`));
             } else {
@@ -44,12 +41,14 @@ export const impl = new class{
     }
 
     get botToken(): string {
+        if (this._configObj === undefined) this.loadConfigFile();
         const token = this._configObj.botToken;
         if (typeof token !== "string") throw new Error(`field 'botToken' is not a string in '${this.CONFIG_FILE}'`);
         return token;
     }
     
     get ownerID(): Snowflake {
+        if (this._configObj === undefined) this.loadConfigFile();
         const ownerID = this._configObj.botOwnerID;
         if (typeof ownerID !== "string") throw new Error(`field 'botOwnerID' is not a string in '${this.CONFIG_FILE}'`);
         return ownerID;

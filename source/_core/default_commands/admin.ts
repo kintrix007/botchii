@@ -1,4 +1,4 @@
-import { createEmbed } from "_core/dc_utils";
+import { createEmbed } from "../dc_utils";
 import { Command, CommandCallData, createCommandPermission, getAdminRole, Prefs, updatePrefs } from "../bot_core";
 import { ADMIN_PREFS_FILE, AdminData } from "./command_prefs";
 
@@ -6,7 +6,7 @@ const description = "Sets the role the bot looks for to decide whether someone i
 + "The default behavior is looking for the **Administrator** permission.\n"
 + "If called without arguements, displays the currently selected criteria.";
 
-export default {
+export default <Command>{
     call: cmdAdmin,
     name: "admin",
     permissions: [ createCommandPermission("ADMINISTRATOR") ],
@@ -15,7 +15,7 @@ export default {
     description: description,
     examples: [ [], ["@Admin"] ],
     aliases: [ "administrator", "mod", "moderator" ]
-} as Command;
+};
 
 async function cmdAdmin({ msg, args }: CommandCallData) {
     const newModRole = args[0];

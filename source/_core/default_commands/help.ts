@@ -1,16 +1,16 @@
-import { createEmbed } from "_core/dc_utils";
-import { notOf } from "_core/general_utils";
+import { createEmbed } from "../dc_utils";
+import { notOf } from "../general_utils";
 import { getPrefix, capitalize, Command, CommandCallData } from "../bot_core";
 import { getCmd, getPermittedCmdList } from "../commands";
 
-export default {
+export default <Command>{
     call: cmdHelp,
     name: "help",
     group: "help",
     usage: "help [command name]",
     description: "Gives you a list of commands, or it can give further information about a specific command.",
     examples: [ [], ["prefix"] ],
-} as Command;
+};
 
 const footerNote = "[] means optional arguements, <> means obligatory arguements, | separates options";
 
