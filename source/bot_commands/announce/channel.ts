@@ -8,7 +8,7 @@ An alias can refer to one or more channels. e.g. \`fun\` could refer to \`#gener
 The base channels are where the bot is allowed to announce messages from.
 The target channels are what botchii defaults to when using the \`announce\` command.`;
 
-const cmd: Command = {
+export default <Command>{
     call:        cmdChannel,
     name:        "channel",
     permissions: [ adminPermission ],
@@ -51,5 +51,3 @@ async function cmdChannel(cmdCall : CommandCallData) {
         sendEmbed(msg, "error", `\`${mode}\` is not a valid arguement for \`channel\`!`);
     }
 }
-
-module.exports = cmd;

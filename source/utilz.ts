@@ -1,4 +1,4 @@
-import { ROOT_DIR, loadPrefs, updatePrefs, keepFulfilledResults, Prefs, fetchChannels } from "./_core/bot_core";
+import { ROOT_DIR, loadPrefs, updatePrefs, awaitAll, Prefs, fetchChannels } from "./_core/bot_core";
 import { CountedEmoji, UserReactions } from "./custom_types";
 import { CategoryChannel, Channel, Client, DMChannel, Guild, GuildEmoji, MessageReaction, NewsChannel, Snowflake, TextChannel } from "discord.js";
 import path from "path";

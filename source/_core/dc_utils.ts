@@ -1,5 +1,5 @@
 import { Channel, TextChannel, NewsChannel, DMChannel, Client, CategoryChannel, Snowflake, Message, MessageReaction, User, GuildChannel, MessageEmbed } from "discord.js";
-import { keepFulfilledResults, notOf } from "./general_utils";
+import { awaitAll, notOf } from "./general_utils";
 
 
 export function isMessageChannel(channel: Channel): channel is TextChannel | NewsChannel | DMChannel {
@@ -18,7 +18,7 @@ export async function fetchMessages(client: Client, msgLinksOrData: string[] | {
     })();
 
     const messagePromises = targetMessages.map(x => getMessage(client, x));
-    const [messages] = await keepFulfilledResults(messagePromises);
+    const [messages] = await awaitAll(messagePromises);
     return messages.filter(notOf(undefined));
 }
 
@@ -31,7 +31,7 @@ export async function cacheMessages(client: Client, msgLinksOrData: string[] | {
 
 export async function fetchChannels(client: Client, channelIDs: Snowflake[] | Set<Snowflake>): Promise<Channel[]> {
     const channelPromises = [...channelIDs].map(x => client.channels.fetch(x));
-    const [channels] = await keepFulfilledResults(channelPromises)
+    const [channels] = await awaitAll(channelPromises)
     return channels;
 }
 
@@ -54,7 +54,7 @@ export async function addReactions(msg: Message, reactions: string[] | Set<strin
         return reactionsResolved;
     } else {
         const reactionPromises = [...reactions].map(r => msg.react(r));
-        const [reactionsResolved] = await keepFulfilledResults(reactionPromises);
+        const [reactionsResolved] = await awaitAll(reactionPromises);
         
         return reactionsResolved;
     }
