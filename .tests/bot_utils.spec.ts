@@ -1,4 +1,4 @@
-import { capitalize, quoteMessage, removeDuplicatesBy, parseMessageLink, isCommand, adminPermission } from "../source/_core/bot_core";
+import { capitalize, quoteMessage, removeDuplicatesBy, parseMessageLink, isCommand, adminPermission, Command } from "../source/_core/bot_core";
 import { expect } from "chai"
 
 describe("Bot core works", () => {
@@ -77,36 +77,67 @@ describe("Bot core works", () => {
     });
 
     describe("'isCommand' works", () => {
-        it("works", () => {
+        it("Returns false for non-object types", () => {
+            expect(isCommand(undefined)).to.be.false;
+            expect(isCommand(null)).to.be.false;
             expect(isCommand(0)).to.be.false;
             expect(isCommand(true)).to.be.false;
-            expect(isCommand([1, 2, 3])).to.be.false;
-            expect(isCommand(undefined)).to.be.false;
+            expect(isCommand("FooBar")).to.be.false;
+        });
+        it("Disallows empty objects", () => {
             expect(isCommand({})).to.be.false;
-            expect(isCommand({ name: "asd", call: () => true })).to.be.true;
-            expect(isCommand({ setup: "random", name: "asd", call: () => true })).to.be.false;
-            expect(isCommand({ setup: undefined, name: "asd", call: () => true })).to.be.true;
-            expect(isCommand({ name: "asd", call: 0 })).to.be.false;
-            expect(isCommand({
-                setup: async() => 0,
-                call: () => 0,
+        });
+        it("Disallows arrays", () => {
+            expect(isCommand([1, 2, 3])).to.be.false;
+        });
+        it("Disallows objects with only 'name' present", () => {
+            expect(isCommand({ name: "foo" })).to.be.false;
+        });
+        it("Disallows objects with only 'call' present", () => {
+            expect(isCommand({ call: () => () => {} })).to.be.false;
+        });
+        it("Allows objects with both 'name' and 'call' present", () => {
+            expect(isCommand(<Command>{ name: "foo", call: () => {} })).to.be.true;
+        });
+        it("Allows unnecessary fields", () => {
+            expect(isCommand(<Command>{ name: "foo", call: () => {}, foo: 10 })).to.be.true;
+            expect(isCommand(<Command>{ name: "foo", call: () => {}, hello: "world" })).to.be.true;
+            expect(isCommand(<Command>{ name: "foo", call: () => {}, default: {} })).to.be.true;
+        });
+        it("Allows all possible fields to be present", () => {
+            expect(isCommand(<Command>{
+                setup: () => {},
+                call: () => {},
                 name: "foo",
-                group: "admin",
+                aliases: [],
+                group: "help",
                 permissions: [ adminPermission ],
                 usage: "foo [bar]",
                 description: "",
                 examples: [ [], ["bar"], ["baz"] ],
             })).to.be.true;
+        });
+        it("Disallows possible fields with incorrect types", () => {
             expect(isCommand({
-                setup: async() => 0,
-                call: () => 0,
-                name: "foo",
-                group: 20,
-                permissions: [ adminPermission ],
-                usage: "foo [bar]",
-                description: "",
-                examples: [ [], ["bar"], ["baz"] ],
+                call: () => {},
+                name: [],
+                aliases: [],
             })).to.be.false;
+            expect(isCommand({
+                call: () => {},
+                name: [],
+                usage: [[]],
+            })).to.be.false;
+            expect(isCommand({
+                call: () => {},
+                name: [],
+                permissions: adminPermission,
+            })).to.be.false;
+            expect(isCommand({ name: 100, call: () => {} })).to.be.false;
+        });
+        it("Allows 'usage' as string or string array", () => {
+            expect(isCommand(<Command>{ name: "foo", call: () => {}, usage: "FooBar" })).to.be.true;
+            expect(isCommand(<Command>{ name: "foo", call: () => {}, usage: ["Foo", "Bar"] })).to.be.true;
         });
     });
 });

@@ -100,7 +100,7 @@ export function isCommand(obj: unknown): obj is Command {
         test(aliases, [ "undefined" ]) || testArray(aliases, [ "string" ]),
         test(permissions, [ "undefined", "object" ]),
         test(group, [ "undefined", "string" ]),
-        test(usage, [ "undefined", "string" ]),
+        test(usage, [ "undefined", "string" ]) || testArray(usage, [ "string" ]),
         test(description, [ "undefined", "string" ]),
         test(examples, [ "undefined" ]) || test2DArray(examples, [ "string" ]),
     ].every(x => x);
