@@ -1,7 +1,14 @@
-export async function keepFulfilledResults<T>(arr: Promise<T>[]): Promise<T[]> {
-    return (await Promise.allSettled(arr))
-    .filter(<T>(x: PromiseSettledResult<T>): x is PromiseFulfilledResult<T> => x.status === "fulfilled")
-    .map(({ value }) => value);
+/**
+ * Returns a tuple of `[fulfilled, rejected]` promises.
+ */
+export async function awaitAll<T>(promises: Promise<T>[]): Promise<[T[], any[]]> {
+    let fulfilled: T[] = [];
+    let rejected: any[] = [];
+    for (const settled of await Promise.allSettled(promises)) {
+        if (settled.status === "fulfilled") fulfilled.push(settled.value);
+        else rejected.push(settled.reason);
+    }
+    return [fulfilled, rejected];
 }
 
 export function notOf<T>(excluded: T | T[] | Set<T>) {

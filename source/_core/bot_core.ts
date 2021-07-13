@@ -1,4 +1,4 @@
-import { impl, DEFAULT_COMMANDS_DIR } from "./bot_utils"
+import { BOT_CORE_DIR, impl } from "./bot_utils"
 import { CommandContentModifier, CoreData, CustomCoreData, LoggedInClient } from "./types";
 import { createCmdsListeners } from "./commands";
 import { Client, ClientOptions } from "discord.js";
@@ -20,6 +20,7 @@ interface SetupData {
 };
 
 const DEFAULT_PREFIX = "!";
+const DEFAULT_COMMANDS_DIR = path.join(BOT_CORE_DIR, "default_commands");
 
 export async function initBot(customCoreData: CustomCoreData, setupData: SetupData) {
     const {
@@ -30,7 +31,7 @@ export async function initBot(customCoreData: CustomCoreData, setupData: SetupDa
         onready,
     } = setupData;
 
-    impl.checkConfigErorrs();
+    // impl.checkConfigErorrs();
     impl.defaultPrefix = defaultPrefix;
     impl.messageContentModifiers = messageContentModifiers;
 

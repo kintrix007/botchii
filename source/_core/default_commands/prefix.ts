@@ -1,13 +1,13 @@
+import { createEmbed } from "../dc_utils";
 import { adminPermission, sendEmbed, updatePrefs, getPrefix, Command, CommandCallData, Prefs } from "../bot_core";
 import { PREFIX_PREFS_FILE, PrefixData } from "./command_prefs"
 import { Message } from "discord.js";
-import { createEmbed } from "_core/dc_utils";
 
 const description = `Sets the prefix the bot uses.
 With this command you can change the bot's prefix, and also access what it is.
 As an alternative, you can ping the bot instead of using the prefix.`;
 
-export default {
+export default <Command>{
     call: cmdPrefix,
     name: "prefix",
     group: "admin",
@@ -15,7 +15,7 @@ export default {
     usage: "prefix [new prefix]",
     description: description,
     examples: [ [], ["!!"], ["."] ],
-} as Command;
+};
 
 const MAX_PREFIX_LENGTH = 4;
 

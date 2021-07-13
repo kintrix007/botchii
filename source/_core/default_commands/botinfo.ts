@@ -1,16 +1,16 @@
+import { createEmbed } from "../dc_utils";
 import { ROOT_DIR, capitalize, Command, CommandCallData } from "../bot_core";
 import * as fs from "fs";
 import * as path from "path";
-import { createEmbed } from "_core/dc_utils";
 
-export default {
+export default <Command>{
     call: cmdInfo,
     name: "botinfo",
     usage: "botinfo",
     group: "help",
     description: "Shows some basic information about the bot.",
     examples: [ [] ]
-} as Command;
+};
 
 function cmdInfo({ msg }: CommandCallData) {
     const packagePath = path.join(ROOT_DIR, "package.json");

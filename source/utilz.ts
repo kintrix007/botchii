@@ -1,4 +1,4 @@
-import { ROOT_DIR, loadPrefs, updatePrefs, keepFulfilledResults, Prefs } from "./_core/bot_core";
+import { ROOT_DIR, loadPrefs, updatePrefs, awaitAll, Prefs, fetchChannels } from "./_core/bot_core";
 import { CountedEmoji, UserReactions } from "./custom_types";
 import { CategoryChannel, Channel, Client, DMChannel, Guild, GuildEmoji, MessageReaction, NewsChannel, Snowflake, TextChannel } from "discord.js";
 import path from "path";
@@ -73,9 +73,8 @@ export function fromChannelAlias(guild: Guild, alias: string) {
 
 
 export async function fetchTextChannels(client: Client, channelIDs: string[] | Set<string>) {
-    const channelPromises = [...channelIDs].map(x => client.channels.fetch(x));
-    const channels = await keepFulfilledResults(channelPromises);
-    return channels.map(x => x instanceof CategoryChannel ? Array.from(x.children.values()) : x)
+    const channels = await fetchChannels(client, channelIDs);
+    return channels.map(x => x instanceof CategoryChannel ? Array.from(x.children.values()) : [x])
     .flat()
     .filter(isTextChannel);
 }

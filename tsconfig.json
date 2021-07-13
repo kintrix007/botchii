@@ -18,7 +18,6 @@
         "alwaysStrict": true,
         "strictFunctionTypes": true,
         "strictPropertyInitialization": true,
-        "baseUrl": "./source",
     },
     "include": [ "source/**/*" ],
 }
