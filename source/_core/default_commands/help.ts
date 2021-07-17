@@ -30,9 +30,8 @@ function queryGeneralHelpSheet(cmdCall: CommandCallData) {
     const cmdList = getPermittedCmdList(cmdCall, true);
 
     // vv Fuck TypeScript, why this no work??? vv
-    // type ExtendedGroup = CommandGroup | "uncategorized";
-    // let commandsInGroups: { [K in ExtendedGroup]?: Command[] } = {};
-    
+    //* type ExtendedGroup = CommandGroup | "uncategorized";
+    //* let commandsInGroups: { [K in ExtendedGroup]?: Command[] } = {};
     let commandsInGroups: { [group: string]: Command[] | undefined } = {};
 
     cmdList.forEach(command => {
@@ -59,7 +58,6 @@ function queryGeneralHelpSheet(cmdCall: CommandCallData) {
             ? usage.map(x => currentPrefix + x).join(" OR\n")
             : currentPrefix + usage!)
         ).join("\n");
-        console.log({group, commandsUsage});
         return (isShownGroup ? `**${capitalize(group)}**:\n` : "") + "```\n" + commandsUsage + "\n```";
     }).join("\n");
     

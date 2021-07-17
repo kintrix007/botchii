@@ -9,7 +9,7 @@ export * from "./bot_utils";
 export * from "./general_utils";
 export * from "./dc_utils";
 export { getCmd, getCmdCallData, getCmdList, getPermittedCmdList } from "./commands";
-export { addListener } from "./listeners"
+export { addListener, deleteListener } from "./listeners"
 
 interface SetupData {
     commandDirs:              string[];
