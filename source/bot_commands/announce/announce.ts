@@ -1,4 +1,4 @@
-import { getReplyMessage, getMessageLink, sendEmbed, loadPrefs, getPrefix, quoteMessage, fetchMessageLink, addReactions, updatePrefs, parseMessageLink, Command, CommandCallData, Prefs } from "../../_core/bot_core";
+import { getReplyMessage, getMessageLink, sendEmbed, loadPrefs, getPrefix, quoteMessage, fetchMessageLink, addReactions, updatePrefs, parseMessageLink, Command, CommandCallData, Prefs, adminPermission } from "../../_core/bot_core";
 import { DMChannel, NewsChannel, TextChannel } from "discord.js";
 import { AnnounceData, ANNOUNCE_PREFS_FILE, ChannelData, CHANNEL_PREFS_FILE, EXPIRED_MESSAGE_TEXT } from "../command_prefs";
 import * as Utilz from "../../utilz";
@@ -15,6 +15,7 @@ export default <Command>{
     name:        "announce",
     group:       "announcement",
     aliases:     [ "forward" ],
+    permissions: [ adminPermission ],
     usage:       "announce <message link> [target channels...]",
     description: description,
     examples:    [ ["https://discord.com/channels/123456789012345678/012345678901234567/234567890123456789"], ["234567890123456789", "#announcements"] ]

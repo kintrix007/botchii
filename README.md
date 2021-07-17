@@ -49,5 +49,5 @@ You can run `npm run setup` to have a simple CLI help you make the needed file(s
 - [ ] **Make `bot_types.d.ts` optional or replace it with something nicer**
 - [x] **Add a listeners module, which creates discord.js listeners and has an API add listeners and modify their callbacks**
 - [ ] ~~Using the listeners module will automatically ignore if a bot triggered it~~ - not happening
-- [ ] **Add configurable default command when pinging the bot, with an option to disable it**
+- [x] **Add configurable default command when pinging the bot, with for optional use**
 - [ ] **Add aliases `from` and `to`, which will be reserved alias names**
