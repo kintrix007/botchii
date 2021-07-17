@@ -1,6 +1,6 @@
 import { BOT_CORE_DIR, impl } from "./bot_utils"
 import { CommandContentModifier, CoreData, CustomCoreData, LoggedInClient } from "./types";
-import { createCmdsListeners } from "./commands";
+import { addDefaultCommands, createCmdsListeners } from "./commands";
 import { Client, ClientOptions } from "discord.js";
 import path from "path";
 
@@ -9,11 +9,12 @@ export * from "./bot_utils";
 export * from "./general_utils";
 export * from "./dc_utils";
 export { getCmd, getCmdCallData, getCmdList, getPermittedCmdList } from "./commands";
-export { addListener } from "./listeners"
+export { addListener, deleteListener } from "./listeners"
 
 interface SetupData {
     commandDirs:              string[];
     defaultPrefix?:           string;
+    defaultCommands?:         string[];
     options?:                 ClientOptions;
     messageContentModifiers?: CommandContentModifier[];
     onready?:                 (coreData: CoreData) => void;
@@ -26,6 +27,7 @@ export async function initBot(customCoreData: CustomCoreData, setupData: SetupDa
     const {
         commandDirs,
         defaultPrefix = DEFAULT_PREFIX,
+        defaultCommands = [],
         messageContentModifiers = [],
         options,
         onready,
@@ -34,6 +36,7 @@ export async function initBot(customCoreData: CustomCoreData, setupData: SetupDa
     // impl.checkConfigErorrs();
     impl.defaultPrefix = defaultPrefix;
     impl.messageContentModifiers = messageContentModifiers;
+    addDefaultCommands(defaultCommands);
 
     const client = new Client();
     if (options !== undefined) {

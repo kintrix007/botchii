@@ -1,4 +1,4 @@
-import { loadPrefs, cacheMessages, fetchMessageLink, updatePrefs, sendEmbed, getPrefix, fetchChannels, getMessageLink, quoteMessage, CoreData, Prefs, notOf } from "../../_core/bot_core";
+import { loadPrefs, cacheMessages, fetchMessageLink, updatePrefs, sendEmbed, getPrefix, fetchChannels, getMessageLink, quoteMessage, CoreData, Prefs, notOf, addListener } from "../../_core/bot_core";
 import * as Utilz from "../../utilz";
 import { AnnounceData, ANNOUNCE_PREFS_FILE, ChannelData, CHANNEL_PREFS_FILE, EXPIRED_MESSAGE_TEXT } from "../command_prefs";
 import { Client, DMChannel, Message, MessageReaction, NewsChannel, PartialUser, TextChannel, User } from "discord.js";
@@ -28,8 +28,8 @@ export async function setup({ client }: CoreData) {
         trackReactions(client, false)(firstReaction, undefined);
     });
 
-    client.on("messageReactionAdd",    trackReactions(client, true));
-    client.on("messageReactionRemove", trackReactions(client, false));
+    addListener(client, "messageReactionAdd",    trackReactions(client, true));
+    addListener(client, "messageReactionRemove", trackReactions(client, false));
 
 }
 
@@ -37,9 +37,6 @@ async function removeExpiredTrackers(client: Client) {
     const currentTimestamp = Date.now();
     const invalidateForMsPassed = invalidateFor*60*60*1000;
     const invalidateBefore = currentTimestamp - invalidateForMsPassed;
-
-    // ! UNTESTED
-    // but should work :P
 
     let announcedPrefs = loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true);
     

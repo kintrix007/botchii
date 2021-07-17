@@ -9,21 +9,21 @@ type ListenerFunctionType<T extends keyof Listeners> = NonNullable<Listeners[T]>
 
 let listeners: Listeners = {};
 
+
 export function addListener<T extends keyof Listeners>(client: Client, event: T, listener: ListenerFunctionType<T>) {
     const eventAlreadyExists = event in listeners;
-
     if (listeners[event] === undefined) listeners[event] = [];
     listeners[event]!.push(listener as any);
-    
     if (!eventAlreadyExists) createListener(client, event);
 }
 
-export function overrideListener<T extends keyof Listeners>(client: Client, event: T, listener: ListenerFunctionType<T>) {
-    const eventAlreadyExists = event in listeners;
-    
-    listeners[event] = [listener] as any[];
-    
-    if (!eventAlreadyExists) createListener(client, event);
+export function deleteListener<T extends keyof Listeners>(event: T, listener: ListenerFunctionType<T>) {
+    const eventExists = event in listeners;
+    if (!eventExists) return false;
+    const idx = listeners[event]!.findIndex(x => x === listener);
+    if (idx === -1) return false;
+    delete listeners[event]![idx];
+    return true;
 }
 
 function createListener(client: Client, event: keyof Listeners) {

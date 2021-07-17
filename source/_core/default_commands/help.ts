@@ -30,9 +30,8 @@ function queryGeneralHelpSheet(cmdCall: CommandCallData) {
     const cmdList = getPermittedCmdList(cmdCall, true);
 
     // vv Fuck TypeScript, why this no work??? vv
-    // type ExtendedGroup = CommandGroup | "uncategorized";
-    // let commandsInGroups: { [K in ExtendedGroup]?: Command[] } = {};
-    
+    //* type ExtendedGroup = CommandGroup | "uncategorized";
+    //* let commandsInGroups: { [K in ExtendedGroup]?: Command[] } = {};
     let commandsInGroups: { [group: string]: Command[] | undefined } = {};
 
     cmdList.forEach(command => {
@@ -53,18 +52,16 @@ function queryGeneralHelpSheet(cmdCall: CommandCallData) {
     });
 
     const reply = commandsAssocList.map(([group, commands]) => {
-        const isShownGroup = group !== "help";
         const commandsUsage = commands!.map(
             ({ usage }) => (usage instanceof Array
             ? usage.map(x => currentPrefix + x).join(" OR\n")
             : currentPrefix + usage!)
         ).join("\n");
-        console.log({group, commandsUsage});
-        return (isShownGroup ? `**${capitalize(group)}**:\n` : "") + "```\n" + commandsUsage + "\n```";
+        return `**${capitalize(group)}**:\n` + "```\n" + commandsUsage + "\n```";
     }).join("\n");
     
     return createEmbed("neutral", {
-        title:  "Help:",
+        title:  "__General Helpsheet__:",
         desc:   reply,
         footer: footerNote
     });
@@ -87,12 +84,13 @@ function querySpecificHelpSheet({ msg }: CommandCallData, targetCommand: string)
         ? "**eg:  " + command.examples.map(ex => "`" + [commandName, ...ex].join(" ") + "`").join(", ") + "**"
         : "");
 
+        const hasPermissions = command.permissions !== undefined;
         const permDescriptions = command.permissions?.map(x => x.description).filter(notOf(undefined));
         const hasPermissionWihtoutDescription = permDescriptions?.some(x => x === undefined) ?? false;
         const permDescStr = permDescriptions?.map(x => `- ${x}`).join("\n")
-            + (hasPermissionWihtoutDescription ? "\n- *And more...*" : "");
+            + (hasPermissionWihtoutDescription ? "\n- *And others, without a description...*" : "");
 
-    const reply = description + (permDescStr ? "\n\n**Permissions:**\n" + permDescStr : "") + "\n\n" + examples;
+    const reply = description + (hasPermissions ? "\n\n**Permissions:**\n" + permDescStr : "") + "\n\n" + examples;
 
     return createEmbed("neutral", {
         title:  usage,

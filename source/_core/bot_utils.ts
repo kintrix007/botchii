@@ -171,6 +171,12 @@ export async function getBotOwner(data: CoreData) {
 }
 
 
+export function isOnlyBotPing(msg: Message): boolean {
+    const cont = msg.content;
+    const regex = new RegExp(`^\s*<@!?${msg.client.user!.id}>\s*$`, "i");
+    return regex.test(cont);
+}
+
 /** returns the contents of `msg` after removing the prefix from the beginning of it */
 export function prefixless(msg: Message): string | undefined {
     const guild = msg.guild;

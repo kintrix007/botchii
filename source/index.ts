@@ -11,6 +11,7 @@ initBot(
         commandDirs: [
             path.join(__dirname, "bot_commands", "announce"),
         ],
+        defaultCommands: [ "announce", "help" ],
         options: {
             disableMentions: "everyone",
         },
