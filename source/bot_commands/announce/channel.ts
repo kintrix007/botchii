@@ -1,10 +1,8 @@
 import { adminPermission, Command, CommandCallData, sendEmbed } from "../../_core/bot_core";
-import cmdAlias from "./alias";
 import cmdSetChannel from "./set_channel";
 import cmdGetChannel from "./get_channel"
 
-const description = `Lets you create aliases to channels, set the default announce target, and the channels where they will be sent from.
-An alias can refer to one or more channels. e.g. \`fun\` could refer to \`#general\` and \`#memes\`.
+const description = `Lets you set the default announce target and the channels where they will be sent from.
 The base channels are where the bot is allowed to announce messages from.
 The target channels are what botchii defaults to when using the \`announce\` command.`;
 
@@ -15,7 +13,6 @@ export default <Command>{
     group:       "announcement",
     aliases:     [ "channels" ],
     usage: [
-        "channel <alias> [<name> <channels...>]",
         "channel <from|base> <channels...>",
         "channel <to|target> <channels...>"
     ],
@@ -39,9 +36,6 @@ async function cmdChannel(cmdCall : CommandCallData) {
         cont:    args.join(" ")
     };
 
-    if ([ "alias", "aliases" ].includes(mode)) {
-        await cmdAlias(subCmdCall);
-    } else
     if ([ "from", "base" ].includes(mode)) {
         await cmdSetChannel(subCmdCall, "base");
     } else

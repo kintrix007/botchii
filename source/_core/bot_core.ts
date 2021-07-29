@@ -1,13 +1,13 @@
-import { BOT_CORE_DIR, impl } from "./bot_utils"
+import { BOT_CORE_DIR, impl } from "./utils/bot_utils"
 import { CommandContentModifier, CoreData, CustomCoreData, LoggedInClient } from "./types";
-import { addDefaultCommands, createCmdsListeners } from "./commands";
+import { addDefaultCommands, createCmdsListeners } from "./impl/command_loader";
 import { Client, ClientOptions } from "discord.js";
 import path from "path";
 
 export * from "./types";
-export * from "./bot_utils";
-export * from "./general_utils";
-export * from "./dc_utils";
+export * from "./utils/bot_utils";
+export * from "./utils/general_utils";
+export * from "./utils/dc_utils";
 export { getCmd, getCmdCallData, getCmdList, getPermittedCmdList } from "./commands";
 export { addListener, deleteListener } from "./listeners"
 

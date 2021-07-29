@@ -26,7 +26,7 @@ function parseChannel(guild: Guild, channelIDOrAlias: string) {
     const channelRegex = /^(?:(\d+)|<#(\d+)>)$/i;
     const match = channelIDOrAlias.match(channelRegex);
     const channelID = match?.[1] ?? match?.[2];
-    const channelIDs = (match ? [ channelID ] : fromChannelAlias(guild, channelIDOrAlias)?.filter(x => x !== undefined));
+    const channelIDs = (match ? [ channelID ] : getIDsFromAlias(guild, channelIDOrAlias)?.filter(x => x !== undefined));
     return channelIDs as Snowflake[] | undefined;
 }
 
@@ -66,7 +66,7 @@ export function removeChannelAlias(guild: Guild, alias: string) {
     updatePrefs(ALIAS_PREFS_FILE, aliasData);
 }
 
-export function fromChannelAlias(guild: Guild, alias: string) {
+export function getIDsFromAlias(guild: Guild, alias: string): string[] | undefined {
     const aliasData = loadPrefs<AliasData>(ALIAS_PREFS_FILE);
     return aliasData[guild.id]?.aliases?.[alias];
 }

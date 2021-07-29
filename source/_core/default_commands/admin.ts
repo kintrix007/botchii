@@ -1,5 +1,4 @@
-import { createEmbed } from "../dc_utils";
-import { Command, CommandCallData, createCommandPermission, getAdminRole, Prefs, updatePrefs } from "../bot_core";
+import { Command, CommandCallData, createCommandPermission, getAdminRole, Prefs, updatePrefs, createEmbed } from "../bot_core";
 import { ADMIN_PREFS_FILE, AdminData } from "./command_prefs";
 
 const description = "Sets the role the bot looks for to decide whether someone is an admin.\n"

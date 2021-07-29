@@ -1,5 +1,4 @@
-import { createEmbed } from "../dc_utils";
-import { adminPermission, sendEmbed, updatePrefs, getPrefix, Command, CommandCallData, Prefs } from "../bot_core";
+import { adminPermission, sendEmbed, updatePrefs, getPrefix, Command, CommandCallData, Prefs, createEmbed } from "../bot_core";
 import { PREFIX_PREFS_FILE, PrefixData } from "./command_prefs"
 import { Message } from "discord.js";
 

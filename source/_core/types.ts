@@ -4,7 +4,8 @@ import * as CustomBotTypes from "../bot_types";
 type CCD = CustomBotTypes.CustomCoreData;
 type CCG = CustomBotTypes.CustomCommandGroup;
 export type CustomCoreData = CCD extends {} ? CCD : never;
-export type CustomCommandGroup = CCG extends string ? CCG : never;
+// export type CustomCommandGroup = CCG extends string ? CCG : never;
+export type CustomCommandGroup = CCG;
 
 type BaseCommandGroup = "help" | "admin" | "owner";
 

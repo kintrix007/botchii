@@ -1,4 +1,4 @@
-import { Channel, TextChannel, NewsChannel, DMChannel, Client, CategoryChannel, Snowflake, Message, MessageReaction, User, GuildChannel, MessageEmbed } from "discord.js";
+import { Channel, TextChannel, NewsChannel, DMChannel, Client, CategoryChannel, Snowflake, Message, MessageReaction, User, GuildChannel, MessageEmbed, Base, MessageType, MessageAttachment, Role } from "discord.js";
 import { awaitAll, notOf } from "./general_utils";
 
 
@@ -111,9 +111,9 @@ export async function fetchMessageLink(client: Client, msgLink: string) {
 export async function getReplyMessage(message: Message) {
     if (message.system) return undefined;
     const reference = message.reference;
-    if (reference === null) return undefined;
+    if (reference == null) return undefined;
     const { channelID, messageID } = reference;
-    if (messageID === null) return undefined;
+    if (messageID == null) return undefined;
     if (message.channel.id !== channelID) return undefined;
     try {
         const replyMessage = await message.channel.messages.fetch(messageID);
@@ -121,6 +121,58 @@ export async function getReplyMessage(message: Message) {
     } catch (err) {
         return undefined;
     }
+}
+
+interface ReplyMessageBase {
+    id: Snowflake;
+    type: number;
+    content: string;
+    channel_id: string;
+    author: User;
+    attachments: MessageAttachment[];
+    embeds: MessageEmbed[];
+    mentions: {
+        id: Snowflake;
+        username: string;
+        avatar: string;
+        discriminator: string;
+        public_flags: number;
+    }[];
+    mention_roles: Role[];
+    pinned: boolean;
+    mention_everyone: boolean;
+    tts: boolean;
+    timestamp: string;
+    edited_timestamp: number | null;
+    flags: number;
+    components: any[];
+}
+
+type ReplyMessage = ReplyMessageBase & {
+    message_reference: {
+        channel_id: Snowflake;
+        guild_id: Snowflake;
+        message_id: Snowflake;
+    };
+    referenced_message: ReplyMessageBase;
+}
+
+
+/**
+ * @param pings Does not do anything, not implemented yet. 
+ */
+export async function replyTo(message: Message, content: any, pings: boolean = true) {
+    const sentMessage: ReplyMessage = await (message.client as any).api.channels[message.channel.id].messages.post({
+        data: {
+            content: content,
+            message_reference: {
+                message_id: message.id,
+                channel_id: message.channel.id,
+                guild_id: message.guild?.id,
+            },
+        },
+    });
+    return sentMessage
 }
 
 
@@ -131,7 +183,7 @@ const messageColors = {
     error:   0xbb0000,
     neutral: 0x008888
 } as const;
-type MessageType = keyof typeof messageColors;
+type EmbedType = keyof typeof messageColors;
 
 interface BasicEmbedData {
     title?:     string;
@@ -172,7 +224,7 @@ function hasEmbedPerms(target: Message | User | TextChannel | NewsChannel | DMCh
     }
 }
 
-export function createEmbed(type: MessageType, message: BasicEmbedData | string) {
+export function createEmbed(type: EmbedType, message: BasicEmbedData | string) {
     let messageEmbed = new MessageEmbed().setColor(messageColors[type]);
 
     if (typeof message === "string") {
@@ -194,7 +246,7 @@ export function createEmbed(type: MessageType, message: BasicEmbedData | string)
     };
 }
 
-export function sendEmbed(target: Message | User | TextChannel | NewsChannel | DMChannel, type: MessageType, message: BasicEmbedData | string) {
+export function sendEmbed(target: Message | User | TextChannel | NewsChannel | DMChannel, type: EmbedType, message: BasicEmbedData | string) {
     let sendTarget: User | TextChannel | NewsChannel | DMChannel;
     
     if (target instanceof Message) {

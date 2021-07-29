@@ -1,6 +1,5 @@
-import { createEmbed } from "../dc_utils";
-import { notOf } from "../general_utils";
-import { getPrefix, capitalize, Command, CommandCallData } from "../bot_core";
+import { notOf } from "../utils/general_utils";
+import { getPrefix, capitalize, Command, CommandCallData, createEmbed } from "../bot_core";
 import { getCmd, getPermittedCmdList } from "../commands";
 
 export default <Command>{
@@ -59,7 +58,7 @@ function queryGeneralHelpSheet(cmdCall: CommandCallData) {
         ).join("\n");
         return `**${capitalize(group)}**:\n` + "```\n" + commandsUsage + "\n```";
     }).join("\n");
-    
+
     return createEmbed("neutral", {
         title:  "__General Helpsheet__:",
         desc:   reply,

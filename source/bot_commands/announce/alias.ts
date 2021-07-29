@@ -1,9 +1,24 @@
-import { sendEmbed, loadPrefs, CommandCallData } from "../../_core/bot_core";
+import { sendEmbed, loadPrefs, CommandCallData, adminPermission, Command } from "../../_core/bot_core";
 import * as Utilz from "../../utilz";
 import { AliasData, ALIAS_PREFS_FILE } from "../command_prefs";
 import { Message } from "discord.js";
 
-export default async function cmdAlias({ msg, args }: CommandCallData) {
+const description = `Allows you to create aliases to channels.
+An alias can refer to one or more channels. e.g. \`fun\` could refer to \`#general\` and \`#memes\`.
+It can also refer to chategories by their ID's, which is identical to listing all the channels under it.`;
+
+export default <Command>{
+    call:        cmdAlias,
+    name:        "channelAlias",
+    permissions: [ adminPermission ],
+    group:       "announcement",
+    aliases:     [ "alias", "aliases" ],
+    usage:       "channelAlias [<name> <channels...>]",
+    description: description,
+    examples:    [ [], ["alias"], ["alias", "general", "123456789012345678"], ["from", "#announcements"], ["to", "general", "#memes"] ],
+};
+
+async function cmdAlias({ msg, args }: CommandCallData) {
     const [alias, ...channelIDsOrAliases] = args;
 
     if (alias === undefined) {

@@ -1,5 +1,4 @@
-import { createEmbed } from "../dc_utils";
-import { ROOT_DIR, capitalize, Command, CommandCallData } from "../bot_core";
+import { ROOT_DIR, capitalize, Command, CommandCallData, createEmbed } from "../bot_core";
 import * as fs from "fs";
 import * as path from "path";
 

@@ -1,8 +1,8 @@
-import { loadPrefs, cacheMessages, fetchMessageLink, updatePrefs, sendEmbed, getPrefix, fetchChannels, getMessageLink, quoteMessage, CoreData, Prefs, notOf, addListener } from "../../_core/bot_core";
 import * as Utilz from "../../utilz";
+import { loadPrefs, cacheMessages, fetchMessageLink, updatePrefs, sendEmbed, getPrefix, fetchChannels, getMessageLink, CoreData, Prefs, notOf, addListener } from "../../_core/bot_core";
 import { AnnounceData, ANNOUNCE_PREFS_FILE, ChannelData, CHANNEL_PREFS_FILE, EXPIRED_MESSAGE_TEXT } from "../command_prefs";
-import { Client, DMChannel, Message, MessageReaction, NewsChannel, PartialUser, TextChannel, User } from "discord.js";
-import { UserReactions } from "../../custom_types";
+import { Client, DMChannel, Guild, Message, MessageReaction, NewsChannel, PartialUser, TextChannel, User } from "discord.js";
+import { getContentAndShouldForward } from "./announce_tracker";
 
 export const announcedEmoji  = "👌";
 export const acceptEmoji     = "⬆️"
@@ -87,14 +87,17 @@ function trackReactions(client: Client, isAdd: boolean) {
 
         const userReactions = await getUserReactions(message);
         const trackerMsg  = (await fetchMessageLink(client, trackerMsgLink))!;
-        const announceMsg = (await fetchMessageLink(client, announceMsgLink))!;
+        const announceMsg = (await fetchMessageLink(client, announceMsgLink));
         const { shouldForward, content } = getContentAndShouldForward(userReactions, announceMsg, targetChannelIDs);
 
-        if (shouldForward) {
-            const targetChannels = await fetchChannels(message.client, targetChannelIDs);
-            const targetTextChannels = targetChannels.filter(Utilz.isTextChannel);
-            await forwardMessage(announceMsg, targetTextChannels);
-            invalidateAnnounceMsg(announceMsg, announceData);
+        if (shouldForward || announceMsg === undefined) {
+            invalidateAnnounceMsg(message.guild!, announceMsgLink, announceData);
+            
+            if (announceMsg !== undefined) {
+                const targetChannels = await fetchChannels(message.client, targetChannelIDs);
+                const targetTextChannels = targetChannels.filter(Utilz.isTextChannel);
+                await forwardMessage(announceMsg, targetTextChannels);
+            }
         }
     
         await trackerMsg.edit(content);
@@ -124,59 +127,7 @@ async function getUserReactions(message: Message) {
     return userReactions;
 }
 
-function getUserIDs(userReactions: UserReactions) {
-    const acceptUserIDs = new Set(Object.entries(userReactions).filter(([,emojiStr]) => emojiStr.has(acceptEmoji)).map(([userID]) => userID));
-    const rejectUserIDs = Utilz.difference(
-        new Set(Object.entries(userReactions).filter(([,emojiStr]) => emojiStr.has(rejectEmoji)).map(([userID]) => userID)),
-        acceptUserIDs
-    );
-    return { acceptUserIDs, rejectUserIDs };
-}
-
-function getScoreToGo(acceptUserIDs: Set<string>, rejectUserIDs: Set<string>) {
-    const score     = acceptUserIDs.size - rejectUserIDs.size;
-    const scoreToGo = Math.max(scoreToForward - score, 0);
-    return scoreToGo
-}
-
-function getPendingContentParts(announceMsg: Message, targetChannelIDs: Set<string> | string[], scoreToGo: number) {
-    const announceMsgLink = getMessageLink(announceMsg);
-    const announceMsgQuote   = (announceMsg.content ? quoteMessage(announceMsg.content, 75) : "");
-    const targetChArray        = [...targetChannelIDs];
-    const targetChannelStrings = "**to:** " + targetChArray.map(x => "<#"+x+">").join(", ");
-    const scoreToGoString      = `**${scoreToGo} to go**`;
-    return { announceMsgQuote, announceMsgLink, targetChannelStrings, scoreToGoString };
-}
-
-function getAnnouncedContentParts(announceMsg: Message, targetChannelIDs: Set<string> | string[], acceptUserIDs: Set<string>) {
-    const announceUserStrings  = `**-- Announced by ${[...acceptUserIDs].map(x => "<@"+x+">").join(", ")} --**`;
-    return { announceUserStrings, ...getPendingContentParts(announceMsg, targetChannelIDs, 0) };
-}
-
-function getContentString(parts: ReturnType<typeof getPendingContentParts> | ReturnType<typeof getAnnouncedContentParts>): string {
-    const { announceMsgLink, announceMsgQuote, targetChannelStrings, scoreToGoString } = parts;
-    if ("announceUserStrings" in parts) {
-        const { announceUserStrings } = parts;
-        return [ announceMsgLink, announceMsgQuote, "", targetChannelStrings, announceUserStrings ].join("\n");
-    } else {
-        return [ announceMsgLink, announceMsgQuote, "", targetChannelStrings, scoreToGoString ].join("\n");
-    }
-}
-
-function getContentAndShouldForward(userReactions: UserReactions, announceMsg: Message, targetChannelIDs: Set<string> | string[]) {
-    const { acceptUserIDs, rejectUserIDs } = getUserIDs(userReactions);
-    const scoreToGo = getScoreToGo(acceptUserIDs, rejectUserIDs);
-    const shouldForward = scoreToGo <= 0;
-    const content = (shouldForward
-        ? getContentString(getAnnouncedContentParts(announceMsg, targetChannelIDs, acceptUserIDs))
-        : getContentString(getPendingContentParts(announceMsg, targetChannelIDs, scoreToGo))
-    );
-    return { shouldForward, content };
-}
-
-function invalidateAnnounceMsg(announceMsg: Message, announceData: AnnounceData) {
-    const guild = announceMsg.guild
-    const announceMsgLink = getMessageLink(announceMsg);
+function invalidateAnnounceMsg(guild: Guild, announceMsgLink: string, announceData: AnnounceData) {
     delete announceData.announceMessages[announceMsgLink];
     const newAnnouncePrefs: Prefs<AnnounceData> = {
         [guild!.id]: { ...announceData, guildName: guild!.name }
