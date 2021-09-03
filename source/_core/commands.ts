@@ -1,7 +1,8 @@
-import { impl, prefixless, Command, CommandCallData, CoreData } from "./bot_core";
+import { impl, Command, CommandCallData, CoreData } from "./bot_core";
 import { Message, } from "discord.js";
 import { isMessageChannel } from "./utils/dc_utils";
 import { cmds } from "./impl/command_loader"
+import { getCommandLimits, isInsideLimit } from "./impl/limit_utils";
 
 
 // "public API"
@@ -14,7 +15,7 @@ export function getCmdCallData(coreData: CoreData, msg: Message): CommandCallDat
     if (!isMessageChannel(msg.channel)) return undefined;
     if (msg.author.bot) return undefined;
     
-    const contTemp = prefixless(msg);
+    const contTemp = impl.prefixless(msg);
     if (contTemp === undefined) return undefined;
     const cont = impl.applyMessageContentModifiers(contTemp);
 
@@ -37,7 +38,7 @@ export function getCmdList(onlyCommandsWithUsage = true) {
     return cmds.filter(x => !onlyCommandsWithUsage || !!x.usage);
 }
 
-export function getPermittedCmdList(cmdCall: CommandCallData, onlyListAvailable: boolean): Command[] {
+export function getPermittedCmdList(cmdCall: CommandCallData): Command[] {
     const hasPerms = (x: Command) => !x.permissions?.some(({ test }) => !test(cmdCall));
-    return getCmdList().filter(x => !onlyListAvailable || hasPerms(x));
+    return getCmdList().filter(cmd => hasPerms(cmd) && isInsideLimit({ msg: cmdCall.msg, cmd: cmd }));
 }

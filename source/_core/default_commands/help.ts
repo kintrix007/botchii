@@ -26,7 +26,7 @@ function cmdHelp(cmdCall: CommandCallData) {
 function queryGeneralHelpSheet(cmdCall: CommandCallData) {
     const { msg } = cmdCall;
     const currentPrefix = getPrefix(msg.guild!.id);
-    const cmdList = getPermittedCmdList(cmdCall, true);
+    const cmdList = getPermittedCmdList(cmdCall);
 
     // vv Fuck TypeScript, why this no work??? vv
     //* type ExtendedGroup = CommandGroup | "uncategorized";

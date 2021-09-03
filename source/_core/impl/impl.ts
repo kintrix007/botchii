@@ -1,5 +1,5 @@
-import { Snowflake } from "discord.js";
-import { ROOT_DIR } from "../utils/bot_utils";
+import { Message, Snowflake } from "discord.js";
+import { getPrefix, ROOT_DIR } from "../utils/bot_utils";
 import { CommandContentModifier } from "../types";
 import path from "path";
 import fs from "fs";
@@ -64,5 +64,23 @@ export class Impl {
     
     public applyMessageContentModifiers(cont: string) {
         return this._messageContentModifiers!.reduce((cont, modifier) => modifier(cont), cont);
+    }
+
+    /** returns the contents of `msg` after removing the prefix from the beginning of it */
+    public prefixless(msg: Message): string | undefined {
+        const guild = msg.guild;
+        if (!guild) return undefined;
+        const cont = msg.content;
+        const prefix = this.applyMessageContentModifiers(getPrefix(guild.id));
+        
+        if (this.applyMessageContentModifiers(cont).startsWith(prefix)) {
+            return cont.slice(prefix.length);
+        }
+
+        const regex = new RegExp(`^<@!?${msg.client.user!.id}>\\s*(.+?)\\s*$`, "i");
+        const match = cont.match(regex);
+        if (!match) return undefined;
+
+        return match[1];
     }
 }

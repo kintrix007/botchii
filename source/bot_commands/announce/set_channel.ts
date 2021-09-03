@@ -1,5 +1,4 @@
-import { sendEmbed, loadPrefs, updatePrefs, CommandCallData, Prefs, parseChannels } from "../../_core/bot_core";
-import { fetchTextChannels} from "../../utilz";
+import { sendEmbed, loadPrefs, updatePrefs, CommandCallData, Prefs, parseChannels, fetchTextChannels } from "../../_core/bot_core";
 import { ChannelData, CHANNEL_PREFS_FILE } from "../command_prefs";
 
 export default async function cmdSetChannel({ msg, args }: CommandCallData, mode: "base" | "target") {

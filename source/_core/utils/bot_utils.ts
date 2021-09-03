@@ -117,24 +117,6 @@ export function isOnlyBotPing(msg: Message): boolean {
     return regex.test(cont);
 }
 
-/** returns the contents of `msg` after removing the prefix from the beginning of it */
-export function prefixless(msg: Message): string | undefined {
-    const guild = msg.guild;
-    if (!guild) return undefined;
-    const cont = msg.content;
-    const prefix = impl.applyMessageContentModifiers(getPrefix(guild.id));
-    
-    if (impl.applyMessageContentModifiers(cont).startsWith(prefix)) {
-        return cont.slice(prefix.length);
-    }
-
-    const regex = new RegExp(`^<@!?${msg.client.user!.id}>\\s*(.+?)\\s*$`, "i");
-    const match = cont.match(regex);
-    if (!match) return undefined;
-
-    return match[1];
-}
-
 export function getPrefix(guildID: Snowflake) {
     const prefixes = loadPrefs<PrefixData>(PREFIX_PREFS_FILE, true);
     const prefixData = prefixes[guildID] ?? { prefix: impl.defaultPrefix };

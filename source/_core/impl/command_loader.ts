@@ -7,6 +7,7 @@ import { CommandCallData, Command, CoreData, CommandPermission } from "../types"
 import { Message, DMChannel, MessageEmbed, DiscordAPIError, User } from "discord.js";
 import path from "path";
 import fs from "fs";
+import { isInsideLimit } from "./limit_utils";
 
 const DEAULT_NOT_PERMITTED_ERROR_MESSAGE: Required<CommandPermission>["errorMessage"]
     = ({ cmdName }) => `You do not have permission to use the command \`${cmdName}\`.`;
@@ -27,9 +28,9 @@ export async function createCmdsListeners(coreData: CoreData, cmdDirs: string[])
         if (!isMessageChannel(msg.channel)) return;
         if (msg.channel instanceof DMChannel) return;
 
+        let cmd: Command | undefined = undefined;
+        let cmdCall: CommandCallData | undefined = undefined;
         if (isOnlyBotPing(msg)) {
-            let cmd: Command | undefined = undefined;
-            let cmdCall: CommandCallData | undefined = undefined;
             
             for (const cmdName of defaultCmdNames) {
                 const command = getCmd(cmdName, false);
@@ -46,17 +47,16 @@ export async function createCmdsListeners(coreData: CoreData, cmdDirs: string[])
                     break;
                 }
             }
-
-            if (cmd === undefined) return;
-            executeCommand(msg, cmd, cmdCall!);
         } else {
-            const cmdCall = getCmdCallData(coreData, msg);
+            cmdCall = getCmdCallData(coreData, msg);
             if (cmdCall === undefined) return;
-            const cmd = getCmd(cmdCall.cmdName, false);
-            if (cmd === undefined) return;
-
-            executeCommand(msg, cmd, cmdCall);
+            cmd = getCmd(cmdCall.cmdName, false);
+            
         }
+
+        if (cmd === undefined) return;
+        if (!isInsideLimit({ msg: cmdCall!.msg, cmd: cmd })) return;
+        executeCommand(msg, cmd, cmdCall!);
     });
 
     console.log("-- all message listeners set up --");

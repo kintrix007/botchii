@@ -51,4 +51,4 @@ You can run `npm run setup` to have a simple CLI help you make the needed file(s
 - [ ] **Change announce to use the `from` an `to` aliases for announcing, intead of the current custom behavior**
 - [ ] **Add an option so that the reply message automatically becomes first arguement**
 - [x] **Make channel aliases a core part of the bot**
-- [ ] **Add `limitCommand`, which limits the usages of certain commands to given channels ONLY**
+- [x] **Add `limitCommand`, which limits the usages of certain commands to given channels ONLY**

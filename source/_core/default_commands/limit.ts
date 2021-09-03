@@ -31,7 +31,7 @@ async function cmdLimit({ msg, args }: CommandCallData) {
     }
 
     if (channelIDsOrAliases.length === 0) {
-        removeCommandLimit(guild, command.name);
+        removeCommandLimit(guild, command);
         return createEmbed("ok", `Successfully removed limit from command \`${command.name}\`!`);
     }
 
@@ -43,14 +43,14 @@ async function cmdLimit({ msg, args }: CommandCallData) {
         return;
     }
 
-    createCommandLimit(guild, commandStr, channels);
+    createCommandLimit(guild, command, channels);
     return createEmbed("ok", `Successfully limited command \`${command.name}\` to be only used in: ${channels.map(x => "<#"+x.id+">").join(", ")}`);
 }
 
 function sendLimits(guild: Guild) {
     const limits = getCommandLimits(guild);
 
-    if (limits === undefined) {
+    if (limits === undefined || Object.values(limits).length === 0) {
         return createEmbed("neutral", "No command limits set...");
     }
 
