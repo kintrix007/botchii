@@ -83,13 +83,23 @@ function querySpecificHelpSheet({ msg }: CommandCallData, targetCommand: string)
         ? "**eg:  " + command.examples.map(ex => "`" + [commandName, ...ex].join(" ") + "`").join(", ") + "**"
         : "");
 
-        const hasPermissions = command.permissions !== undefined;
-        const permDescriptions = command.permissions?.map(x => x.description).filter(notOf(undefined));
-        const hasPermissionWihtoutDescription = permDescriptions?.some(x => x === undefined) ?? false;
-        const permDescStr = permDescriptions?.map(x => `- ${x}`).join("\n")
-            + (hasPermissionWihtoutDescription ? "\n- *And others, without a description...*" : "");
+    const permString = (() => {
+        if (command.permissions === undefined) return undefined;
+        const possiblePermDescriptions = command.permissions?.map(x => x.description?.(command));
+        const hasPermissionWihtoutDescription = possiblePermDescriptions.some(x => x === undefined);
+        const permDescriptions = possiblePermDescriptions.filter(notOf(undefined));
+        
+        let permDescStr = permDescriptions.map(x => `- ${x}`).join("\n");
+        if (hasPermissionWihtoutDescription) {
+            permDescStr += "\n- *And others, unspecified...*";
+        }
+        return permDescStr;
+    })();
 
-    const reply = description + (hasPermissions ? "\n\n**Permissions:**\n" + permDescStr : "") + "\n\n" + examples;
+    const reply =
+        description
+        + (permString !== undefined ? "\n\n**Permissions:**\n" + permString : "")
+        + "\n\n" + examples;
 
     return createEmbed("neutral", {
         title:  usage,

@@ -27,7 +27,7 @@ export class Impl {
                 if (typeof this._configObj.botOwnerID !== "string") errors.push(new Error(`field 'botOwnerID' is not a string in '${this.CONFIG_FILE}'`));
             }
         } catch (err) {
-            errors.push(err);
+            if (err instanceof Error) errors.push(err);
         }
 
         errors.forEach(error => { throw error });

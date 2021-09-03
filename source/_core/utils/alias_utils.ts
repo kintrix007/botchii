@@ -1,6 +1,6 @@
-import { Guild, Snowflake, TextChannel, NewsChannel, DMChannel } from "discord.js";
-import { AliasData, ALIAS_PREFS_FILE } from "../../bot_commands/command_prefs";
 import { loadPrefs, notOf, updatePrefs } from "../bot_core";
+import { Guild, Snowflake, TextChannel, NewsChannel, DMChannel } from "discord.js";
+import { AliasData, ALIAS_PREFS_FILE } from "../default_commands/command_prefs";
 
 function parseChannel(guild: Guild, channelIDOrAlias: string): Snowflake[] | undefined {
     const channelRegex = /^(?:(\d+)|<#(\d+)>)$/i;
@@ -24,8 +24,7 @@ export function createChannelAlias(
     const channels = (channelOrChannels instanceof Array ? channelOrChannels : [channelOrChannels]);
     const aliasPrefs = loadPrefs<AliasData>(ALIAS_PREFS_FILE, true);
     
-    const aliasData = aliasPrefs[guild.id];
-    if (aliasData === undefined) return;
+    let aliasData = aliasPrefs[guild.id] ?? { guildName: guild.name, aliases: {} }; 
     aliasData.aliases[alias] = channels.map(x => x.id);
     
     updatePrefs(ALIAS_PREFS_FILE, { [guild.id]: aliasData });
@@ -44,4 +43,10 @@ export function removeChannelAlias(guild: Guild, alias: string) {
 function getIDsFromAlias(guild: Guild, alias: string): string[] | undefined {
     const aliasData = loadPrefs<AliasData>(ALIAS_PREFS_FILE);
     return aliasData[guild.id]?.aliases?.[alias];
+}
+
+export function getChannelAliases(guild: Guild) {
+    const limitPrefs = loadPrefs<AliasData>(ALIAS_PREFS_FILE, true);
+    const limitData = limitPrefs[guild.id];
+    return limitData?.aliases;
 }

@@ -3,12 +3,13 @@ import { isOnlyBotPing, isCommand, impl } from "../utils/bot_utils";
 import { getCmd, getCmdCallData } from "../commands";
 import { isMessageChannel, sendEmbed, getUserString, embedToString } from "../utils/dc_utils";
 import { notOf } from "../utils/general_utils";
-import { CommandCallData, Command, CoreData } from "../types";
+import { CommandCallData, Command, CoreData, CommandPermission } from "../types";
 import { Message, DMChannel, MessageEmbed, DiscordAPIError, User } from "discord.js";
 import path from "path";
 import fs from "fs";
 
-const DEAULT_NOT_PERMITTED_ERROR_MESSAGE = ({ cmdName }: CommandCallData) => `You do not have permission to use the command \`${cmdName}\`.`;
+const DEAULT_NOT_PERMITTED_ERROR_MESSAGE: Required<CommandPermission>["errorMessage"]
+    = ({ cmdName }) => `You do not have permission to use the command \`${cmdName}\`.`;
 
 export let cmds: Command[] = [];
 export let defaultCmdNames: string[] = [];

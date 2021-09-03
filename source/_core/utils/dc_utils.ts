@@ -35,6 +35,13 @@ export async function fetchChannels(client: Client, channelIDs: Snowflake[]): Pr
     return channels;
 }
 
+export async function fetchTextChannels(client: Client, channelIDs: string[]) {
+    const channels = await fetchChannels(client, channelIDs);
+    return channels.map(x => x instanceof CategoryChannel ? Array.from(x.children.values()) : [x])
+    .flat()
+    .filter(isMessageChannel);
+}
+
 /**
  * @param msg Message to add the reactions to
  * @param reactions If it's an array, then adds the reactions while keeping the order,

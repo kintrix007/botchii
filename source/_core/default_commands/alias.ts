@@ -1,7 +1,5 @@
-import { sendEmbed, loadPrefs, CommandCallData, adminPermission, Command, createChannelAlias, parseChannels, removeChannelAlias } from "../bot_core";
-import { AliasData, ALIAS_PREFS_FILE } from "../../bot_commands/command_prefs";
-import { Message } from "discord.js";
-import { fetchTextChannels } from "../../utilz";
+import { CommandCallData, adminPermission, Command, createChannelAlias, parseChannels, removeChannelAlias, fetchTextChannels, createEmbed, getChannelAliases } from "../bot_core";
+import { Guild } from "discord.js";
 
 const description = `Allows you to create aliases to channels.
 An alias can refer to one or more channels. e.g. \`fun\` could refer to \`#general\` and \`#memes\`.
@@ -19,49 +17,43 @@ export default <Command>{
 };
 
 async function cmdAlias({ msg, args }: CommandCallData) {
+    const guild = msg.guild!;
     const [alias, ...channelIDsOrAliases] = args;
 
     if (alias === undefined) {
-        sendAliases(msg);
-        return;
+        return sendAliases(guild);
     }
 
     if (channelIDsOrAliases.length === 0) {
-        removeAlias(msg, alias);
-        return;
+        removeChannelAlias(guild, alias);
+        return createEmbed("ok", `Successfully removed channel alias \`${alias}\`.`);
     }
 
     // removing duplicates by converting to set
-    const channelIDs = Array.from(new Set(parseChannels(msg.guild!, channelIDsOrAliases)));
+    const channelIDs = Array.from(new Set(parseChannels(guild, channelIDsOrAliases)));
     const channels = await fetchTextChannels(msg.client, channelIDs);
 
     if (channels.length === 0) {
-        sendEmbed(msg, "error", "No valid channels given.");
-        return;
+        return createEmbed("error", "No valid channels given.");
     }
 
-    createChannelAlias(msg.guild!, alias, channels);
-    sendEmbed(msg, "ok", `Successfully added channel alias \`${alias}\` for ${channels.join(", ")}`);
+    createChannelAlias(guild, alias, channels);
+    return createEmbed("ok", `Successfully added channel alias \`${alias}\` for ${channels.join(", ")}`);
 }
 
-function removeAlias(msg: Message, alias: string) {
-    removeChannelAlias(msg.guild!, alias);
-    sendEmbed(msg, "ok", `Successfully removed channel alias \`${alias}\`.`);
-}
+function sendAliases(guild: Guild) {
+    const aliases = getChannelAliases(guild);
 
-function sendAliases(msg: Message) {
-    const aliasData = loadPrefs<AliasData>(ALIAS_PREFS_FILE)[msg.guild!.id];
-
-    if (aliasData === undefined || Object.values(aliasData.aliases).length === 0) {
-        sendEmbed(msg, "neutral", "No aliases set...");
-        return;
+    if (aliases === undefined || Object.values(aliases).length === 0) {
+        return createEmbed("neutral", "No aliases set...");
     }
 
-    sendEmbed(msg, "neutral", {
-        title: `${aliasData.guildName} aliases:`,
-        desc: Object.entries(aliasData.aliases)
-            .map(([alias, channelIDs]) =>
-                `\`${alias}\` -> ${channelIDs?.map(x => "<#"+x+">")?.join(", ")}`)
-            .join("\n")
+    const aliasesStr = Object.entries(aliases)
+    .map(([alias, channelIDs]) => `\`${alias}\` -> ${channelIDs.map(x => "<#"+x+">").join(", ")}`)
+    .join("\n");
+
+    return createEmbed("neutral", {
+        title: `Channel aliases:`,
+        desc: aliasesStr 
     });
 }

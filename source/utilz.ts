@@ -21,14 +21,6 @@ export function convertToCountedEmoji(reaction: MessageReaction) {
 }
 
 
-export async function fetchTextChannels(client: Client, channelIDs: string[]) {
-    const channels = await fetchChannels(client, channelIDs);
-    return channels.map(x => x instanceof CategoryChannel ? Array.from(x.children.values()) : [x])
-    .flat()
-    .filter(isMessageChannel);
-}
-
-
 export async function convertToUserReactions(reactions: MessageReaction[], fromCache = false) {
     if (!fromCache) await Promise.all(reactions.map(x => x.users.fetch()));
 

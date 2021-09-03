@@ -11,12 +11,6 @@ export interface AnnounceData {
     };
 }
 
-export interface AliasData {
-    aliases: {
-        [alias: string]: Snowflake[];
-    }
-}
-
 export interface ChannelData {
     fromChannels?: string[];
     toChannels?:   string[];
@@ -33,7 +27,6 @@ export interface RRData {
 }
 
 export const ANNOUNCE_PREFS_FILE = "announce_messages";
-export const ALIAS_PREFS_FILE    = "aliases";
 export const RR_PREFS_FILE       = "reaction_roles";
 export const CHANNEL_PREFS_FILE  = "channel";
 
