@@ -8,6 +8,7 @@ export * from "./types";
 export * from "./utils/bot_utils";
 export * from "./utils/general_utils";
 export * from "./utils/dc_utils";
+export * from "./utils/alias_utils";
 export { getCmd, getCmdCallData, getCmdList, getPermittedCmdList } from "./commands";
 export { addListener, deleteListener } from "./listeners"
 

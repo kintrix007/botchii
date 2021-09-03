@@ -1,7 +1,6 @@
-import { getReplyMessage, getMessageLink, sendEmbed, loadPrefs, getPrefix, quoteMessage, fetchMessageLink, addReactions, updatePrefs, parseMessageLink, Command, CommandCallData, Prefs, adminPermission, replyTo } from "../../_core/bot_core";
+import { getReplyMessage, getMessageLink, sendEmbed, loadPrefs, getPrefix, quoteMessage, fetchMessageLink, addReactions, updatePrefs, parseMessageLink, Command, CommandCallData, Prefs, adminPermission, replyTo, parseChannels, isMessageChannel } from "../../_core/bot_core";
 import { DMChannel, Message, NewsChannel, TextChannel } from "discord.js";
 import { AnnounceData, ANNOUNCE_PREFS_FILE, ChannelData, CHANNEL_PREFS_FILE, EXPIRED_MESSAGE_TEXT } from "../command_prefs";
-import * as Utilz from "../../utilz";
 import { setup, acceptEmoji, rejectEmoji, scoreToForward } from "./forward_message"
 import { getContentAndShouldForward } from "./announce_tracker";
 
@@ -47,7 +46,7 @@ async function cmdAnnounce({ msg, args }: CommandCallData) {
         return;
     }
 
-    const customTargetChannels = Utilz.parseChannels(msg.guild!, targetChannelAliases);
+    const customTargetChannels = parseChannels(msg.guild!, targetChannelAliases);
     const targetChannelIDs = (customTargetChannels.length === 0
         ? loadPrefs<ChannelData>(CHANNEL_PREFS_FILE, true)[msg.guild!.id]?.toChannels
         : customTargetChannels);
@@ -101,7 +100,7 @@ async function getMessage(channel: TextChannel | NewsChannel | DMChannel, msgLin
             return await channel.messages.fetch(messageID);
         } else {
             const ch = await channel.client.channels.fetch(channelID);
-            if (!Utilz.isTextChannel(ch)) return undefined;
+            if (!isMessageChannel(ch)) return undefined;
             return await ch.messages.fetch(messageID);
         }
     } catch (err) {

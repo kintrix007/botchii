@@ -1,5 +1,5 @@
 import * as Utilz from "../../utilz";
-import { loadPrefs, cacheMessages, fetchMessageLink, updatePrefs, sendEmbed, getPrefix, fetchChannels, getMessageLink, CoreData, Prefs, notOf, addListener } from "../../_core/bot_core";
+import { loadPrefs, cacheMessages, fetchMessageLink, updatePrefs, sendEmbed, getPrefix, fetchChannels, getMessageLink, CoreData, Prefs, notOf, addListener, isMessageChannel } from "../../_core/bot_core";
 import { AnnounceData, ANNOUNCE_PREFS_FILE, ChannelData, CHANNEL_PREFS_FILE, EXPIRED_MESSAGE_TEXT } from "../command_prefs";
 import { Client, DMChannel, Guild, Message, MessageReaction, NewsChannel, PartialUser, TextChannel, User } from "discord.js";
 import { getContentAndShouldForward } from "./announce_tracker";
@@ -95,7 +95,7 @@ function trackReactions(client: Client, isAdd: boolean) {
             
             if (announceMsg !== undefined) {
                 const targetChannels = await fetchChannels(message.client, targetChannelIDs);
-                const targetTextChannels = targetChannels.filter(Utilz.isTextChannel);
+                const targetTextChannels = targetChannels.filter(isMessageChannel);
                 await forwardMessage(announceMsg, targetTextChannels);
             }
         }

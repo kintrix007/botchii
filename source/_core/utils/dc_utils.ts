@@ -29,8 +29,8 @@ export async function cacheMessages(client: Client, msgLinksOrData: string[] | {
     return messages;
 }
 
-export async function fetchChannels(client: Client, channelIDs: Snowflake[] | Set<Snowflake>): Promise<Channel[]> {
-    const channelPromises = [...channelIDs].map(x => client.channels.fetch(x));
+export async function fetchChannels(client: Client, channelIDs: Snowflake[]): Promise<Channel[]> {
+    const channelPromises = channelIDs.map(x => client.channels.fetch(x));
     const [channels] = await awaitAll(channelPromises)
     return channels;
 }

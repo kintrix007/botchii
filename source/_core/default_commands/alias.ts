@@ -1,7 +1,7 @@
-import { sendEmbed, loadPrefs, CommandCallData, adminPermission, Command } from "../../_core/bot_core";
-import * as Utilz from "../../utilz";
-import { AliasData, ALIAS_PREFS_FILE } from "../command_prefs";
+import { sendEmbed, loadPrefs, CommandCallData, adminPermission, Command, createChannelAlias, parseChannels, removeChannelAlias } from "../bot_core";
+import { AliasData, ALIAS_PREFS_FILE } from "../../bot_commands/command_prefs";
 import { Message } from "discord.js";
+import { fetchTextChannels } from "../../utilz";
 
 const description = `Allows you to create aliases to channels.
 An alias can refer to one or more channels. e.g. \`fun\` could refer to \`#general\` and \`#memes\`.
@@ -32,20 +32,20 @@ async function cmdAlias({ msg, args }: CommandCallData) {
     }
 
     // removing duplicates by converting to set
-    const channelIDs = new Set(Utilz.parseChannels(msg.guild!, channelIDsOrAliases));
-    const channels = await Utilz.fetchTextChannels(msg.client, channelIDs);
+    const channelIDs = Array.from(new Set(parseChannels(msg.guild!, channelIDsOrAliases)));
+    const channels = await fetchTextChannels(msg.client, channelIDs);
 
     if (channels.length === 0) {
         sendEmbed(msg, "error", "No valid channels given.");
         return;
     }
 
-    Utilz.createChannelAlias(msg.guild!, alias, channels);
+    createChannelAlias(msg.guild!, alias, channels);
     sendEmbed(msg, "ok", `Successfully added channel alias \`${alias}\` for ${channels.join(", ")}`);
 }
 
 function removeAlias(msg: Message, alias: string) {
-    Utilz.removeChannelAlias(msg.guild!, alias);
+    removeChannelAlias(msg.guild!, alias);
     sendEmbed(msg, "ok", `Successfully removed channel alias \`${alias}\`.`);
 }
 
