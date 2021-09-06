@@ -1,5 +1,4 @@
-import { createEmbed } from "../dc_utils";
-import { adminPermission, sendEmbed, updatePrefs, getPrefix, Command, CommandCallData, Prefs } from "../bot_core";
+import { adminPermission, sendEmbed, updatePrefs, getPrefix, Command, CommandCallData, Prefs, createEmbed } from "../bot_core";
 import { PREFIX_PREFS_FILE, PrefixData } from "./command_prefs"
 import { Message } from "discord.js";
 
@@ -25,8 +24,7 @@ function cmdPrefix({ msg, args }: CommandCallData) {
     if (newPrefix === undefined) return prefixGetter(msg);
 
     if (newPrefix.length > MAX_PREFIX_LENGTH) {
-        sendEmbed(msg, "error", `The prefix must not be longer than \`${MAX_PREFIX_LENGTH}\`! \`"${newPrefix}"\`(${newPrefix.length})`);
-        return;
+        return createEmbed("error", `The prefix must not be longer than \`${MAX_PREFIX_LENGTH}\`! \`"${newPrefix}"\`(${newPrefix.length})`);
     }
 
     const prefixData: Prefs<PrefixData> = {

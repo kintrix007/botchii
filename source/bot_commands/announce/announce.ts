@@ -1,8 +1,8 @@
-import { getReplyMessage, getMessageLink, sendEmbed, loadPrefs, getPrefix, quoteMessage, fetchMessageLink, addReactions, updatePrefs, parseMessageLink, Command, CommandCallData, Prefs, adminPermission } from "../../_core/bot_core";
-import { DMChannel, NewsChannel, TextChannel } from "discord.js";
+import { getReplyMessage, getMessageLink, sendEmbed, loadPrefs, getPrefix, quoteMessage, fetchMessageLink, addReactions, updatePrefs, parseMessageLink, Command, CommandCallData, Prefs, adminPermission, replyTo, parseChannels, isMessageChannel } from "../../_core/bot_core";
+import { DMChannel, Message, NewsChannel, TextChannel } from "discord.js";
 import { AnnounceData, ANNOUNCE_PREFS_FILE, ChannelData, CHANNEL_PREFS_FILE, EXPIRED_MESSAGE_TEXT } from "../command_prefs";
-import * as Utilz from "../../utilz";
 import { setup, acceptEmoji, rejectEmoji, scoreToForward } from "./forward_message"
+import { getContentAndShouldForward } from "./announce_tracker";
 
 const description = `Creates an announcement poll for a given message. If accepted it forwards the message to all of the target channels.
 You can specify where to announce the message, which can be a channel alias.
@@ -46,7 +46,7 @@ async function cmdAnnounce({ msg, args }: CommandCallData) {
         return;
     }
 
-    const customTargetChannels = Utilz.parseChannels(msg.guild!, targetChannelAliases);
+    const customTargetChannels = parseChannels(msg.guild!, targetChannelAliases);
     const targetChannelIDs = (customTargetChannels.length === 0
         ? loadPrefs<ChannelData>(CHANNEL_PREFS_FILE, true)[msg.guild!.id]?.toChannels
         : customTargetChannels);
@@ -59,10 +59,7 @@ async function cmdAnnounce({ msg, args }: CommandCallData) {
         return;
     }
 
-    const content = getMessageLink(announceMsg)
-    + (announceMsg.content ? "\n" + quoteMessage(announceMsg.content, 75) : "") + "\n"
-    + (targetChannelIDs.length ? "\n**to:** " + targetChannelIDs.map(x => "<#"+x+">").join(", ") : "")
-    + `\n**${scoreToForward} to go**`;
+    const { content } = getContentAndShouldForward({}, announceMsg, targetChannelIDs);
 
     const announcePrefs = loadPrefs<AnnounceData>(ANNOUNCE_PREFS_FILE, true);
     const previousAnnounceMsgData = announcePrefs[msg.guild!.id]?.announceMessages[announceMsgLink];
@@ -103,7 +100,7 @@ async function getMessage(channel: TextChannel | NewsChannel | DMChannel, msgLin
             return await channel.messages.fetch(messageID);
         } else {
             const ch = await channel.client.channels.fetch(channelID);
-            if (!Utilz.isTextChannel(ch)) return undefined;
+            if (!isMessageChannel(ch)) return undefined;
             return await ch.messages.fetch(messageID);
         }
     } catch (err) {

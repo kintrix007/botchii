@@ -1,6 +1,5 @@
-import { createEmbed } from "../dc_utils";
-import { notOf } from "../general_utils";
-import { getPrefix, capitalize, Command, CommandCallData } from "../bot_core";
+import { notOf } from "../utils/general_utils";
+import { getPrefix, capitalize, Command, CommandCallData, createEmbed } from "../bot_core";
 import { getCmd, getPermittedCmdList } from "../commands";
 
 export default <Command>{
@@ -27,7 +26,7 @@ function cmdHelp(cmdCall: CommandCallData) {
 function queryGeneralHelpSheet(cmdCall: CommandCallData) {
     const { msg } = cmdCall;
     const currentPrefix = getPrefix(msg.guild!.id);
-    const cmdList = getPermittedCmdList(cmdCall, true);
+    const cmdList = getPermittedCmdList(cmdCall);
 
     // vv Fuck TypeScript, why this no work??? vv
     //* type ExtendedGroup = CommandGroup | "uncategorized";
@@ -59,7 +58,7 @@ function queryGeneralHelpSheet(cmdCall: CommandCallData) {
         ).join("\n");
         return `**${capitalize(group)}**:\n` + "```\n" + commandsUsage + "\n```";
     }).join("\n");
-    
+
     return createEmbed("neutral", {
         title:  "__General Helpsheet__:",
         desc:   reply,
@@ -84,13 +83,23 @@ function querySpecificHelpSheet({ msg }: CommandCallData, targetCommand: string)
         ? "**eg:  " + command.examples.map(ex => "`" + [commandName, ...ex].join(" ") + "`").join(", ") + "**"
         : "");
 
-        const hasPermissions = command.permissions !== undefined;
-        const permDescriptions = command.permissions?.map(x => x.description).filter(notOf(undefined));
-        const hasPermissionWihtoutDescription = permDescriptions?.some(x => x === undefined) ?? false;
-        const permDescStr = permDescriptions?.map(x => `- ${x}`).join("\n")
-            + (hasPermissionWihtoutDescription ? "\n- *And others, without a description...*" : "");
+    const permString = (() => {
+        if (command.permissions === undefined) return undefined;
+        const possiblePermDescriptions = command.permissions?.map(x => x.description?.(command));
+        const hasPermissionWihtoutDescription = possiblePermDescriptions.some(x => x === undefined);
+        const permDescriptions = possiblePermDescriptions.filter(notOf(undefined));
+        
+        let permDescStr = permDescriptions.map(x => `- ${x}`).join("\n");
+        if (hasPermissionWihtoutDescription) {
+            permDescStr += "\n- *And others, unspecified...*";
+        }
+        return permDescStr;
+    })();
 
-    const reply = description + (hasPermissions ? "\n\n**Permissions:**\n" + permDescStr : "") + "\n\n" + examples;
+    const reply =
+        description
+        + (permString !== undefined ? "\n\n**Permissions:**\n" + permString : "")
+        + "\n\n" + examples;
 
     return createEmbed("neutral", {
         title:  usage,

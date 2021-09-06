@@ -1,9 +1,8 @@
-import { sendEmbed, loadPrefs, updatePrefs, CommandCallData, Prefs } from "../../_core/bot_core";
-import * as Utilz from "../../utilz";
+import { sendEmbed, loadPrefs, updatePrefs, CommandCallData, Prefs, parseChannels, fetchTextChannels } from "../../_core/bot_core";
 import { ChannelData, CHANNEL_PREFS_FILE } from "../command_prefs";
 
 export default async function cmdSetChannel({ msg, args }: CommandCallData, mode: "base" | "target") {
-    const channels = await Utilz.fetchTextChannels(msg.client, Utilz.parseChannels(msg.guild!, args));
+    const channels = await fetchTextChannels(msg.client, parseChannels(msg.guild!, args));
 
     if (channels.length === 0) {
         sendEmbed(msg, "error", "No valid channels given.");

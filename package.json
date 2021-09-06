@@ -6,6 +6,7 @@
   "scripts": {
     "start": "npm run build && echo \"-- starting bot... --\" && node .",
     "start:full": "npm run setup -- -y && npm ci && npm start",
+    "start:ts": "ts-node source/",
     "build": "echo \"-- compiling... --\" && tsc && echo \"-- finished compilation --\"",
     "test": "mocha --extension spec.ts --require ts-node/register --recursive .tests/",
     "setup": "node setup.js"
@@ -21,8 +22,7 @@
   },
   "homepage": "https://github.com/kintrix007/botchii#readme",
   "dependencies": {
-    "discord.js": "^12.5.2",
-    "emoji-regex": "^9.2.2"
+    "discord.js": "^12.5.2"
   },
   "devDependencies": {
     "@types/chai": "^4.2.18",
@@ -33,5 +33,12 @@
     "mocha": "^9.0.1",
     "ts-node": "^10.0.0",
     "typescript": "^4.3.2"
-  }
+  },
+  "files": [
+    "build",
+    "images",
+    "package.json",
+    "package-lock.json",
+    "setup.js"
+  ]
 }
