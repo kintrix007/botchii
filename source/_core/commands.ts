@@ -8,7 +8,7 @@ import { getCommandLimits, isInsideLimit } from "./impl/limit_utils";
 // "public API"
 
 export function getCmd(cmdName: string, onlyCommandsWithUsage: boolean) {
-    return getCmdList(onlyCommandsWithUsage).find(cmd => cmd.name === cmdName || cmd.aliases?.includes(cmdName));
+    return getCmdList(onlyCommandsWithUsage).find(cmd => isCalledBy(cmd, cmdName));
 }
 
 export function getCmdCallData(coreData: CoreData, msg: Message): CommandCallData | undefined {
@@ -41,4 +41,8 @@ export function getCmdList(onlyCommandsWithUsage = true) {
 export function getPermittedCmdList(cmdCall: CommandCallData): Command[] {
     const hasPerms = (x: Command) => !x.permissions?.some(({ test }) => !test(cmdCall));
     return getCmdList().filter(cmd => hasPerms(cmd) && isInsideLimit({ msg: cmdCall.msg, cmd: cmd }));
+}
+
+export function isCalledBy(cmd: Command, cmdName: string): boolean {
+    return cmd.name == cmdName || (cmd.aliases?.includes(cmdName) ?? false);
 }

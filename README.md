@@ -45,8 +45,7 @@ You can run `npm run setup` to have a simple CLI help you make the needed file(s
 - [x] **Remove `removeAccents` from core, and add a way to give content modifier functions**
 - [x] **Add `impl` field to `BotUtils` with the functions that should not be acessed by the user**
 - [ ] **Make `bot_types.ts` optional or replace it with something nicer**
-- [x] **Add a listeners module, which creates discord.js listeners and has an API add listeners and modify their callbacks**
-- [ ] ~~Using the listeners module will automatically ignore if a bot triggered it~~ - not happening
+- [x] **Add a listeners module, which creates discord.js listeners and has an API to add listeners and modify their callbacks**
 - [x] **Add configurable default command when pinging the bot, with for optional use**
 - [ ] **Change announce to use the `from` an `to` aliases for announcing, intead of the current custom behavior**
 - [ ] **Add an option so that the reply message automatically becomes first arguement**
