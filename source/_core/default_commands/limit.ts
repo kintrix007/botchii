@@ -3,7 +3,8 @@ import { createCommandLimit, getCommandLimits, removeCommandLimit } from "../imp
 import { getCmd } from "../commands";
 import { Guild } from "discord.js";
 
-const description = ``;
+const description = `Limits the usage of a command to given channels.
+If the command is used outside of permitted channels, the bot will not react at all.`;
 
 export default <Command>{
     call:        cmdLimit,
@@ -13,7 +14,7 @@ export default <Command>{
     aliases:     [ "limit", "limits" ],
     usage:       "limitCommand [<command> <channels...>]",
     description: description,
-    examples:    [ [], ["help", "#bot-stuff", "123456789012345678"] ],
+    examples:    [ [], ["help", "#bots", "123456789012345678"] ],
 }
 
 async function cmdLimit({ msg, args }: CommandCallData) {

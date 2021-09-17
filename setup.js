@@ -29,7 +29,7 @@ promptCreateConfig();
 function promptDeleteConfig(callback = undefined) {
     if (shouldAutoAccept) process.exit(0);
     rl.question(`File '${CONFIG_FILE}' already exists. Do you want to overwrite it? (y/N) `, answer => {
-        rl.pause();
+        rl.pause();         // Do not 'close' to allow for other questions as well.
         if (![ "y", "yes" ].includes(answer.toLowerCase())) {
             process.exit(0);
         }
