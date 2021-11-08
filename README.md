@@ -51,3 +51,4 @@ You can run `npm run setup` to have a simple CLI help you make the needed file(s
 - [ ] **Add an option so that the reply message automatically becomes first arguement**
 - [x] **Make channel aliases a core part of the bot**
 - [x] **Add `limitCommand`, which limits the usages of certain commands to given channels ONLY**
+- [ ] **Fix bug: limiting the usage of `limit` command to a channel, then deleting that channel**

@@ -25,7 +25,4 @@ prefs/
 # Build directory
 build/
 
-# Directories containing unnecessary stuff
-examples/
-
 crash_logs/
