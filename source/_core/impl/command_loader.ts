@@ -20,7 +20,7 @@ export function addDefaultCommands(cmdNames: string[]) {
 }
 
 export async function createCmdsListeners(coreData: CoreData, cmdDirs: string[]) {
-    await Promise.allSettled(cmdDirs.map(loadCmds));
+    await Promise.allSettled(cmdDirs.map(loadCmds)).catch(console.error);
     await setupCmds(coreData);
 
     addListener(coreData.client, "message", async (msg: Message) => {
@@ -114,7 +114,8 @@ async function loadCmds(cmdDir: string) {
         return typeof obj === "object" && obj != null && typeof obj.default === "object" && obj.default != null;
     }
 
-    const _imports = await Promise.allSettled(importPromieses);
+    const _imports = await Promise.allSettled(importPromieses).catch(console.error);
+    if (_imports == null) return;
     const imported = _imports.map(x => x.status === "fulfilled" ? x.value : undefined).filter(notOf(undefined));
     const falied = _imports.map(x => x.status === "rejected" ? x.reason : undefined).filter(notOf(undefined));
     if (falied.length !== 0) console.error(falied);
