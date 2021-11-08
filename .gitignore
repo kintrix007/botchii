@@ -29,3 +29,5 @@ build/
 examples/
 
 crash_logs/
+
+token.token
