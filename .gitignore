@@ -30,4 +30,5 @@ examples/
 
 crash_logs/
 
+# Ignore the token
 token.token
