@@ -1,18 +1,21 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { CacheType, CommandInteraction } from "discord.js";
+import { getCommandNames } from "../core/commandLoader";
 import { Command } from "../core/types";
 
-export default <Command>{
+const command: Command = {
     slashCommand: new SlashCommandBuilder()
         .setName("help")
-        .setDescription("Shows the help sheet.")
-        .addStringOption(option =>
-            option.setName("command")
-                .setDescription("Show the help sheet of this command")
-                .addChoice("Help", "help")
-        ),
+        .setDescription("Shows the help sheet."),
     execute: ({ inter }) => {
-        // inter.reply("Hello");
         return { content: "Hello", ephemeral: true }
     },
+    setup: async client => {
+        command.slashCommand.addStringOption(option =>
+            option.setName("command")
+                .setDescription("Show the help sheet of this command")
+                .addChoices(getCommandNames().map(x => [x, x]))
+        );
+    },
 };
+
+export default command;
