@@ -1,28 +1,11 @@
-# Logs
-logs
-*.log
-
 # Dependency directories
 node_modules/
-jspm_packages/
 
 # TypeScript cache
 *.tsbuildinfo
 
-# Output of 'npm pack'
-*.tgz
-
-# dotenv environment variables file
-.env
-config.json
-
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-
 # Preferences directory
 prefs/
 
-# Build directory
-build/
-
-crash_logs/
+# Private bot data
+config.json
