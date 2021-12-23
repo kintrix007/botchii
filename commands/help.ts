@@ -6,9 +6,6 @@ const command: Command = {
     slashCommand: new SlashCommandBuilder()
         .setName("help")
         .setDescription("Shows the help sheet."),
-    execute: ({ inter }) => {
-        return { content: "Hello", ephemeral: true }
-    },
     setup: async client => {
         command.slashCommand.addStringOption(option =>
             option.setName("command")
@@ -16,6 +13,20 @@ const command: Command = {
                 .addChoices(getCommandNames().map(x => [x, x]))
         );
     },
+    examples: [ "", "help" ],
+    execute: ({ inter }) => {
+        const commandName = inter.options.getString("command");
+        if (commandName === null) general();
+        else                      specific(commandName);
+    },
 };
 
 export default command;
+
+function general() {
+    //TODO implement
+}
+
+function specific(commandName: string) {
+    //TODO implement
+}

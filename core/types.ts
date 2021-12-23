@@ -7,9 +7,9 @@ import { CacheType, Client, CommandInteraction } from "discord.js";
 type PromiseOrNot<T> = Promise<T> | T;
 type InteractionReply = Parameters<CommandInteraction<CacheType>["reply"]>[0];
 
-//! Hacky
+//! Might break if Snowflake gets changed in the Discord API
 type Snowflake = number;
-export type MessageLink = `https://discord.com/channels/${Snowflake | "@me"}/${Snowflake}/${Snowflake}` | ``;
+export type MessageLink = `https://discord.com/channels/${Snowflake | "@me"}/${Snowflake}/${Snowflake}`;
 
 export interface CommandCall {
     client: Client<true>;
@@ -18,10 +18,11 @@ export interface CommandCall {
 
 export interface Command {
     slashCommand: SlashCommandBuilder;
-    execute(call: CommandCall): PromiseOrNot<InteractionReply | void>;
     setup?(client: Client<true>): Promise<void>;
+    group?: string;
     examples?: {
         command:      string;
         explanation?: string;
-    }[];
+    }[] | string[];
+    execute(call: CommandCall): PromiseOrNot<InteractionReply | void>;
 }

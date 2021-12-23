@@ -34,7 +34,6 @@ export async function loadCommands(client: Client<true>) {
 
     await registerSlashCommands(client);
     setUpListeners(client);
-    
 }
 
 export async function registerSlashCommands(client: Client<true>) {
