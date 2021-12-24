@@ -8,33 +8,47 @@ import { token } from "../config.json"
 import { REPLY_STATUS } from "./core";
 
 const COMMAND_DIR = path.join(__dirname, "..", "commands");
+const MAX_DESCRIPTION_LENGTH = 80;
 
 const rest = new REST().setToken(token);
 const allCommands: { [name: string]: Command } = {};
 
 let hasRequiredCommands = false;
 
+export async function loadCommands(client: Client<true>) {
+    const commandFiles = getCommandFiles(COMMAND_DIR);
+    requireCommands(commandFiles);
+
+    console.log("running setup for commands...");
+    const setupPromises = Object.values(allCommands).map(x => x.setup?.(client));
+    await Promise.allSettled(setupPromises);
+    console.log("successfully ran setup for commands");
+
+    Object.values(allCommands).forEach(x => {
+        if (x.slashCommand.description.length > MAX_DESCRIPTION_LENGTH) {
+            throw new Error(`The description of '${x.slashCommand.name}' should not be longer than ${MAX_DESCRIPTION_LENGTH}!\n'longDescription' should be used for that`);
+        }
+    });
+
+    await registerSlashCommands(client);
+    setUpListeners(client);
+}
+
+export function requireCommands(commandFiles: string[]) {
+    console.log("loading command modules...");
+    commandFiles.forEach(f => {
+        const command = require(f).default as Command;
+        allCommands[command.slashCommand.name] = command;
+    });
+    hasRequiredCommands = true;
+    console.log(`successfully loaded (${Object.keys(allCommands).length}) commands`);
+}
+
 export function getCommandFiles(dir: string): string[] {
     const items = fs.readdirSync(dir).map(f => path.join(dir, f));
     const dirs  = items.filter(p => fs.lstatSync(p).isDirectory());
     const files = items.filter(p => fs.lstatSync(p).isFile() && p.endsWith(".ts"));
     return [ ...files, ...dirs.map(d => getCommandFiles(d)).flat(1) ];
-}
-
-export async function loadCommands(client: Client<true>) {
-    const commandFiles = getCommandFiles(COMMAND_DIR);
-    
-    commandFiles.forEach(f => {
-        const command = require(f).default as Command;
-        // console.log(command);
-        allCommands[command.slashCommand.name] = command;
-    });
-    hasRequiredCommands = true;
-
-    for await (const _ of Object.values(allCommands).map(x => x.setup?.(client)));
-
-    await registerSlashCommands(client);
-    setUpListeners(client);
 }
 
 export async function registerSlashCommands(client: Client<true>) {
@@ -62,7 +76,7 @@ export function setUpListeners(client: Client<true>) {
         if (replyOptions === undefined) return;
         await inter.reply(replyOptions);
     });
-    console.log("Successfully set up slash command listeners");
+    console.log("successfully set up slash command listeners");
 }
 
 export function getCommandNames() {
