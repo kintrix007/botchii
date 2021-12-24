@@ -1,10 +1,9 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { CacheType, Client, CommandInteraction } from "discord.js";
+import { CacheType, Client, CommandInteraction, InteractionReplyOptions, MessageEmbed } from "discord.js";
 
 // Same as Parameters
 // type Arguements<T extends Function> = T extends (...args: infer A) => any ? A : never;
 
-type PromiseOrNot<T> = Promise<T> | T;
 type InteractionReply = Parameters<CommandInteraction<CacheType>["reply"]>[0];
 
 //! Might break if Snowflake gets changed in the Discord API
@@ -20,9 +19,10 @@ export interface Command {
     slashCommand: SlashCommandBuilder;
     setup?(client: Client<true>): Promise<void>;
     group?: string;
+    longDescription?: string;
     examples?: {
-        command:      string;
+        usage:        string;
         explanation?: string;
     }[] | string[];
-    execute(call: CommandCall): PromiseOrNot<InteractionReply | void>;
+    execute(call: CommandCall): Promise<void | string | [string, boolean?] | MessageEmbed | [MessageEmbed, boolean?] | InteractionReplyOptions>
 }

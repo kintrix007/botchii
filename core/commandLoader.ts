@@ -2,9 +2,10 @@ import fs from "fs";
 import path from "path";
 import { REST } from "@discordjs/rest";
 import { Routes } from "discord-api-types/v9";
-import { Client } from "discord.js";
+import { Client, InteractionReplyOptions, MessageEmbed } from "discord.js";
 import { Command, CommandCall } from "./types";
 import { token } from "../config.json"
+import { REPLY_STATUS } from "./core";
 
 const COMMAND_DIR = path.join(__dirname, "..", "commands");
 
@@ -56,8 +57,10 @@ export function setUpListeners(client: Client<true>) {
             inter: inter,
         };
         const res = await command.execute(cmdCall);
-        if (res === undefined) return;
-        await inter.reply(res);
+        const replyOptions = getReplyOptionsFromRes(res);
+        
+        if (replyOptions === undefined) return;
+        await inter.reply(replyOptions);
     });
     console.log("Successfully set up slash command listeners");
 }
@@ -65,4 +68,24 @@ export function setUpListeners(client: Client<true>) {
 export function getCommandNames() {
     if (!hasRequiredCommands) throw new Error("Cannot access commands before they are loaded.");
     return Object.keys(allCommands);
+}
+
+export function getCommand(name: string) {
+    if (!hasRequiredCommands) throw new Error("Cannot access commands before they are loaded.");
+    if (!Object.keys(allCommands).includes(name)) throw new Error(`Command ${name} does not exist.`);
+    return allCommands[name]!;
+}
+
+function getReplyOptionsFromRes(res: Awaited<ReturnType<Command["execute"]>>) {
+    if (res == undefined) return undefined;
+    if (typeof res === "string") return { embeds: [ new MessageEmbed().setDescription(res).setColor(REPLY_STATUS.success) ] };
+    if (res instanceof MessageEmbed) return { embeds: [res] };
+    if (res instanceof Array) {
+        if (typeof res[0] === "string") return { embeds: [ new MessageEmbed().setDescription(res[0]).setColor(REPLY_STATUS.success) ], ephemeral: res[1] }
+        if (res[0] instanceof MessageEmbed) return { embeds: [res[0]], ephemeral: res[1] };
+        return undefined;
+    }
+    //! Error prone. Has `void` as a possible return type, so any runtime value passes.
+    //TODO Make a type guard to check if it is actually of `InteractionReplyOptions`.
+    return res;
 }
