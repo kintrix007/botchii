@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { CacheType, Client, CommandInteraction, InteractionReplyOptions, MessageEmbed } from "discord.js";
+import { ApplicationCommandPermissionData, CacheType, Client, CommandInteraction, InteractionReplyOptions, MessageEmbed } from "discord.js";
 
 export const REPLY_STATUS = {
     success: 0x00bb00,
@@ -23,13 +23,14 @@ export interface CommandCall {
 }
 
 export interface Command {
-    slashCommand: SlashCommandBuilder;
+    execute(call: CommandCall): Promise<void | string | [string, boolean?] | MessageEmbed | [MessageEmbed, boolean?] | InteractionReplyOptions>;
     setup?(client: Client<true>): Promise<void>;
-    group?: string;
+    slashCommand:     SlashCommandBuilder;
+    permissions?:     ApplicationCommandPermissionData[];
+    group?:           string;
     longDescription?: string;
     examples?: {
         usage:        string;
         explanation?: string;
     }[] | string[];
-    execute(call: CommandCall): Promise<void | string | [string, boolean?] | MessageEmbed | [MessageEmbed, boolean?] | InteractionReplyOptions>
 }

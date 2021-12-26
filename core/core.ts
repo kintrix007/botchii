@@ -1,7 +1,7 @@
-import { Client, ClientEvents, EmbedFieldData, Intents, MessageEmbed } from "discord.js";
+import { Client, EmbedFieldData, Intents, MessageEmbed } from "discord.js";
 import { token } from "../config.json"
 import { loadCommands } from "./commandLoader";
-import { ReplyStatus, REPLY_STATUS } from "./types";
+import { Command, ReplyStatus, REPLY_STATUS } from "./types";
 
 type EmbedLiteral = {
     author?: {
@@ -59,9 +59,11 @@ export async function init(unauthClient = DEFAULT_CLIENT) {
     });
 
     unauthClient.login(token);
+    
     const client = await clientPromise;
     console.log("bot online");
     await loadCommands(client);
     console.log(`bot ready -- ${Date()}`);
+
     return client;
 }

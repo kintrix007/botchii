@@ -14,6 +14,14 @@ const _command: Command = {
                 .addChoices(getCommandNames().map(x => tuple(x, x)))
         );
     },
+    // Does not do anything, just demonstration for how permissions work
+    permissions: [
+        {
+            type: "USER",
+            id: "529285344764624907",
+            permission: true,
+        },
+    ],
     examples: [ "", "help" ],
     execute: async ({ inter }) => {
         const commandName = inter.options.getString("command");

@@ -1,8 +1,8 @@
 import fs from "fs";
 import path from "path";
 import { REST } from "@discordjs/rest";
-import { Routes } from "discord-api-types/v9";
-import { Client, MessageEmbed } from "discord.js";
+import { ConnectionVisibility, Routes } from "discord-api-types/v9";
+import { ApplicationCommand, Client, Collection, GuildResolvable, MessageEmbed } from "discord.js";
 import { Command, CommandCall } from "./types";
 import { token, testServerId } from "../config.json"
 import { REPLY_STATUS } from "./types";
@@ -31,6 +31,7 @@ export async function loadCommands(client: Client<true>) {
     });
 
     await registerSlashCommands(client);
+    await setUpCommandPermissions(client);
     setUpListeners(client);
 }
 
@@ -60,6 +61,32 @@ export async function registerSlashCommands(client: Client<true>) {
     await rest.put(Routes.applicationGuildCommands(client.user.id, testServerId), { body: commandJSONs });
     
     console.log("successfully registered slash commands");
+}
+
+//! Very Hacky!
+export async function setUpCommandPermissions(client: Client<true>) {
+    if (client.application.owner === null) await client.application.fetch();
+
+    const globalCommands = await client.application.commands.fetch();
+    //? const guildCommands = await client.guilds.cache.get(testServerId)!.commands.fetch();
+    const guildCommandPromises = client.guilds.cache.map(async guild => await guild.commands.fetch());
+    const commands = globalCommands;
+    for await (const appCmd of guildCommandPromises) commands.concat(appCmd);
+    
+    const permissionPromises = commands.map(_appCmd => {
+        const appCmd = _appCmd as ApplicationCommand<{ guild?: GuildResolvable }>;
+        const command = allCommands[appCmd.name];
+        if (command?.permissions !== undefined) {
+            return appCmd.permissions.set({
+                permissions: command.permissions,
+                guild: appCmd.guild?.id,
+            });
+        }
+        return undefined;
+    });
+
+    await Promise.allSettled(permissionPromises);
+    console.log("successfully set up permissions for slash commands")
 }
 
 export function setUpListeners(client: Client<true>) {
