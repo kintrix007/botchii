@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { getCommand, getCommandNames } from "../core/commandLoader";
-import { tuple } from "../core/core";
+import { createEmbed, tuple } from "../core/core";
 import { Command } from "../core/types";
 
 const _command: Command = {
@@ -29,7 +29,7 @@ function general() {
     const commands = commandNames.map(name => getCommand(name));
     const table = commands.map(({ slashCommand: { name, description } }) => [ "`/" + name + "`", description ] as const);
     const result = table.map(x => x.join(" - ")).reduce((acc, x) => acc + "\n" + x);
-    return tuple(result, true);
+    return tuple(createEmbed("neutral", result), true);
 }
 
 function specific(commandName: string) {
@@ -47,5 +47,5 @@ function specific(commandName: string) {
     let result = `**\`/${name}\`** - ${desc}`;
     if (longDesc) result += `\n\nDescription:\n${longDesc}`;
     if (examples) result += `\n\nExamples:\n${examples}`;
-    return tuple(result, true);
+    return tuple(createEmbed("neutral", result), true);
 }

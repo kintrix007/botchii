@@ -1,6 +1,13 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { CacheType, Client, CommandInteraction, InteractionReplyOptions, MessageEmbed } from "discord.js";
 
+export const REPLY_STATUS = {
+    success: 0x00bb00,
+    failure: 0xbb0000,
+    neutral: 0x008888,
+} as const;
+export type ReplyStatus = keyof typeof REPLY_STATUS;
+
 // Same as Parameters
 // type Arguements<T extends Function> = T extends (...args: infer A) => any ? A : never;
 

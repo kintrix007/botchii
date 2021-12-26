@@ -1,4 +1,5 @@
 {
   "token": "your-bot-token",
-  "ownerId": "your-user-id"
+  "ownerId": "your-user-id",
+  "testServerId": "your-test-server-id"
 }

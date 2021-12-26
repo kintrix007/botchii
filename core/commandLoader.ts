@@ -2,10 +2,10 @@ import fs from "fs";
 import path from "path";
 import { REST } from "@discordjs/rest";
 import { Routes } from "discord-api-types/v9";
-import { Client, InteractionReplyOptions, MessageEmbed } from "discord.js";
+import { Client, MessageEmbed } from "discord.js";
 import { Command, CommandCall } from "./types";
-import { token } from "../config.json"
-import { REPLY_STATUS } from "./core";
+import { token, testServerId } from "../config.json"
+import { REPLY_STATUS } from "./types";
 
 const COMMAND_DIR = path.join(__dirname, "..", "commands");
 const MAX_DESCRIPTION_LENGTH = 80;
@@ -13,13 +13,13 @@ const MAX_DESCRIPTION_LENGTH = 80;
 const rest = new REST().setToken(token);
 const allCommands: { [name: string]: Command } = {};
 
-let hasRequiredCommands = false;
+let hasRequiredCommands = true;
 
 export async function loadCommands(client: Client<true>) {
     const commandFiles = getCommandFiles(COMMAND_DIR);
     requireCommands(commandFiles);
 
-    console.log("running setup for commands...");
+    // console.log("running setup for commands...");
     const setupPromises = Object.values(allCommands).map(x => x.setup?.(client));
     await Promise.allSettled(setupPromises);
     console.log("successfully ran setup for commands");
@@ -35,7 +35,7 @@ export async function loadCommands(client: Client<true>) {
 }
 
 export function requireCommands(commandFiles: string[]) {
-    console.log("loading command modules...");
+    // console.log("loading command modules...");
     commandFiles.forEach(f => {
         const command = require(f).default as Command;
         allCommands[command.slashCommand.name] = command;
@@ -52,15 +52,18 @@ export function getCommandFiles(dir: string): string[] {
 }
 
 export async function registerSlashCommands(client: Client<true>) {
-    console.log("registering global slash commands...")
+    // console.log("registering slash commands...");
     const commandJSONs = Object.values(allCommands).map(c => c.slashCommand.toJSON());
-    // console.log(commandJSONs);
-    await rest.put(Routes.applicationCommands(client.user.id), { body: commandJSONs });
-    console.log("successfully registered global slash commands");
+
+    //TODO change it to use guild commands only for testing
+    // await rest.put(Routes.applicationCommands(client.user.id), { body: commandJSONs });
+    await rest.put(Routes.applicationGuildCommands(client.user.id, testServerId), { body: commandJSONs });
+    
+    console.log("successfully registered slash commands");
 }
 
 export function setUpListeners(client: Client<true>) {
-    console.log("setting up slash command listeners...")
+    // console.log("setting up slash command listeners...")
     client.on("interactionCreate", async inter => {
         if (!inter.isCommand()) return;
         const command = allCommands[inter.commandName];
