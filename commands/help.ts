@@ -44,8 +44,8 @@ function specific(commandName: string) {
             return "`" + (usage == "" ? `/${name}` : `/${name} ${usage}`) + "`" + (explanation !== undefined ? ` - ${explanation}` : "");
         }
     })?.join("\n");
-    let result = `**\`/${name}\`** - ${desc}`;
+    let result = desc;
     if (longDesc) result += `\n\nDescription:\n${longDesc}`;
     if (examples) result += `\n\nExamples:\n${examples}`;
-    return tuple(createEmbed("neutral", result), true);
+    return tuple(createEmbed("neutral", { title: `\`/${name}\``, desc: result }), true);
 }
