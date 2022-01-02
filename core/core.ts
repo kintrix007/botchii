@@ -1,7 +1,9 @@
-import { Client, EmbedFieldData, Intents, MessageEmbed } from "discord.js";
+import { ApplicationCommandPermissionData, Client, EmbedFieldData, Intents, MessageEmbed, Snowflake } from "discord.js";
 import { token } from "../config.json"
 import { loadCommands } from "./commandLoader";
-import { Command, ReplyStatus, REPLY_STATUS } from "./types";
+import { GuildPreferences, ReplyStatus, REPLY_STATUS } from "./types";
+import fs from "fs";
+import path from "path";
 
 type EmbedLiteral = {
     author?: {
@@ -26,8 +28,16 @@ const DEFAULT_CLIENT = new Client({
     intents: [ Intents.FLAGS.GUILDS ],
     allowedMentions: { parse: [ "users" ], repliedUser: true }
 });
+const PREFS_DIR = path.join(__dirname, "..", "prefs");
 
 export type Literal = string | number | boolean | undefined | null | void | {};
+
+export const OwnerPermission: (isAllow: boolean) => ApplicationCommandPermissionData = isAllow => ({
+    type: "USER",
+    id: "529285344764624907",
+    permission: isAllow,
+});
+
 export function tuple<T extends Literal[]>(...args: T) { return args };
 
 export function createEmbed(status: ReplyStatus, content: string | EmbedLiteral) {
@@ -48,6 +58,40 @@ export function createEmbed(status: ReplyStatus, content: string | EmbedLiteral)
     }
     return embed;
 }
+
+const guildPrefsCache: { [guildId: Snowflake]: GuildPreferences } = {};
+
+export function prefs<T extends keyof GuildPreferences>(guildId: Snowflake, id: T) {
+    if (!fs.existsSync(PREFS_DIR)) fs.mkdirSync(PREFS_DIR);
+    if (guildPrefsCache[guildId] === undefined) guildPrefsCache[guildId] = {};
+
+    const idFilename = `${id}.json`;
+
+    function assertDir(path: string) {
+        if (!fs.existsSync(path)) fs.mkdirSync(path);
+    }
+
+    return new class {
+        public get(): GuildPreferences[T] {
+            read:
+            if (guildPrefsCache[guildId]![id] === undefined) {
+                //? Updates cache too
+                if (!fs.existsSync(path.join(PREFS_DIR, guildId, idFilename))) break read;
+                guildPrefsCache[guildId]![id] = JSON.parse(fs.readFileSync(path.join(PREFS_DIR, guildId, idFilename)).toString());
+            }
+            return guildPrefsCache[guildId]![id];
+        }
+    
+        public set(value: GuildPreferences[T]) {
+            //? Updates cache too
+            // this.get(); //? Unnecessary, because it's gonna be overridden 
+            guildPrefsCache[guildId]![id] = value;
+            assertDir(path.join(PREFS_DIR, guildId));
+            fs.writeFileSync(path.join(PREFS_DIR, guildId, idFilename), JSON.stringify(guildPrefsCache[guildId]![id]!, undefined, 2));
+        }
+    };
+}
+
 
 export async function init(unauthClient = DEFAULT_CLIENT) {
     const clientPromise = new Promise<Client<true>>((resolve, reject) => {

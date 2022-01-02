@@ -1,12 +1,13 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { getCommand, getCommandNames } from "../core/commandLoader";
-import { createEmbed, tuple } from "../core/core";
+import { createEmbed, OwnerPermission, tuple } from "../core/core";
 import { Command } from "../core/types";
 
 const _command: Command = {
+    type: "global",
     slashCommand: new SlashCommandBuilder()
         .setName("help")
-        .setDescription("Shows the help sheet."),
+        .setDescription("Shows the help sheet"),
     setup: async client => {
         _command.slashCommand.addStringOption(option =>
             option.setName("command")
@@ -14,14 +15,10 @@ const _command: Command = {
                 .addChoices(getCommandNames().map(x => tuple(x, x)))
         );
     },
-    // Does not do anything, just demonstration for how permissions work
-    permissions: [
-        {
-            type: "USER",
-            id: "529285344764624907",
-            permission: true,
-        },
-    ],
+    // Demonstration for how permissions work
+    // permissions: [
+    //     OwnerPermission(true),
+    // ],
     examples: [ "", "help" ],
     execute: async ({ inter }) => {
         const commandName = inter.options.getString("command");

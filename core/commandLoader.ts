@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { REST } from "@discordjs/rest";
-import { ConnectionVisibility, Routes } from "discord-api-types/v9";
+import { Routes } from "discord-api-types/v9";
 import { ApplicationCommand, Client, Collection, GuildResolvable, MessageEmbed } from "discord.js";
 import { Command, CommandCall } from "./types";
 import { token, testServerId } from "../config.json"
@@ -31,7 +31,8 @@ export async function loadCommands(client: Client<true>) {
     });
 
     await registerSlashCommands(client);
-    await setUpCommandPermissions(client);
+    await setUpGlobalPermissions(client);
+    await setUpGuildPermissions(client);
     setUpListeners(client);
 }
 
@@ -45,51 +46,89 @@ export function requireCommands(commandFiles: string[]) {
     console.log(`successfully loaded (${Object.keys(allCommands).length}) commands`);
 }
 
-export function getCommandFiles(dir: string): string[] {
+function getCommandFiles(dir: string): string[] {
     const items = fs.readdirSync(dir).map(f => path.join(dir, f));
     const dirs  = items.filter(p => fs.lstatSync(p).isDirectory());
     const files = items.filter(p => fs.lstatSync(p).isFile() && p.endsWith(".ts"));
     return [ ...files, ...dirs.map(d => getCommandFiles(d)).flat(1) ];
 }
 
-export async function registerSlashCommands(client: Client<true>) {
+async function registerSlashCommands(client: Client<true>) {
     // console.log("registering slash commands...");
-    const commandJSONs = Object.values(allCommands).map(c => c.slashCommand.toJSON());
+    const globalCommandJSONs = Object.values(allCommands).filter(({ type }) => type === "global").map(({ slashCommand }) => slashCommand.toJSON());
+    const guildCommandJSONs  = Object.values(allCommands).filter(({ type }) => type === "guild").map(({ slashCommand }) => slashCommand.toJSON());
 
-    //TODO change it to use guild commands only for testing
-    // await rest.put(Routes.applicationCommands(client.user.id), { body: commandJSONs });
-    await rest.put(Routes.applicationGuildCommands(client.user.id, testServerId), { body: commandJSONs });
-    
+    // TODO change it to select between the two without editing the code
+
+    if (false) {
+        //? For deployment
+        await rest.put(Routes.applicationCommands(client.user.id), { body: globalCommandJSONs });
+        const guildRegisterPromises = client.guilds.cache
+            .map(guild => rest.put(Routes.applicationGuildCommands(client.user.id, guild.id), { body: guildCommandJSONs }));
+        await Promise.allSettled(guildRegisterPromises);
+    } else {
+        //? For testing
+        await rest.put(Routes.applicationGuildCommands(client.user.id, testServerId), { body: [ ...globalCommandJSONs, ...guildCommandJSONs ] });
+    }
+
     console.log("successfully registered slash commands");
 }
 
-//! Very Hacky!
-export async function setUpCommandPermissions(client: Client<true>) {
+//! Hacky!
+async function setUpGlobalPermissions(client: Client<true>) {
     if (client.application.owner === null) await client.application.fetch();
 
     const globalCommands = await client.application.commands.fetch();
-    //? const guildCommands = await client.guilds.cache.get(testServerId)!.commands.fetch();
-    const guildCommandPromises = client.guilds.cache.map(async guild => await guild.commands.fetch());
-    const commands = globalCommands;
-    for await (const appCmd of guildCommandPromises) commands.concat(appCmd);
     
-    const permissionPromises = commands.map(_appCmd => {
+    //TODO Update all permissions with one API call...
+    const permissionPromises = globalCommands.map(_appCmd => {
+        // For some reason the built-in type is incorrect??? 
         const appCmd = _appCmd as ApplicationCommand<{ guild?: GuildResolvable }>;
         const command = allCommands[appCmd.name];
+        if (command?.type !== "global") return undefined;
+        
         if (command?.permissions !== undefined) {
             return appCmd.permissions.set({
                 permissions: command.permissions,
-                guild: appCmd.guild?.id,
             });
         }
         return undefined;
     });
-
+    
     await Promise.allSettled(permissionPromises);
-    console.log("successfully set up permissions for slash commands")
+    console.log("successfully set up permissions for global slash commands");
 }
 
-export function setUpListeners(client: Client<true>) {
+//! Hacky!
+async function setUpGuildPermissions(client: Client<true>) {
+    if (client.application.owner === null) await client.application.fetch();
+    
+    const guildCommandPromises = client.guilds.cache.map(async guild => await guild.commands.fetch());
+    const guildCommands = <Awaited<typeof guildCommandPromises[number]>>new Collection();
+    for await (const appCmd of guildCommandPromises) guildCommands.concat(appCmd);
+    
+    const permissionPromises = guildCommands.map(_appCmd => {
+        // For some reason the built-in type is incorrect??? 
+        const appCmd = _appCmd as ApplicationCommand<{ guild?: GuildResolvable }>;
+        const command = allCommands[appCmd.name];
+        if (command?.type !== "guild") return undefined;
+        
+        //TODO Make a system for guild-specific permissions
+        if (false) {
+            return appCmd.permissions.set({
+                permissions: [],
+                guild: appCmd.guild?.id,
+            });
+        }
+        
+        return undefined;
+    });
+
+    await Promise.allSettled(permissionPromises);
+    console.log("successfully set up permissions for guild slash commands");
+}
+
+function setUpListeners(client: Client<true>) {
     // console.log("setting up slash command listeners...")
     client.on("interactionCreate", async inter => {
         if (!inter.isCommand()) return;
@@ -109,17 +148,6 @@ export function setUpListeners(client: Client<true>) {
     console.log("successfully set up slash command listeners");
 }
 
-export function getCommandNames() {
-    if (!hasRequiredCommands) throw new Error("Cannot access commands before they are loaded.");
-    return Object.keys(allCommands);
-}
-
-export function getCommand(name: string) {
-    if (!hasRequiredCommands) throw new Error("Cannot access commands before they are loaded.");
-    if (!Object.keys(allCommands).includes(name)) throw new Error(`Command ${name} does not exist.`);
-    return allCommands[name]!;
-}
-
 function getReplyOptionsFromRes(res: Awaited<ReturnType<Command["execute"]>>) {
     if (res == undefined) return undefined;
     if (typeof res === "string") return { embeds: [ new MessageEmbed().setDescription(res).setColor(REPLY_STATUS.success) ] };
@@ -130,6 +158,18 @@ function getReplyOptionsFromRes(res: Awaited<ReturnType<Command["execute"]>>) {
         return undefined;
     }
     //! Error prone. Has `void` as a possible return type, so any runtime value passes.
-    //TODO Make a type guard to check if it is actually of `InteractionReplyOptions`.
+    //TODO Make a type guard to check if it is actually of type `InteractionReplyOptions`.
     return res;
+}
+
+export function getCommandNames() {
+    if (!hasRequiredCommands) throw new Error("Cannot access commands before they are loaded.");
+    return Object.keys(allCommands);
+}
+
+export function getCommand(name: string) {
+    if (!hasRequiredCommands) throw new Error("Cannot access commands before they are loaded.");
+    const command = allCommands[name];
+    if (command === undefined) throw new Error(`Command ${name} does not exist.`);
+    return command;
 }

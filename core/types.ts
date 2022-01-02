@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { ApplicationCommandPermissionData, CacheType, Client, CommandInteraction, InteractionReplyOptions, MessageEmbed } from "discord.js";
+import { ApplicationCommandPermissionData, CacheType, Client, CommandInteraction, InteractionReplyOptions, MessageEmbed, Snowflake } from "discord.js";
 
 export const REPLY_STATUS = {
     success: 0x00bb00,
@@ -8,23 +8,26 @@ export const REPLY_STATUS = {
 } as const;
 export type ReplyStatus = keyof typeof REPLY_STATUS;
 
+
 // Same as Parameters
 // type Arguements<T extends Function> = T extends (...args: infer A) => any ? A : never;
+type Optional<T> = {
+    [K in keyof T]?: T[K];
+}
 
-type InteractionReply = Parameters<CommandInteraction<CacheType>["reply"]>[0];
 
 //! Might break if Snowflake gets changed in the Discord API
-type Snowflake = number;
-export type MessageLink = `https://discord.com/channels/${Snowflake | "@me"}/${Snowflake}/${Snowflake}`;
+export type MessageLink = `https://discord.com/channels/${number | "@me"}/${number}/${number}`;
 
 export interface CommandCall {
     client: Client<true>;
     inter:  CommandInteraction;
 }
 
-export interface Command {
+interface GlobalCommand {
     execute(call: CommandCall): Promise<void | string | [string, boolean?] | MessageEmbed | [MessageEmbed, boolean?] | InteractionReplyOptions>;
     setup?(client: Client<true>): Promise<void>;
+    type:             "global";
     slashCommand:     SlashCommandBuilder;
     permissions?:     ApplicationCommandPermissionData[];
     group?:           string;
@@ -34,3 +37,27 @@ export interface Command {
         explanation?: string;
     }[] | string[];
 }
+
+interface GuildCommand {
+    execute(call: CommandCall): Promise<void | string | [string, boolean?] | MessageEmbed | [MessageEmbed, boolean?] | InteractionReplyOptions>;
+    setup?(client: Client<true>): Promise<void>;
+    type:             "guild";
+    slashCommand:     SlashCommandBuilder;
+    group?:           string;
+    longDescription?: string;
+    examples?: {
+        usage:        string;
+        explanation?: string;
+    }[] | string[];
+}
+
+export type Command = GlobalCommand | GuildCommand;
+
+export type GuildPreferences = Optional<{
+    admin: {
+        roleId: Snowflake;
+    };
+    aliases: {
+        [alias: string]: Snowflake[];
+    };
+}>;
