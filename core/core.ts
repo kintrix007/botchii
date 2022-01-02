@@ -1,5 +1,5 @@
 import { ApplicationCommandPermissionData, Client, EmbedFieldData, Intents, MessageEmbed, Snowflake } from "discord.js";
-import { token } from "../config.json"
+import { token, ownerId } from "../config.json"
 import { loadCommands } from "./commandLoader";
 import { GuildPreferences, ReplyStatus, REPLY_STATUS } from "./types";
 import fs from "fs";
@@ -34,7 +34,7 @@ export type Literal = string | number | boolean | undefined | null | void | {};
 
 export const OwnerPermission: (isAllow: boolean) => ApplicationCommandPermissionData = isAllow => ({
     type: "USER",
-    id: "529285344764624907",
+    id: ownerId,
     permission: isAllow,
 });
 
