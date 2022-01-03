@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { getCommand, getCommandNames } from "../core/commandLoader";
-import { createEmbed, OwnerPermission, tuple } from "../core/core";
+import { createEmbed, tuple } from "../core/core";
 import { Command } from "../core/types";
 
 const _command: Command = {
@@ -11,13 +11,13 @@ const _command: Command = {
     setup: async client => {
         _command.slashCommand.addStringOption(option =>
             option.setName("command")
-                .setDescription("Show the help sheet of this command")
-                .addChoices(getCommandNames().map(x => tuple(x, x)))
+            .setDescription("Show the help sheet of this command")
+            .addChoices(getCommandNames().map(x => tuple(x, x)))
         );
     },
     // Demonstration for how permissions work
     // permissions: [
-    //     OwnerPermission(true),
+    //     BotOwnerPermission(true),
     // ],
     examples: [ "", "help" ],
     execute: async ({ inter }) => {

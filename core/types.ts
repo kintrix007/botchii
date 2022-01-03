@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { ApplicationCommandPermissionData, CacheType, Client, CommandInteraction, InteractionReplyOptions, MessageEmbed, Snowflake } from "discord.js";
+import { ApplicationCommandPermissionData, Client, CommandInteraction, InteractionReplyOptions, MessageEmbed, Snowflake } from "discord.js";
 
 export const REPLY_STATUS = {
     success: 0x00bb00,
@@ -16,7 +16,7 @@ type Optional<T> = {
 }
 
 
-//! Might break if Snowflake gets changed in the Discord API
+//! Might break if Snowflake gets changed from just numbers in the Discord API
 export type MessageLink = `https://discord.com/channels/${number | "@me"}/${number}/${number}`;
 
 export interface CommandCall {
@@ -30,7 +30,6 @@ interface GlobalCommand {
     type:             "global";
     slashCommand:     SlashCommandBuilder;
     permissions?:     ApplicationCommandPermissionData[];
-    group?:           string;
     longDescription?: string;
     examples?: {
         usage:        string;
@@ -43,7 +42,6 @@ interface GuildCommand {
     setup?(client: Client<true>): Promise<void>;
     type:             "guild";
     slashCommand:     SlashCommandBuilder;
-    group?:           string;
     longDescription?: string;
     examples?: {
         usage:        string;

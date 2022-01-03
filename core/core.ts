@@ -32,7 +32,7 @@ const PREFS_DIR = path.join(__dirname, "..", "prefs");
 
 export type Literal = string | number | boolean | undefined | null | void | {};
 
-export const OwnerPermission: (isAllow: boolean) => ApplicationCommandPermissionData = isAllow => ({
+export const BotOwnerPermission: (isAllow: boolean) => ApplicationCommandPermissionData = isAllow => ({
     type: "USER",
     id: ownerId,
     permission: isAllow,
