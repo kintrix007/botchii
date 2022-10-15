@@ -2,8 +2,6 @@
 
 ### Bot invite
 
-To invite this bot to your server use [this link](https://discord.com/api/oauth2/authorize?client_id=802315557981913130&permissions=268520512&scope=bot).
-
 ### Dependencies
 * `discord.js`
 
