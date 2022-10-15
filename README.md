@@ -1,7 +1,5 @@
 # Botchii
 
-### Bot invite
-
 ### Dependencies
 * `discord.js`
 
